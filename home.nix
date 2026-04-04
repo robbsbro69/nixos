@@ -1,0 +1,97 @@
+{ config, pkgs, zen-browser, ... }:
+let
+	dotfiles = "${config.home.homeDirectory}/nixos-dotfiles/config";
+	create_symlink = path: config.lib.file.mkOutOfStoreSymlink path;
+	configs = {
+		nvim = "nvim";
+		nautilus = "nautilus";
+		kitty = "kitty";
+		niri = "niri";
+		waybar = "waybar";
+		fuzzel = "fuzzel";
+		mpv = "mpv";
+  };
+in {
+	imports = [ zen-browser.homeModules.default ];
+
+	programs.zen-browser = {
+		enable = true;
+		setAsDefaultBrowser = true;
+		policies = {
+			DisableAppUpdate = true;
+			DisableTelemetry = true;
+			DisablePocket = true;
+		};
+	};
+
+home.username = "alpha";
+home.homeDirectory = "/home/alpha";
+programs.ssh = {
+	enable = true;
+	enableDefaultConfig = false;
+	matchBlocks."github.com" = {
+		hostname = "github.com";
+		user = "git";
+		identityFile = "~/.ssh/id_ed25519_main";
+	};
+};
+programs.git = {
+	enable = true;
+	settings = {
+	user = {
+		name = "robbsbro69";
+		email = "robbsbro369@proton.me";
+		};
+	init.defaultBranch =  "main";
+	};
+  };
+home.stateVersion = "25.11";
+programs.bash = {
+	enable = true;
+	shellAliases = {
+		btw = "echo i use nixos, btw";
+		nrs = "sudo nixos-rebuild switch --flake ~/nixos-dotfiles#nixos";
+		nuprs = "nix flake update && sudo nixos-rebuild switch --flake ~/nixos-dotfiles#nixos";
+		gnrs = "git add . && git commit -m \"update\" && nrs";
+		ls = "eza --icons";
+		ll = "eza -l --icons";
+};
+	initExtra = ''
+		export PS1="\[\e[38;5;75m\]\u@\h \[\e[38;5;113m\]\w \[\e[38;5;189m\]\$ \[\e[0m\]"
+	'';
+};
+
+programs.starship = {
+	enable = true;
+};
+
+xdg.configFile = builtins.mapAttrs
+  (name: subpath: {
+    source = create_symlink "${dotfiles}/${subpath}";
+    recursive = true;
+})
+configs;
+
+home.packages = with  pkgs; [
+	neovim
+	ripgrep
+	nil
+	nixpkgs-fmt
+	nodejs
+	gcc
+  	fuzzel
+  	nautilus
+  	obsidian
+  	spotify
+	jellyfin-media-player
+	evince
+	blueman
+	yazi
+	brave
+	adwaita-icon-theme
+	mpv
+	eza
+	fzf
+	zoxide
+];
+}

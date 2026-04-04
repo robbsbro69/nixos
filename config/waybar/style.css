@@ -1,0 +1,179 @@
+@import "colors-waybar.css";
+
+/* 🔹 Global Waybar Settings */
+* {
+    font-family: "JetBrainsMono Nerd Font";
+    font-weight: bolder;
+    font-size: 12px;
+    min-height: 0;
+    border: none;
+}
+
+/* 🔹 Waybar Background */
+window#waybar {
+    background: transparent;
+    color: @foreground;
+    padding: 2px;
+    border: none;
+    box-shadow: none;
+}
+
+/* 🟢 Modules (Minimal Padding, Small Size) */
+#workspaces,
+#window,
+#pulseaudio,
+#cpu,
+#memory,
+#battery,
+#backlight,
+#network,
+#clock,
+#custom-distrologo,
+#custom-notifications,
+#custom-laptop-display,
+#tray {
+    background: @color0;
+    color: @foreground;
+    padding: 2px 6px;
+    margin: 2px;
+    border-radius: 5px;
+    transition: background 0.15s ease-in-out, box-shadow 0.15s ease-in-out;
+}
+
+/* 🔹 Hover Effect */
+#pulseaudio:hover,
+#cpu:hover,
+#battery:hover,
+#backlight:hover,
+#memory:hover,
+#network:hover,
+#clock:hover,
+#custom-distrologo:hover,
+#custom-player:hover,
+#custom-notifications:hover,
+#custom-laptop-display:hover,
+#tray:hover {
+    background: @color3;
+    color: @background;
+    box-shadow: 0px 0px 4px @color3;
+}
+
+#window {
+    border-top-left-radius: 0;
+    border-bottom-left-radius: 0;
+    margin-left: 0;
+    padding-left: 10px;
+    border-left: 1px solid rgba(255, 255, 255, 0.1); /* Subtle separator line */
+}
+
+
+/* 🎯 Workspaces (Compact, Minimalist) */
+#workspaces {
+    padding: 2px 4px;
+}
+
+#workspaces button:hover {
+    background: @color3;
+    color: #bb9af7;   /* Purple tint on hover */
+    border-radius: 5px;
+}
+
+#workspaces button {
+    color: @foreground;
+    padding: 0 8px;
+    margin: 2px 0;
+    font-size: 16px; /* Makes icons pop */
+    transition: all 0.2s ease-in-out;
+}
+
+/* Focused Workspaces */
+#workspaces button.active {
+    color: #7aa2f7;   /* Tokyo Night Blue focus color */
+    background: transparent;
+    border-bottom: 2px solid #7aa2f7; /* Underline effect */
+}
+
+/* Urgent Workspaces */
+#workspaces button.urgent {
+    background: @color12;
+    color: @background;
+    animation: urgent-pulse 1s infinite;
+}
+
+@keyframes urgent-pulse {
+    0% { background: @color12; }
+    50% { background: @color13; }
+    100% { background: @color12; }
+}
+
+/* Visible Workspaces */
+#workspaces button.visible {
+    background: @color14;
+    color: @background;
+    box-shadow: inset 0px 0px 3px @color15;
+}
+
+/* 🔹 Clock Module (Minimalist) */
+#clock {
+    background: @color0;
+    color: @foreground;
+}
+
+/* 🔹 Network Module */
+#network {
+    background: @color0;
+    color: @foreground;
+}
+
+/* Battery */
+#battery {
+	background: @color0;
+	color: @foreground;
+}
+
+/* 🔹 CPU & Memory */
+#cpu, #memory {
+    background: @color0;
+    color: @foreground;
+}
+
+/* Backlight */
+#backlight {
+    background: @color0;
+    color: @foreground;
+}
+
+/* 🔹 PulseAudio */
+#pulseaudio {
+    background: @color0;
+    color: @foreground;
+}
+
+/* 🔹 Tray */
+#tray {
+    background: @color0;
+    color: @foreground;
+}
+
+#custom-player, #custom-player-prev, #custom-player-next {
+    padding: 4px 10px;
+    background: @color0; /* module background */
+    color: @foreground;
+    border-radius: 8px;
+    margin: 2px 4px;
+}
+#custom-distrologo {
+  background: @color0;
+  font-size: 16px;
+  padding: 0 10px;
+}
+
+#custom-notifications {
+    color: #89B4FA;
+    padding: 0 10px;
+}
+
+#custom-notifications.paused {
+    color: #F38BA8;
+}
+

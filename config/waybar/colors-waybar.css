@@ -1,0 +1,38 @@
+/* Color Variables - Catppuccin Macchiato (modifiable) */
+@define-color background #24273a;
+@define-color foreground #cad3f5;
+
+/* Base Colors */
+@define-color color0 #1e2030;   /* Module background */
+@define-color color1 #363a4f;   /* Border color */
+@define-color color3 #494d64;   /* Hover background */
+
+/* Workspace States */
+@define-color color8 #5b6078;   /* Empty workspaces */
+@define-color color9 #8aadf4;   /* Occupied workspaces - Blue */
+@define-color color10 #a6da95;  /* Focused workspaces - Green */
+@define-color color12 #ed8796;  /* Urgent workspaces - Red */
+@define-color color13 #f5a97f;  /* Urgent pulse - Peach */
+@define-color color14 #c6a0f6;  /* Visible workspaces - Lavender */
+@define-color color15 #b7bdf8;  /* Visible highlight - Light lavender */
+
+/* Module Colors */
+@define-color pulseaudio #91d7e3;  /* Cyan */
+@define-color cpu #7dc4e4;        /* Sky blue */
+@define-color memory #f4dbd6;     /* Rosewater */
+@define-color network #8bd5ca;    /* Teal */
+@define-color clock #eed49f;      /* Yellow */
+
+/* Animation */
+@keyframes urgent-pulse {
+    0% { background: @color12; }
+    50% { background: @color13; }
+    100% { background: @color12; }
+}
+
+/* Emoji Color Fix (forces full-color rendering) */
+.emoji {
+    font-family: "Noto Color Emoji";
+    color: transparent;
+    text-shadow: 0 0 0 @foreground;
+}
