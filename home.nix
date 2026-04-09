@@ -4,7 +4,6 @@ let
 	create_symlink = path: config.lib.file.mkOutOfStoreSymlink path;
 	configs = {
 		nvim = "nvim";
-		nautilus = "nautilus";
 		kitty = "kitty";
 		niri = "niri";
 		waybar = "waybar";
@@ -57,6 +56,7 @@ programs.bash = {
 		ll = "eza -l --icons";
 };
 	initExtra = ''
+	  	export PATH="$HOME/.cargo/bin:$PATH"
 		export PS1="\[\e[38;5;75m\]\u@\h \[\e[38;5;113m\]\w \[\e[38;5;189m\]\$ \[\e[0m\]"
 	'';
 };
@@ -80,10 +80,8 @@ home.packages = with  pkgs; [
 	nodejs
 	gcc
   	fuzzel
-  	nautilus
   	obsidian
   	spotify
-	jellyfin-media-player
 	evince
 	blueman
 	yazi
@@ -93,5 +91,10 @@ home.packages = with  pkgs; [
 	eza
 	fzf
 	zoxide
+	gammastep
+	fastfetch
+	transmission_4-gtk
+	telegram-desktop
+
 ];
 }

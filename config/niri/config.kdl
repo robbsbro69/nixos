@@ -38,6 +38,7 @@ spawn-at-startup "swaybg" "-i" "/home/alpha/Pictures/Wallpapers/Beer-Girl.png" "
 spawn-at-startup "ssh-add" "/home/alpha/.ssh/id_ed25519_main"
 spawn-at-startup "swayidle" "-w" "timeout" "300" "swaylock" "-f" "-c" "1a1b26" "before-sleep" "swaylock" "-f" "-c" "1a1b26"
 spawn-at-startup "waybar" "-c" "/home/alpha/.config/waybar/config.jsonc" "-s" "/home/alpha/.config/waybar/style.css"
+spawn-at-startup "gammastep" "-O" "3000"
 
 binds {
     Mod+Return { spawn "kitty"; }

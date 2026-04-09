@@ -20,6 +20,7 @@ hardware.nvidia = {
 environment.sessionVariables = {
   NIXOS_OZONE_WL = "1";
   WLR_NO_HARDWARE_CURSORS = "1";
+  WLR_GAMMA_CONTROL = "1";
 };
 
 xdg.portal = {
@@ -45,7 +46,10 @@ services.xserver = {
 };
 
 services.displayManager.ly.enable = true;
-services.jellyfin.enable = true;
+services.gvfs.enable = true;
+services.udev.packages = with pkgs; [
+  libmtp
+];
 services.pipewire.wireplumber.extraConfig."99-bluetooth-default" = {
 	"monitor.bluez.rules" = [
 		{
@@ -79,20 +83,31 @@ environment.systemPackages = with pkgs; [
 	rustfmt
 	clippy
 	fuzzel
-	swaylock
-	swayidle
-	swaybg
-	wl-clipboard
 	grim
 	slurp
-	wlr-randr
-	xwayland
 	waybar
 	playerctl
 	dunst
 	brightnessctl
 	libnotify
 	socat
+	swaylock
+	swayidle
+	swaybg
+	wl-clipboard
+	wlr-randr
+	xwayland
+	gvfs
+	mtpfs
+	jmtpfs
+	libmtp
+	usbutils
+	android-tools
+	kdePackages.qtsvg
+	kdePackages.kio # needed since 25.11
+    	kdePackages.kio-fuse #to mount remote filesystems via FUSE
+    	kdePackages.kio-extras #extra protocols support (sftp, fish and more)
+    	kdePackages.dolphin # This is the actual dolphin package
 ];
 
 fonts.packages = with pkgs; [ nerd-fonts.jetbrains-mono ];
