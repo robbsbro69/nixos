@@ -31,6 +31,7 @@ window#waybar {
 #custom-distrologo,
 #custom-notifications,
 #custom-laptop-display,
+#custom-player,
 #tray {
     background: @color0;
     color: @foreground;

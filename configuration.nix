@@ -21,14 +21,22 @@ environment.sessionVariables = {
   NIXOS_OZONE_WL = "1";
   WLR_NO_HARDWARE_CURSORS = "1";
   WLR_GAMMA_CONTROL = "1";
+  WLR_DRM_DEVICES = "/dev/dri/card1";
+  XCURSOR_SIZE = "24";
+};
+
+programs.hyprland = {
+	enable = true;
+	xwayland.enable = true;
 };
 
 xdg.portal = {
 	enable = true;
+	wlr.enable = true;
 	extraPortals = [ pkgs.xdg-desktop-portal-gtk ];
 };
 
-programs.niri.enable = true;
+security.pam.services.hyprlock = {};
 
 networking.hostName = "nixos";
 networking.networkmanager.enable = true;
@@ -65,7 +73,7 @@ services.pipewire.wireplumber.extraConfig."99-bluetooth-default" = {
 
 users.users.alpha = {
 	isNormalUser = true;
-	extraGroups = [ "wheel" ]; # Enable ‘sudo’ for the user.
+	extraGroups = [ "wheel" ];
 	packages = with pkgs; [
        				tree
 	];
@@ -91,9 +99,6 @@ environment.systemPackages = with pkgs; [
 	brightnessctl
 	libnotify
 	socat
-	swaylock
-	swayidle
-	swaybg
 	wl-clipboard
 	wlr-randr
 	xwayland
@@ -104,10 +109,10 @@ environment.systemPackages = with pkgs; [
 	usbutils
 	android-tools
 	kdePackages.qtsvg
-	kdePackages.kio # needed since 25.11
-    	kdePackages.kio-fuse #to mount remote filesystems via FUSE
-    	kdePackages.kio-extras #extra protocols support (sftp, fish and more)
-    	kdePackages.dolphin # This is the actual dolphin package
+	kdePackages.kio
+    	kdePackages.kio-fuse
+    	kdePackages.kio-extras
+    	kdePackages.dolphin
 ];
 
 fonts.packages = with pkgs; [ nerd-fonts.jetbrains-mono ];
@@ -120,7 +125,13 @@ fileSystems."/mnt/ssd" = {
 };
 
 
-nix.settings.experimental-features = [ "nix-command" "flakes" ];
+nix.settings = { 
+	experimental-features = [ "nix-command" "flakes" ];
+    	substituters = [ "https://hyprland.cachix.org" ];
+    	trusted-public-keys = [
+      		"hyprland.cachix.org-1:a7pgxzMz7+chwVL3/pzj6jIBMioiJM7ypFP8PwtkuGc="
+    	];
+};
 
 system.stateVersion = "25.11";
 

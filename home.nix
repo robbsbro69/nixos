@@ -5,7 +5,7 @@ let
 	configs = {
 		nvim = "nvim";
 		kitty = "kitty";
-		niri = "niri";
+		hypr = "hypr";
 		waybar = "waybar";
 		fuzzel = "fuzzel";
 		mpv = "mpv";
@@ -23,6 +23,11 @@ in {
 		};
 	};
 
+wayland.windowManager.hyprland = {
+	enable = true;
+	systemd.enable = false;
+};
+
 home.username = "alpha";
 home.homeDirectory = "/home/alpha";
 programs.ssh = {
@@ -34,6 +39,7 @@ programs.ssh = {
 		identityFile = "~/.ssh/id_ed25519_main";
 	};
 };
+
 programs.git = {
 	enable = true;
 	settings = {
@@ -44,6 +50,7 @@ programs.git = {
 	init.defaultBranch =  "main";
 	};
   };
+
 home.stateVersion = "25.11";
 programs.bash = {
 	enable = true;
@@ -95,6 +102,9 @@ home.packages = with  pkgs; [
 	fastfetch
 	transmission_4-gtk
 	telegram-desktop
+	hyprlock
+	hypridle
+	hyprpaper
 
 ];
 }
