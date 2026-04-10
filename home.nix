@@ -9,6 +9,8 @@ let
 		waybar = "waybar";
 		fuzzel = "fuzzel";
 		mpv = "mpv";
+		yazi = "yazi";
+		starship = "starship";
   };
 in {
 	imports = [ zen-browser.homeModules.default ];
@@ -64,8 +66,7 @@ programs.bash = {
 };
 	initExtra = ''
 	  	export PATH="$HOME/.cargo/bin:$PATH"
-		export PS1="\[\e[38;5;75m\]\u@\h \[\e[38;5;113m\]\w \[\e[38;5;189m\]\$ \[\e[0m\]"
-	'';
+		'';
 };
 
 programs.starship = {
@@ -105,6 +106,7 @@ home.packages = with  pkgs; [
 	hyprlock
 	hypridle
 	hyprpaper
-
+	btop
+	imv
 ];
 }

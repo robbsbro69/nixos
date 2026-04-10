@@ -113,6 +113,7 @@ environment.systemPackages = with pkgs; [
     	kdePackages.kio-fuse
     	kdePackages.kio-extras
     	kdePackages.dolphin
+	kdePackages.kservice
 ];
 
 fonts.packages = with pkgs; [ nerd-fonts.jetbrains-mono ];
@@ -123,6 +124,22 @@ fileSystems."/mnt/ssd" = {
 	fsType = "ext4";
 	options = [ "defaults" "nofail" ];
 };
+
+fileSystems."/mnt/hdd" = {
+	device = "/dev/disk/by-uuid/b0c8283c-f138-4045-9479-71159cea34f7";
+	fsType = "ext4";
+	options = [ "defaults" "nofail" ];
+};
+
+
+nix.gc = {
+	automatic = true;
+	dates = "monthly";             
+	options = "--delete-older-than 30d";
+  };
+
+  nix.optimise.automatic = true;
+
 
 
 nix.settings = { 
