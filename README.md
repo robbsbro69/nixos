@@ -8,7 +8,7 @@
 > **System Information:**
 >
 > - **OS:** NixOS
-> - **Window Manager:** Niri
+> - **Window Manager:** Hyprland
 > - **Shell:** Bash
 > - **Terminal:** Kitty
 > - **Editor:** Neovim
