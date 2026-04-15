@@ -1,0 +1,7 @@
+.env
+.env.*
+**/.env
+**/.env.*
+/result
+commit.txt
+config/programs/eww/hotfile-eww/*

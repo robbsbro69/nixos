@@ -1,0 +1,36 @@
+/* Color Variables - Catppuccin Macchiato (modifiable) */
+@define-color background #24273a;
+@define-color foreground #cad3f5;
+
+/* Base Colors */
+@define-color color0 #1e2030;
+@define-color color1 #363a4f;
+@define-color color3 #494d64;
+
+/* Workspace States */
+@define-color color8 #5b6078;
+@define-color color9 #8aadf4;
+@define-color color10 #a6da95; 
+@define-color color12 #ed8796;
+@define-color color13 #f5a97f;
+@define-color color14 #c6a0f6;
+@define-color color15 #b7bdf8;
+
+/* Module Colors */
+@define-color pulseaudio #91d7e3;
+@define-color cpu #7dc4e4;
+@define-color memory #f4dbd6;
+@define-color network #8bd5ca;
+@define-color clock #eed49f;
+
+@keyframes urgent-pulse {
+    0% { background: @color12; }
+    50% { background: @color13; }
+    100% { background: @color12; }
+}
+
+.emoji {
+    font-family: "Noto Color Emoji";
+    color: transparent;
+    text-shadow: 0 0 0 @foreground;
+}
