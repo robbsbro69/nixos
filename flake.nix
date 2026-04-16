@@ -6,11 +6,11 @@ inputs = {
 	home-manager = {
 		url = "github:nix-community/home-manager/release-25.11";
 		inputs.nixpkgs.follows = "nixpkgs";
-    };
+    	};
 	zen-browser = {
     		url = "github:0xc000022070/zen-browser-flake";
 		inputs.nixpkgs.follows = "nixpkgs";
-    };
+    	};
   };
 
 outputs = { self, nixpkgs, home-manager, zen-browser, ... }:
@@ -27,7 +27,9 @@ outputs = { self, nixpkgs, home-manager, zen-browser, ... }:
 		useGlobalPkgs = true;
 		useUserPackages = true;
 		users.alpha = import ./home.nix;
-		extraSpecialArgs = { inherit zen-browser; };
+		extraSpecialArgs = { 
+			inherit zen-browser; 
+		};
 		backupFileExtension = "backup";
           };
         }

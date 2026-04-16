@@ -6,30 +6,29 @@
       ./hardware-configuration.nix
     ];
 nixpkgs.config.allowUnfree = true;
+
 boot.loader.systemd-boot.enable = true;
 boot.loader.efi.canTouchEfiVariables = true;
- 
-security.rtkit.enable = true;
-services.xserver.videoDrivers = [ "amdgpu" "nvidia" ];
 boot.blacklistedKernelModules = [ "nouveau" ];
+
+security.rtkit.enable = true;
+security.pam.services.hyprlock = {};
+
 hardware.nvidia = {
 	open = false;
 	modesetting.enable = true;
 };
-
-environment.sessionVariables = {
-  NIXOS_OZONE_WL = "1";
-  WLR_NO_HARDWARE_CURSORS = "1";
-  WLR_GAMMA_CONTROL = "1";
-  WLR_DRM_DEVICES = "/dev/dri/card1";
-  XCURSOR_SIZE = "24";
-};
+hardware.bluetooth.enable = true;
+hardware.bluetooth.powerOnBoot = true;
 
 programs.hyprland = {
 	enable = true;
 	xwayland.enable = true;
 };
-programs.firefox.enable = true;
+programs.firefox = {
+	enable = true;
+	languagePacks = [ "en-US" ];
+};
 
 xdg.portal = {
 	enable = true;
@@ -37,23 +36,18 @@ xdg.portal = {
 	extraPortals = [ pkgs.xdg-desktop-portal-gtk ];
 };
 
-security.pam.services.hyprlock = {};
-
 networking.hostName = "nixos";
 networking.networkmanager.enable = true;
 
-hardware.bluetooth.enable = true;
-hardware.bluetooth.powerOnBoot = true;
-services.blueman.enable = true;
-
 time.timeZone = "Asia/Kathmandu";
 
+services.xserver.videoDrivers = [ "amdgpu" "nvidia" ];
 services.xserver = {
 	enable = true;
 	autoRepeatDelay = 200;
 	autoRepeatInterval = 35;
 };
-
+services.blueman.enable = true;
 services.displayManager.ly.enable = true;
 services.gvfs.enable = true;
 services.udev.packages = with pkgs; [
@@ -79,6 +73,14 @@ users.users.alpha = {
 	packages = with pkgs; [
        				tree
 	];
+};
+
+environment.sessionVariables = {
+  NIXOS_OZONE_WL = "1";
+  WLR_NO_HARDWARE_CURSORS = "1";
+  WLR_GAMMA_CONTROL = "1";
+  WLR_DRM_DEVICES = "/dev/dri/card1";
+  XCURSOR_SIZE = "24";
 };
 
 environment.systemPackages = with pkgs; [
@@ -137,10 +139,10 @@ fileSystems."/mnt/hdd" = {
 nix.gc = {
 	automatic = true;
 	dates = "monthly";             
-	options = "--delete-older-than 30d";
+	options = "--delete-older-than 7d";
   };
 
-  nix.optimise.automatic = true;
+nix.optimise.automatic = true;
 
 
 

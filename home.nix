@@ -47,8 +47,8 @@ programs.git = {
 	enable = true;
 	settings = {
 	user = {
-		name = " rusty067";
-		email = "getrusty69@gmail.com";
+		name = "robbsbro69";
+		email = "robbsbro369@proton.me";
 		};
 	init.defaultBranch =  "main";
 	};
