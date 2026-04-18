@@ -37,7 +37,7 @@ PanelWindow {
 
         Rectangle {
             anchors.fill: parent
-            color: Qt.rgba(root.walBackground.r, root.walBackground.g, root.walBackground.b, 0.7)
+            color: Qt.rgba(root.walBackground.r, root.walBackground.g, root.walBackground.b, 0.95)
             radius: 20
 
             ColumnLayout {
@@ -88,7 +88,7 @@ PanelWindow {
                     Layout.fillWidth: true
                     Layout.preferredHeight: 50
                     radius: 12
-                    color: Qt.rgba(0, 0, 0, 0.3)
+                    color: Qt.rgba(0, 0, 0, 0.5)
                     visible: root.wifiCurrentSSID !== ""
                     RowLayout {
                         anchors.fill: parent
@@ -146,7 +146,7 @@ PanelWindow {
                     Layout.fillWidth: true
                     Layout.preferredHeight: 36
                     radius: 10
-                    color: Qt.rgba(0, 0, 0, 0.3)
+                    color: Qt.rgba(0, 0, 0, 0.5)
                     visible: root.wifiPasswordSSID !== ""
                     RowLayout {
                         anchors.fill: parent
@@ -258,7 +258,7 @@ PanelWindow {
                 Rectangle {
                     Layout.fillWidth: true
                     Layout.fillHeight: true
-                    color: Qt.rgba(0, 0, 0, 0.3)
+                    color: Qt.rgba(0, 0, 0, 0.5)
                     radius: 12
                     clip: true
                     ListView {

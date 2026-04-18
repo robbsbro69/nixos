@@ -32,7 +32,7 @@ PanelWindow {
 
         Rectangle {
             anchors.fill: parent
-            color: Qt.rgba(root.walBackground.r, root.walBackground.g, root.walBackground.b, 0.7)
+            color: Qt.rgba(root.walBackground.r, root.walBackground.g, root.walBackground.b, 0.95)
             radius: 20
 
             ColumnLayout {
@@ -95,7 +95,7 @@ PanelWindow {
                 Rectangle {
                     Layout.fillWidth: true
                     Layout.preferredHeight: 180
-                    color: Qt.rgba(0, 0, 0, 0.3)
+                    color: Qt.rgba(0, 0, 0, 0.5)
                     radius: 12
                     clip: true
                     visible: root.btEnabled
@@ -230,7 +230,7 @@ PanelWindow {
                         width: 60
                         height: 24
                         radius: 6
-                        color: btScanBtnMa.containsMouse ? Qt.rgba(root.walColor5.r, root.walColor5.g, root.walColor5.b, 0.2) : Qt.rgba(0, 0, 0, 0.3)
+                        color: btScanBtnMa.containsMouse ? Qt.rgba(root.walColor5.r, root.walColor5.g, root.walColor5.b, 0.2) : Qt.rgba(0, 0, 0, 0.5)
                         Text {
                             anchors.centerIn: parent
                             text: root.btScanning ? "Scanning" : "Scan"
@@ -257,7 +257,7 @@ PanelWindow {
                 Rectangle {
                     Layout.fillWidth: true
                     Layout.fillHeight: true
-                    color: Qt.rgba(0, 0, 0, 0.3)
+                    color: Qt.rgba(0, 0, 0, 0.5)
                     radius: 12
                     clip: true
                     visible: root.btEnabled

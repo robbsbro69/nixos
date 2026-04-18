@@ -114,8 +114,8 @@ environment.systemPackages = with pkgs; [
     	kdePackages.dolphin
 	kdePackages.kservice
 	imagemagick
-	  qt6.qt5compat
-  qt6.qtimageformats
+	qt6.qt5compat
+  	qt6.qtimageformats
 ];
 
 fonts.packages = with pkgs; [ nerd-fonts.jetbrains-mono ];

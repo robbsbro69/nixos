@@ -44,7 +44,7 @@ PanelWindow {
 
         Rectangle {
             anchors.fill: parent
-            color: Qt.rgba(root.walBackground.r, root.walBackground.g, root.walBackground.b, 0.7)
+            color: Qt.rgba(root.walBackground.r, root.walBackground.g, root.walBackground.b, 0.95)
             radius: 20
 
             MouseArea {
@@ -64,7 +64,7 @@ PanelWindow {
                     id: profileSection
                     Layout.fillWidth: true
                     Layout.preferredHeight: pfpPickerOpen ? 280 : 100
-                    color: Qt.rgba(0, 0, 0, 0.3)
+                    color: Qt.rgba(0, 0, 0, 0.5)
                     radius: 15
                     clip: true
                     property bool pfpPickerOpen: false
@@ -173,7 +173,7 @@ PanelWindow {
                         Rectangle {
                             Layout.fillWidth: true
                             Layout.fillHeight: true
-                            color: Qt.rgba(0, 0, 0, 0.3)
+                            color: Qt.rgba(0, 0, 0, 0.5)
                             radius: 10
                             visible: profileSection.pfpPickerOpen
                             ColumnLayout {
@@ -287,7 +287,7 @@ PanelWindow {
                 Rectangle {
                     Layout.fillWidth: true
                     Layout.preferredHeight: 50
-                    color: Qt.rgba(0, 0, 0, 0.3)
+                    color: Qt.rgba(0, 0, 0, 0.5)
                     radius: 15
                     Row {
                         anchors.centerIn: parent
@@ -303,7 +303,7 @@ PanelWindow {
                 Rectangle {
                     Layout.fillWidth: true
                     Layout.preferredHeight: 70
-                    color: Qt.rgba(0, 0, 0, 0.3)
+                    color: Qt.rgba(0, 0, 0, 0.5)
                     radius: 15
                     RowLayout {
                         anchors.fill: parent
@@ -339,7 +339,7 @@ PanelWindow {
                 Rectangle {
                     Layout.fillWidth: true
                     Layout.preferredHeight: 140
-                    color: Qt.rgba(0, 0, 0, 0.3)
+                    color: Qt.rgba(0, 0, 0, 0.5)
                     radius: 15
                     Row {
                         anchors.centerIn: parent
@@ -353,7 +353,7 @@ PanelWindow {
                 Rectangle {
                     Layout.fillWidth: true
                     Layout.preferredHeight: 100
-                    color: Qt.rgba(0, 0, 0, 0.3)
+                    color: Qt.rgba(0, 0, 0, 0.5)
                     radius: 15
                     Column {
                         anchors.fill: parent
@@ -493,7 +493,7 @@ PanelWindow {
                 Rectangle {
                     Layout.fillWidth: true
                     Layout.fillHeight: true
-                    color: Qt.rgba(0, 0, 0, 0.3)
+                    color: Qt.rgba(0, 0, 0, 0.5)
                     radius: 15
                     Column {
                         anchors.fill: parent
@@ -572,7 +572,7 @@ PanelWindow {
                         ctx.clearRect(0, 0, width, height)
                         ctx.lineWidth = 5
                         ctx.lineCap = "round"
-                        ctx.strokeStyle = Qt.rgba(0, 0, 0, 0.3)
+                        ctx.strokeStyle = Qt.rgba(0, 0, 0, 0.5)
                         ctx.beginPath()
                         ctx.arc(35, 35, 32, 0, 2 * Math.PI)
                         ctx.stroke()

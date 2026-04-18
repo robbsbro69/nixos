@@ -122,5 +122,6 @@ home.packages = with  pkgs; [
   	qt6.qtimageformats # webp + other image formats
   	cava
 	fastfetch
+
 ];
 }

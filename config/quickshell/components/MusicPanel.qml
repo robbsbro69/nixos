@@ -8,17 +8,18 @@ import Qt5Compat.GraphicalEffects
 
 PanelWindow {
 	id: musicPanel
-	    screen: root.focusedScreen ?? Quickshell.screens[0]  // add this
+	   screen: root.focusedScreen ?? Quickshell.screens[0]  // add this
     visible: true
     exclusionMode: ExclusionMode.Ignore
     anchors { top: true; left: true; right: true }
     margins { top: root.musicVisible ? 50 : -350; left: 0; right: 0 }
     implicitWidth: 400
-    implicitHeight: musicPanel.gifSelectorOpen ? 460 : 188
+    implicitHeight: musicPanel.gifSelectorOpen ? 460 : (musicPanel.playerDropdownOpen ? 188 + 8 + 28 + 1 + 34 + (musicPanel.availablePlayers.length * 34) + 16 : 188)
     color: "transparent"
     focusable: true
     WlrLayershell.keyboardFocus: root.musicVisible ? WlrKeyboardFocus.OnDemand : WlrKeyboardFocus.None
     Behavior on margins.top { NumberAnimation { duration: 300; easing.type: Easing.OutCubic } }
+    Behavior on implicitHeight { NumberAnimation { duration: 200; easing.type: Easing.OutCubic } }
 
     property string configPath: root.configPath
     property string gifPath: configPath + "/assets/gifs"
@@ -38,6 +39,41 @@ PanelWindow {
     property bool isApplyingGif: false
     property string currentGifSource: "file://" + gifPath + "/current.gif"
     property int pendingGifIndex: -1
+
+    // Player selection
+    property string activePlayer: "%any"
+    property var availablePlayers: []
+    property bool playerDropdownOpen: false
+
+    function playerDisplayName(player) {
+        if (!player || player === "%any") return "Auto"
+        // Clean up common player names
+        var name = player
+        // Strip instance suffix like firefox.instance123
+        var dotIdx = name.indexOf(".")
+        if (dotIdx > 0) name = name.substring(0, dotIdx)
+        // Capitalize
+        return name.charAt(0).toUpperCase() + name.slice(1)
+    }
+
+    function playerIcon(player) {
+        if (!player || player === "%any") return "󰝚"
+        var n = player.toLowerCase()
+        if (n.indexOf("firefox") >= 0 || n.indexOf("mozilla") >= 0) return "󰈹"
+        if (n.indexOf("chromium") >= 0 || n.indexOf("chrome") >= 0) return ""
+        if (n.indexOf("spotify") >= 0) return "󰓇"
+        if (n.indexOf("mpv") >= 0) return "󰐌"
+        if (n.indexOf("vlc") >= 0) return "󰕼"
+        if (n.indexOf("rhythmbox") >= 0 || n.indexOf("clementine") >= 0) return "󰝚"
+        if (n.indexOf("cmus") >= 0 || n.indexOf("ncmpcpp") >= 0 || n.indexOf("mpd") >= 0) return "󰎆"
+        if (n.indexOf("strawberry") >= 0 || n.indexOf("elisa") >= 0) return "󰝚"
+        if (n.indexOf("youtube") >= 0) return "󰗃"
+        return "󰝚"
+    }
+
+    function refreshPlayers() {
+        if (!playerListProc.running) playerListProc.running = true
+    }
 
     function formatTime(seconds) {
         var mins = Math.floor(seconds / 60)
@@ -108,25 +144,57 @@ PanelWindow {
         onTriggered: musicPanel.reloadMainGif()
     }
 
+    // Poll available players periodically when panel is open
+    Timer {
+        id: playerRefreshTimer
+        interval: 3000
+        running: root.musicVisible
+        repeat: true
+        triggeredOnStart: true
+        onTriggered: musicPanel.refreshPlayers()
+    }
+
+    Process {
+        id: playerListProc
+        command: ["bash", "-c", "playerctl --list-all 2>/dev/null | tr '\\n' '|' | sed 's/|$//'"]
+        stdout: SplitParser {
+            onRead: data => {
+                var line = data.trim()
+                if (line.length === 0) {
+                    musicPanel.availablePlayers = []
+                    return
+                }
+                var players = line.split("|").filter(function(p) { return p.length > 0 })
+                musicPanel.availablePlayers = players
+                if (musicPanel.activePlayer !== "%any") {
+                    var found = players.indexOf(musicPanel.activePlayer) >= 0
+                    if (!found) musicPanel.activePlayer = "%any"
+                }
+            }
+        }
+    }
+
     Item {
         anchors.fill: parent
         focus: root.musicVisible
 
         Keys.onPressed: function(event) {
             if (event.key === Qt.Key_Escape) {
-                if (musicPanel.gifSelectorOpen) {
+                if (musicPanel.playerDropdownOpen) {
+                    musicPanel.playerDropdownOpen = false
+                } else if (musicPanel.gifSelectorOpen) {
                     musicPanel.gifSelectorOpen = false
                 } else {
                     root.musicVisible = false
                 }
                 event.accepted = true
-            } else if (event.key === Qt.Key_Space && !musicPanel.gifSelectorOpen) {
+            } else if (event.key === Qt.Key_Space && !musicPanel.gifSelectorOpen && !musicPanel.playerDropdownOpen) {
                 if (!playPauseProc.running) playPauseProc.running = true
                 event.accepted = true
-            } else if (event.key === Qt.Key_N && !musicPanel.gifSelectorOpen) {
+            } else if (event.key === Qt.Key_N && !musicPanel.gifSelectorOpen && !musicPanel.playerDropdownOpen) {
                 if (!nextProc.running) nextProc.running = true
                 event.accepted = true
-            } else if (event.key === Qt.Key_P && !musicPanel.gifSelectorOpen) {
+            } else if (event.key === Qt.Key_P && !musicPanel.gifSelectorOpen && !musicPanel.playerDropdownOpen) {
                 if (!prevProc.running) prevProc.running = true
                 event.accepted = true
             } else if (event.key === Qt.Key_Left && musicPanel.gifSelectorOpen) {
@@ -150,7 +218,7 @@ PanelWindow {
             Rectangle {
                 width: 400
                 height: 180
-                color: Qt.rgba(root.walBackground.r, root.walBackground.g, root.walBackground.b, 0.7)
+                color: Qt.rgba(root.walBackground.r, root.walBackground.g, root.walBackground.b, 0.95)
                 radius: 15
                 clip: true
 
@@ -164,14 +232,74 @@ PanelWindow {
                         Layout.fillHeight: true
                         spacing: 6
 
-                        Text {
-                            text: musicPanel.trackTitle || "Nothing is playing"
-                            color: root.walColor5
-                            font.pixelSize: 15
-                            font.bold: true
-                            font.family: "JetBrainsMono Nerd Font"
+                        // Player selector button row
+                        RowLayout {
                             Layout.fillWidth: true
-                            elide: Text.ElideRight
+                            spacing: 6
+
+                            Text {
+                                text: musicPanel.trackTitle || "Nothing is playing"
+                                color: root.walColor5
+                                font.pixelSize: 15
+                                font.bold: true
+                                font.family: "JetBrainsMono Nerd Font"
+                                Layout.fillWidth: true
+                                elide: Text.ElideRight
+                            }
+
+                            // Player picker button
+                            Rectangle {
+                                width: playerBtnRow.width + 14
+                                height: 22
+                                radius: 7
+                                color: playerBtnMa.containsMouse || musicPanel.playerDropdownOpen
+                                    ? Qt.rgba(root.walColor5.r, root.walColor5.g, root.walColor5.b, 0.25)
+                                    : Qt.rgba(0, 0, 0, 0.35)
+                                border.width: musicPanel.playerDropdownOpen ? 1 : 0
+                                border.color: Qt.rgba(root.walColor5.r, root.walColor5.g, root.walColor5.b, 0.5)
+                                Behavior on color { ColorAnimation { duration: 150 } }
+
+                                Row {
+                                    id: playerBtnRow
+                                    anchors.centerIn: parent
+                                    spacing: 5
+
+                                    Text {
+                                        text: musicPanel.playerIcon(musicPanel.activePlayer)
+                                        color: root.walColor5
+                                        font.pixelSize: 11
+                                        font.family: "JetBrainsMono Nerd Font"
+                                        anchors.verticalCenter: parent.verticalCenter
+                                    }
+                                    Text {
+                                        text: musicPanel.playerDisplayName(musicPanel.activePlayer)
+                                        color: root.walColor5
+                                        font.pixelSize: 10
+                                        font.family: "JetBrainsMono Nerd Font"
+                                        anchors.verticalCenter: parent.verticalCenter
+                                    }
+                                    Text {
+                                        text: musicPanel.playerDropdownOpen ? "󰅃" : "󰅀"
+                                        color: root.walColor5
+                                        font.pixelSize: 9
+                                        font.family: "JetBrainsMono Nerd Font"
+                                        anchors.verticalCenter: parent.verticalCenter
+                                    }
+                                }
+
+                                MouseArea {
+                                    id: playerBtnMa
+                                    anchors.fill: parent
+                                    hoverEnabled: true
+                                    cursorShape: Qt.PointingHandCursor
+                                    onClicked: {
+                                        musicPanel.playerDropdownOpen = !musicPanel.playerDropdownOpen
+                                        if (musicPanel.playerDropdownOpen) {
+                                            musicPanel.refreshPlayers()
+                                        }
+                                    }
+                                }
+                            }
                         }
 
                         Text {
@@ -203,7 +331,7 @@ PanelWindow {
                                 Layout.fillWidth: true
                                 height: 4
                                 radius: 2
-                                color: Qt.rgba(0, 0, 0, 0.3)
+                                color: Qt.rgba(0, 0, 0, 0.5)
 
                                 Rectangle {
                                     width: musicPanel.length > 0 ? parent.width * (musicPanel.position / musicPanel.length) : 0
@@ -218,7 +346,7 @@ PanelWindow {
                                     onClicked: function(mouse) {
                                         if (musicPanel.length > 0 && !seekProc.running) {
                                             var seekPos = (mouse.x / parent.width) * musicPanel.length
-                                            seekProc.command = ["playerctl", "position", seekPos.toString()]
+                                            seekProc.command = ["playerctl", "--player=" + musicPanel.activePlayer, "position", seekPos.toString()]
                                             seekProc.running = true
                                         }
                                     }
@@ -366,6 +494,7 @@ PanelWindow {
                                     if (!musicPanel.gifSelectorOpen) {
                                         musicPanel.loadGifs()
                                         musicPanel.gifSelectorOpen = true
+                                        musicPanel.playerDropdownOpen = false
                                     } else {
                                         musicPanel.gifSelectorOpen = false
                                     }
@@ -383,6 +512,210 @@ PanelWindow {
                 }
             }
 
+            // ── Player dropdown card ──────────────────────────────────────────
+            Rectangle {
+                id: playerDropdownCard
+                width: 380
+                anchors.horizontalCenter: parent.horizontalCenter
+                // 1 auto row + N player rows, each 34px, plus header 28px + divider 1px + margins
+                height: visible ? (28 + 1 + 34 + (musicPanel.availablePlayers.length * 34) + 16) : 0
+                radius: 12
+                color: Qt.rgba(root.walBackground.r, root.walBackground.g, root.walBackground.b, 0.92)
+                border.color: Qt.rgba(root.walColor5.r, root.walColor5.g, root.walColor5.b, 0.25)
+                border.width: 1
+                visible: musicPanel.playerDropdownOpen && !musicPanel.gifSelectorOpen
+                clip: true
+
+                layer.enabled: true
+                layer.effect: DropShadow {
+                    transparentBorder: true
+                    horizontalOffset: 0
+                    verticalOffset: 4
+                    radius: 14
+                    samples: 17
+                    color: Qt.rgba(0,0,0,0.35)
+                }
+
+                // Header
+                Item {
+                    id: pdHeader
+                    anchors.top: parent.top
+                    anchors.left: parent.left
+                    anchors.right: parent.right
+                    anchors.margins: 8
+                    height: 28
+
+                    Text {
+                        anchors.left: parent.left
+                        anchors.verticalCenter: parent.verticalCenter
+                        anchors.leftMargin: 6
+                        text: "󰝚  Select Player"
+                        color: root.walColor5
+                        font.pixelSize: 11
+                        font.bold: true
+                        font.family: "JetBrainsMono Nerd Font"
+                    }
+                    Text {
+                        anchors.right: parent.right
+                        anchors.verticalCenter: parent.verticalCenter
+                        anchors.rightMargin: 6
+                        text: musicPanel.availablePlayers.length === 0 ? "No players" : musicPanel.availablePlayers.length + " found"
+                        color: root.walColor8
+                        font.pixelSize: 9
+                        font.family: "JetBrainsMono Nerd Font"
+                        opacity: 0.6
+                    }
+                }
+
+                // Divider
+                Rectangle {
+                    id: pdDivider
+                    anchors.top: pdHeader.bottom
+                    anchors.left: parent.left
+                    anchors.right: parent.right
+                    anchors.leftMargin: 8
+                    anchors.rightMargin: 8
+                    height: 1
+                    color: Qt.rgba(1,1,1,0.06)
+                }
+
+                // All rows: Auto + players
+                Column {
+                    id: pdRows
+                    anchors.top: pdDivider.bottom
+                    anchors.left: parent.left
+                    anchors.right: parent.right
+                    anchors.leftMargin: 8
+                    anchors.rightMargin: 8
+                    anchors.topMargin: 2
+                    spacing: 2
+
+                    // Auto row
+                    Rectangle {
+                        width: parent.width
+                        height: 34
+                        radius: 8
+                        color: musicPanel.activePlayer === "%any"
+                            ? Qt.rgba(root.walColor5.r, root.walColor5.g, root.walColor5.b, 0.18)
+                            : autoMa.containsMouse ? Qt.rgba(1,1,1,0.07) : "transparent"
+                        Behavior on color { ColorAnimation { duration: 120 } }
+
+                        Row {
+                            anchors.fill: parent
+                            anchors.leftMargin: 10
+                            anchors.rightMargin: 10
+                            spacing: 8
+
+                            Text {
+                                anchors.verticalCenter: parent.verticalCenter
+                                text: "󰝚"
+                                color: musicPanel.activePlayer === "%any" ? root.walColor5 : root.walColor8
+                                font.pixelSize: 14
+                                font.family: "JetBrainsMono Nerd Font"
+                            }
+                            Text {
+                                anchors.verticalCenter: parent.verticalCenter
+                                text: "Auto"
+                                color: musicPanel.activePlayer === "%any" ? root.walColor5 : root.walForeground
+                                font.pixelSize: 12
+                                font.bold: musicPanel.activePlayer === "%any"
+                                font.family: "JetBrainsMono Nerd Font"
+                                width: 120
+                            }
+                            Text {
+                                anchors.verticalCenter: parent.verticalCenter
+                                text: "any active"
+                                color: root.walColor8
+                                font.pixelSize: 9
+                                font.family: "JetBrainsMono Nerd Font"
+                                opacity: 0.5
+                            }
+                            Text {
+                                anchors.verticalCenter: parent.verticalCenter
+                                visible: musicPanel.activePlayer === "%any"
+                                text: "󰄬"
+                                color: root.walColor5
+                                font.pixelSize: 12
+                                font.family: "JetBrainsMono Nerd Font"
+                            }
+                        }
+
+                        MouseArea {
+                            id: autoMa
+                            anchors.fill: parent
+                            hoverEnabled: true
+                            cursorShape: Qt.PointingHandCursor
+                            onClicked: {
+                                musicPanel.activePlayer = "%any"
+                                musicPanel.playerDropdownOpen = false
+                                if (!musicStatusProc.running) musicStatusProc.running = true
+                            }
+                        }
+                    }
+
+                    // Player rows
+                    Repeater {
+                        model: musicPanel.availablePlayers
+
+                        Rectangle {
+                            width: pdRows.width
+                            height: 34
+                            radius: 8
+                            color: musicPanel.activePlayer === modelData
+                                ? Qt.rgba(root.walColor5.r, root.walColor5.g, root.walColor5.b, 0.18)
+                                : playerItemMa.containsMouse ? Qt.rgba(1,1,1,0.07) : "transparent"
+                            Behavior on color { ColorAnimation { duration: 120 } }
+
+                            Row {
+                                anchors.fill: parent
+                                anchors.leftMargin: 10
+                                anchors.rightMargin: 10
+                                spacing: 8
+
+                                Text {
+                                    anchors.verticalCenter: parent.verticalCenter
+                                    text: musicPanel.playerIcon(modelData)
+                                    color: musicPanel.activePlayer === modelData ? root.walColor5 : root.walColor8
+                                    font.pixelSize: 14
+                                    font.family: "JetBrainsMono Nerd Font"
+                                }
+                                Text {
+                                    anchors.verticalCenter: parent.verticalCenter
+                                    text: musicPanel.playerDisplayName(modelData)
+                                    color: musicPanel.activePlayer === modelData ? root.walColor5 : root.walForeground
+                                    font.pixelSize: 12
+                                    font.bold: musicPanel.activePlayer === modelData
+                                    font.family: "JetBrainsMono Nerd Font"
+                                    width: 200
+                                    elide: Text.ElideRight
+                                }
+                                Text {
+                                    anchors.verticalCenter: parent.verticalCenter
+                                    visible: musicPanel.activePlayer === modelData
+                                    text: "󰄬"
+                                    color: root.walColor5
+                                    font.pixelSize: 12
+                                    font.family: "JetBrainsMono Nerd Font"
+                                }
+                            }
+
+                            MouseArea {
+                                id: playerItemMa
+                                anchors.fill: parent
+                                hoverEnabled: true
+                                cursorShape: Qt.PointingHandCursor
+                                onClicked: {
+                                    musicPanel.activePlayer = modelData
+                                    musicPanel.playerDropdownOpen = false
+                                    if (!musicStatusProc.running) musicStatusProc.running = true
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+
+            // ── Gif selector card ─────────────────────────────────────────────
             Rectangle {
                 id: dropdownCard
                 width: 380
@@ -706,6 +1039,8 @@ PanelWindow {
         function onMusicVisibleChanged() {
             if (root.musicVisible) {
                 focusTimer.start()
+            } else {
+                musicPanel.playerDropdownOpen = false
             }
         }
     }
@@ -781,7 +1116,7 @@ PanelWindow {
 
     Process {
         id: musicStatusProc
-        command: ["playerctl", "status"]
+        command: ["playerctl", "--player=" + musicPanel.activePlayer, "status"]
         stdout: SplitParser {
             onRead: data => {
                 var newStatus = data.trim()
@@ -812,21 +1147,21 @@ PanelWindow {
 
     Process {
         id: musicTitleProc
-        command: ["playerctl", "metadata", "title"]
+        command: ["playerctl", "--player=" + musicPanel.activePlayer, "metadata", "title"]
         stdout: SplitParser { onRead: data => musicPanel.trackTitle = data.trim() }
         onExited: code => { if (code !== 0) musicPanel.trackTitle = "" }
     }
 
     Process {
         id: musicArtistProc
-        command: ["playerctl", "metadata", "artist"]
+        command: ["playerctl", "--player=" + musicPanel.activePlayer, "metadata", "artist"]
         stdout: SplitParser { onRead: data => musicPanel.trackArtist = data.trim() }
         onExited: code => { if (code !== 0) musicPanel.trackArtist = "" }
     }
 
     Process {
         id: musicPosProc
-        command: ["playerctl", "position"]
+        command: ["playerctl", "--player=" + musicPanel.activePlayer, "position"]
         stdout: SplitParser {
             onRead: data => {
                 var pos = parseFloat(data.trim()) || 0
@@ -838,30 +1173,30 @@ PanelWindow {
 
     Process {
         id: musicLenProc
-        command: ["sh", "-c", "playerctl metadata mpris:length 2>/dev/null | awk '{print $1/1000000}'"]
+        command: ["sh", "-c", "playerctl --player=" + musicPanel.activePlayer + " metadata mpris:length 2>/dev/null | awk '{print $1/1000000}'"]
         stdout: SplitParser { onRead: data => musicPanel.length = parseFloat(data.trim()) || 0 }
     }
 
     Process {
         id: playPauseProc
-        command: ["playerctl", "play-pause"]
+        command: ["playerctl", "--player=" + musicPanel.activePlayer, "play-pause"]
         onExited: { if (!musicStatusProc.running) musicStatusProc.running = true }
     }
 
     Process {
         id: nextProc
-        command: ["playerctl", "next"]
+        command: ["playerctl", "--player=" + musicPanel.activePlayer, "next"]
         onExited: { if (!musicStatusProc.running) musicStatusProc.running = true }
     }
 
     Process {
         id: prevProc
-        command: ["playerctl", "previous"]
+        command: ["playerctl", "--player=" + musicPanel.activePlayer, "previous"]
         onExited: { if (!musicStatusProc.running) musicStatusProc.running = true }
     }
 
     Process {
         id: seekProc
-        command: ["playerctl", "position", "0"]
+        command: ["playerctl", "--player=" + musicPanel.activePlayer, "position", "0"]
     }
 }

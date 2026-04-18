@@ -21,7 +21,7 @@ PanelWindow {
 
     Rectangle {
         anchors.fill: parent
-        color: Qt.rgba(root.walBackground.r, root.walBackground.g, root.walBackground.b, 0.7)
+        color: Qt.rgba(root.walBackground.r, root.walBackground.g, root.walBackground.b, 0.95)
         radius: 20
 
         ColumnLayout {
@@ -32,7 +32,7 @@ PanelWindow {
             Rectangle {
                 Layout.fillWidth: true
                 Layout.preferredHeight: 42
-                color: Qt.rgba(0, 0, 0, 0.3)
+                color: Qt.rgba(0, 0, 0, 0.5)
                 radius: 12
                 RowLayout {
                     anchors.fill: parent
@@ -120,7 +120,7 @@ PanelWindow {
                     Rectangle {
                         Layout.fillWidth: true
                         Layout.preferredHeight: 42
-                        color: Qt.rgba(0, 0, 0, 0.3)
+                        color: Qt.rgba(0, 0, 0, 0.5)
                         radius: 12
                         border.width: searchInput.activeFocus ? 1 : 0
                         border.color: root.walColor5
@@ -210,7 +210,7 @@ PanelWindow {
                     Rectangle {
                         Layout.fillWidth: true
                         Layout.fillHeight: true
-                        color: Qt.rgba(0, 0, 0, 0.3)
+                        color: Qt.rgba(0, 0, 0, 0.5)
                         radius: 15
                         clip: true
 
@@ -378,7 +378,7 @@ PanelWindow {
                     Rectangle {
                         Layout.fillWidth: true
                         Layout.preferredHeight: 28
-                        color: Qt.rgba(0, 0, 0, 0.3)
+                        color: Qt.rgba(0, 0, 0, 0.5)
                         radius: 10
                         RowLayout {
                             anchors.fill: parent
@@ -405,7 +405,7 @@ PanelWindow {
                     Rectangle {
                         Layout.fillWidth: true
                         Layout.preferredHeight: 42
-                        color: Qt.rgba(0, 0, 0, 0.3)
+                        color: Qt.rgba(0, 0, 0, 0.5)
                         radius: 12
                         border.width: wallSearchInput.activeFocus ? 1 : 0
                         border.color: root.walColor13
@@ -504,7 +504,7 @@ PanelWindow {
                     Rectangle {
                         Layout.fillWidth: true
                         Layout.fillHeight: true
-                        color: Qt.rgba(0, 0, 0, 0.3)
+                        color: Qt.rgba(0, 0, 0, 0.5)
                         radius: 15
                         clip: true
 
@@ -703,7 +703,7 @@ PanelWindow {
                     Rectangle {
                         Layout.fillWidth: true
                         Layout.preferredHeight: 28
-                        color: Qt.rgba(0, 0, 0, 0.3)
+                        color: Qt.rgba(0, 0, 0, 0.5)
                         radius: 10
                         RowLayout {
                             anchors.fill: parent

@@ -9,7 +9,6 @@ import Qt5Compat.GraphicalEffects
 PanelWindow {
 	id: bar
 	visible: true
-    exclusionMode: ExclusionMode.Exclusive
     WlrLayershell.layer: WlrLayer.Top
     WlrLayershell.namespace: "quickshell"
     anchors { top: true; left: true; right: true }
@@ -17,8 +16,8 @@ PanelWindow {
     implicitHeight: 32
     color: "transparent"
 
-    property color notchColor: Qt.rgba(0, 0, 0, 0.50)
-    property color notchHoverColor: Qt.rgba(0, 0, 0, 0.62)
+    property color notchColor: Qt.rgba(0, 0, 0, 0.80)
+    property color notchHoverColor: Qt.rgba(0, 0, 0, 0.90)
     property int notchRadius: 12
     property int notchHeight: 32
 
@@ -748,7 +747,7 @@ PanelWindow {
                                 width: 16
                                 height: 10
                                 radius: 3
-                                color: "transparent"
+    color: "transparent"
                                 border.width: bar.batteryPercent >= 100 ? 0 : 1.5
                                 border.color: {
                                     if (bar.batteryClass === "charging") return root.walColor2
