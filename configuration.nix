@@ -29,7 +29,6 @@ programs.firefox = {
 	enable = true;
 	languagePacks = [ "en-US" ];
 };
-
 xdg.portal = {
 	enable = true;
 	wlr.enable = true;
@@ -66,12 +65,11 @@ services.pipewire.wireplumber.extraConfig."99-bluetooth-default" = {
   ];
  };
 
-
 users.users.alpha = {
 	isNormalUser = true;
 	extraGroups = [ "wheel" ];
 	packages = with pkgs; [
-       				tree
+       		tree
 	];
 };
 
@@ -81,6 +79,7 @@ environment.sessionVariables = {
   WLR_GAMMA_CONTROL = "1";
   WLR_DRM_DEVICES = "/dev/dri/card1";
   XCURSOR_SIZE = "24";
+    QML2_IMPORT_PATH = "/run/current-system/sw/lib/qt-6/qml";  # add this
 };
 
 environment.systemPackages = with pkgs; [
@@ -94,15 +93,11 @@ environment.systemPackages = with pkgs; [
 	cargo
 	rustfmt
 	clippy
-	fuzzel
 	grim
 	slurp
-	waybar
 	playerctl
-	dunst
 	brightnessctl
 	libnotify
-	socat
 	wl-clipboard
 	wlr-randr
 	xwayland
@@ -118,6 +113,9 @@ environment.systemPackages = with pkgs; [
     	kdePackages.kio-extras
     	kdePackages.dolphin
 	kdePackages.kservice
+	imagemagick
+	  qt6.qt5compat
+  qt6.qtimageformats
 ];
 
 fonts.packages = with pkgs; [ nerd-fonts.jetbrains-mono ];

@@ -1,4 +1,4 @@
-{ config, pkgs, zen-browser, ... }:
+{ config, pkgs, quickshell, ... }:
 let
 	dotfiles = "${config.home.homeDirectory}/nixos-dotfiles/config";
 	create_symlink = path: config.lib.file.mkOutOfStoreSymlink path;
@@ -6,25 +6,16 @@ let
 		nvim = "nvim";
 		kitty = "kitty";
 		hypr = "hypr";
-		waybar = "waybar";
-		fuzzel = "fuzzel";
 		mpv = "mpv";
 		yazi = "yazi";
 		starship = "starship";
-		dunst = "dunst";
+		quickshell = "quickshell";
+		swaync = "swaync";
+		wal = "wal";
+		cava = "cava";
+		scripts = "scripts";
   };
 in {
-	imports = [ zen-browser.homeModules.default ];
-
-	programs.zen-browser = {
-		enable = true;
-		setAsDefaultBrowser = true;
-		policies = {
-			DisableAppUpdate = true;
-			DisableTelemetry = true;
-			DisablePocket = true;
-		};
-	};
 
 wayland.windowManager.hyprland = {
 	enable = true;
@@ -64,7 +55,7 @@ programs.bash = {
 		gnrs = "git add . && git commit -m \"update\" && nrs";
 		ls = "eza --icons";
 		ll = "eza -l --icons";
-};
+	};
 	initExtra = ''
 	  	export PATH="$HOME/.cargo/bin:$PATH"
 		export FZF_DEFAULT_OPTS=" \
@@ -94,7 +85,6 @@ home.packages = with  pkgs; [
 	nixpkgs-fmt
 	nodejs
 	gcc
-  	fuzzel
   	obsidian
   	spotify
 	evince
@@ -115,5 +105,22 @@ home.packages = with  pkgs; [
 	tmux
 	unzip
 	video-downloader
+	quickshell.packages.${pkgs.stdenv.hostPlatform.system}.default
+	pywal
+	swww
+	playerctl
+	brightnessctl
+	libnotify
+	swaynotificationcenter
+	mpd
+	rmpc
+	imagemagick
+	vips
+	jq
+	upower
+	qt6.qt5compat      # provides Qt5Compat.GraphicalEffects
+  	qt6.qtimageformats # webp + other image formats
+  	cava
+	fastfetch
 ];
 }
