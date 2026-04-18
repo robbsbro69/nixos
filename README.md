@@ -12,4 +12,9 @@
 > - **Shell:** Bash
 > - **Terminal:** Kitty
 > - **Editor:** Neovim
+> - **Widget:** QuickShell
+> - **Notifications:** SwayNC
+> - **Wallpaper:** swww + pywal
+> - **Bar:** QuickShell
+> - **Lockscreen:** Hyprlock
 
