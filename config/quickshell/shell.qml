@@ -363,7 +363,7 @@ ShellRoot {
     Process {
         id: walStepSwaync
         command: ["bash", "-c", "cp '" + root.cachePath + "/wal/colors-swaync.css' '" + root.configPath + "/../swaync/style.css' 2>/dev/null; pkill -SIGUSR1 swaync 2>/dev/null"]
-        onExited: {
+	onExited: {
             if (!walStepBlur.running) walStepBlur.running = true
         }
     }

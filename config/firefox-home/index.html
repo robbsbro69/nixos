@@ -237,62 +237,6 @@ body{
 /* ── RIGHT COLUMN ── */
 .right-col{display:flex;flex-direction:column;gap:.85rem;}
 
-/* Pomodoro */
-.pomo{
-  background:var(--mantle);
-  border:1.5px solid var(--surface0);
-  border-radius:16px;
-  padding:1rem;
-}
-.pomo-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:.8rem;}
-.pomo-title{font-size:.8rem;font-weight:700;color:var(--subtext1);letter-spacing:.04em;}
-.pomo-tabs{display:flex;gap:4px;}
-.ptab{
-  background:none;
-  border:1.5px solid var(--surface0);
-  border-radius:7px;
-  padding:.25rem .5rem;
-  color:var(--overlay1);
-  font-size:.68rem;
-  cursor:pointer;
-  font-family:'Syne',sans-serif;
-  transition:all .15s;
-}
-.ptab.active{border-color:var(--mauve);color:var(--mauve);background:rgba(203,166,247,.1);}
-.pomo-ring-wrap{display:flex;justify-content:center;margin-bottom:.8rem;}
-.pomo-ring{position:relative;width:120px;height:120px;}
-.pomo-ring svg{transform:rotate(-90deg);}
-.pomo-ring circle{fill:none;stroke-width:6;}
-.pomo-ring .track{stroke:var(--surface0);}
-.pomo-ring .prog{stroke:var(--mauve);stroke-linecap:round;transition:stroke-dashoffset .5s,stroke .3s;}
-.pomo-time{
-  position:absolute;inset:0;
-  display:flex;align-items:center;justify-content:center;
-  font-family:'JetBrains Mono',monospace;
-  font-size:1.6rem;font-weight:200;
-  color:var(--lavender);
-}
-.pomo-controls{display:flex;gap:6px;justify-content:center;}
-.pomo-btn{
-  background:var(--surface0);
-  border:1.5px solid var(--surface1);
-  border-radius:9px;
-  padding:.4rem .9rem;
-  color:var(--text);
-  font-size:.78rem;
-  cursor:pointer;
-  font-family:'Syne',sans-serif;
-  transition:all .15s;
-  font-weight:600;
-}
-.pomo-btn:hover{background:var(--surface1);}
-.pomo-btn.primary{background:var(--mauve);border-color:var(--mauve);color:var(--base);}
-.pomo-btn.primary:hover{opacity:.85;}
-.pomo-sessions{text-align:center;margin-top:.6rem;font-size:.7rem;color:var(--overlay1);}
-.pomo-dots{display:flex;justify-content:center;gap:5px;margin-top:.3rem;}
-.pdot{width:7px;height:7px;border-radius:50%;background:var(--surface0);}
-.pdot.done{background:var(--mauve);}
-
 /* Tasks */
 .tasks-card{
   background:var(--mantle);
@@ -441,7 +385,6 @@ body{
       <div class="grid" id="grid"></div>
     </div>
     <div class="right-col">
-      <div id="pomo-widget"></div>
       <div id="tasks-widget"></div>
     </div>
   </div>
@@ -482,20 +425,14 @@ body{
 </div>
 
 <script>
-// ═══════════════════════════════════════════════
+// ═══════════════════════════════════════════════════════════════════
 // CONFIG — edit these to customise your dashboard
-// ═══════════════════════════════════════════════
+// ═══════════════════════════════════════════════════════════════════
 const CONFIG = {
   streak: {
-    startDate: '2026-04-17', // YYYY-MM-DD local date you started
-    totalDays: 180,
+    startDate: '2026-04-22', // YYYY-MM-DD local date you started
+    totalDays: 90,
     label: 'Coding',
-  },
-  pomodoro: {
-    sessions: 4,
-    focus:  25,   // minutes
-    short:  5,
-    long:   15,
   },
   search: {
     engines: {
@@ -823,134 +760,6 @@ const Bookmarks = (() => {
 
 
 // ═══════════════════════════════════════════
-// MODULE: POMODORO
-// ═══════════════════════════════════════════
-const Pomodoro = (() => {
-  const { sessions: SESSIONS, focus, short, long } = CONFIG.pomodoro;
-  const MODES = {
-    focus: { label:'Focus',       mins: focus, color:'#cba6f7' },
-    short: { label:'Short break', mins: short, color:'#94e2d5' },
-    long:  { label:'Long break',  mins: long,  color:'#89b4fa' },
-  };
-
-  let mode = 'focus';
-  let total = focus * 60;
-  let left  = focus * 60;
-  let running = false;
-  let timer   = null;
-  let done    = 0;
-  let sess    = 0;
-
-  function mount() {
-    $('pomo-widget').innerHTML = `
-      <div class="pomo">
-        <div class="pomo-header">
-          <span class="pomo-title">Pomodoro</span>
-          <div class="pomo-tabs">
-            <button class="ptab active" id="pt-focus">Focus</button>
-            <button class="ptab" id="pt-short">Short</button>
-            <button class="ptab" id="pt-long">Long</button>
-          </div>
-        </div>
-        <div class="pomo-ring-wrap">
-          <div class="pomo-ring">
-            <svg width="120" height="120">
-              <circle class="track" cx="60" cy="60" r="54"/>
-              <circle class="prog" id="pomo-prog" cx="60" cy="60" r="54"
-                stroke-dasharray="339.29" stroke-dashoffset="0"/>
-            </svg>
-            <div class="pomo-time" id="pomo-display">25:00</div>
-          </div>
-        </div>
-        <div class="pomo-controls">
-          <button class="pomo-btn" id="pomo-reset">↺</button>
-          <button class="pomo-btn primary" id="pomo-play">▶ Start</button>
-          <button class="pomo-btn" id="pomo-skip">⏭</button>
-        </div>
-        <div class="pomo-sessions" id="pomo-sess"></div>
-        <div class="pomo-dots" id="pomo-dots"></div>
-      </div>
-    `;
-
-    ['focus','short','long'].forEach(m =>
-      $('pt-' + m).addEventListener('click', () => setMode(m)));
-    $('pomo-reset').addEventListener('click', reset);
-    $('pomo-play').addEventListener('click',  toggle);
-    $('pomo-skip').addEventListener('click',  skip);
-  }
-
-  function setMode(m) {
-    if (running) return;
-    mode  = m;
-    total = MODES[m].mins * 60;
-    left  = total;
-    document.querySelectorAll('.ptab').forEach(t => t.classList.remove('active'));
-    $('pt-' + m).classList.add('active');
-    renderPomo();
-  }
-
-  function renderPomo() {
-    const mm = String(Math.floor(left / 60)).padStart(2,'0');
-    const ss = String(left % 60).padStart(2,'0');
-    $('pomo-display').textContent = `${mm}:${ss}`;
-
-    const circ = 339.29;
-    const prog = circ * (1 - left / total);
-    const el = $('pomo-prog');
-    el.style.strokeDashoffset = prog;
-    el.style.stroke = MODES[mode].color;
-
-    $('pomo-play').textContent = running ? '⏸ Pause' : '▶ Start';
-    $('pomo-sess').textContent = `Session ${sess + 1} of ${SESSIONS}`;
-    $('pomo-dots').innerHTML = Array.from({ length: SESSIONS }, (_, i) =>
-      `<div class="pdot${i < done ? ' done' : ''}"></div>`
-    ).join('');
-  }
-
-  function toggle() {
-    if (running) {
-      clearInterval(timer);
-      running = false;
-    } else {
-      running = true;
-      timer = setInterval(() => {
-        left--;
-        if (left <= 0) {
-          clearInterval(timer);
-          running = false;
-          onSessionEnd();
-        }
-        renderPomo();
-      }, 1000);
-    }
-    renderPomo();
-  }
-
-  function onSessionEnd() {
-    if (mode === 'focus') {
-      done = Math.min(done + 1, SESSIONS);
-      sess = (sess + 1) % SESSIONS;
-      if (done >= SESSIONS) done = 0;
-      setMode(sess === 0 ? 'long' : 'short');
-    } else {
-      setMode('focus');
-    }
-  }
-
-  function reset() { clearInterval(timer); running = false; left = total; renderPomo(); }
-
-  function skip() {
-    clearInterval(timer); running = false; left = 0;
-    onSessionEnd();
-    renderPomo();
-  }
-
-  function init() { mount(); renderPomo(); }
-  return { init };
-})();
-
-
-// ═══════════════════════════════════════════
 // MODULE: TASKS
 // ═══════════════════════════════════════════
 const Tasks = (() => {
@@ -1042,7 +851,6 @@ Streak.init();
 Search.init();
 Modal.init();
 Bookmarks.init();
-Pomodoro.init();
 Tasks.init();
 </script>
 </body>

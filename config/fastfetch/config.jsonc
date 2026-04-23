@@ -1,0 +1,130 @@
+{
+    "$schema": "https://github.com/fastfetch-cli/fastfetch/raw/master/doc/json_schema.json",
+    "logo": {
+	"source": "$HOME/.config/fastfetch/logo/snoop.png",
+	"type": "auto",
+        "height": 18,
+        "padding": { "top": 2, "left": 2, "right": 2 }
+    },
+    "display": {
+        "separator": " ",
+        "key": {
+            "width": 18
+        }
+    },
+    "modules": [
+        { 
+		"type": "custom", 
+		"format": "\u001b[1;31m 󰊠 \u001b[1;35m󰊠 \u001b[1;36m󰊠 \u001b[1;33m󰮯 \u001b[0;33m· · · · \u001b[1;38;5;208mTERMINAL \u001b[1;32mONLINE" 
+	},
+        { 
+		"type": "custom", 
+		"format": "┌────────────────────────────────────────────┐" 
+	},
+        { 
+		"type": "os", 
+		"key": "  󱄅  OS", 
+		"keyColor": "red", 
+		"format": "{2}" 
+	},
+        { 
+		"type": "kernel", 
+		"key": "  󰌽  Kernel", 
+		"keyColor": "red", 
+		"format": "{2}" 
+	},
+        {
+            "type": "packages",
+            "key": "  󰏖  Packages",
+            "keyColor": "red",
+            "format": "{1} (nix-env) {?2}+ {2} (nix-system){?}"
+        },
+        { 
+		"type": "display", 
+		"key": "  󰍹  Display", 
+		"keyColor": "green", 
+		"format": "{1}x{2} @ {3}Hz" 
+	},
+        { 
+		"type": "wm", 
+		"key": "  󰨇  WM", 
+		"keyColor": "green", 
+		"format": "{2}" 
+	},
+        // { "type": "de", "key": "  󰧨  DE", "keyColor": "green", "format": "{2}" },
+        // { "type": "theme", "key": "  󰏘  Theme",  "keyColor":  "green",  "format": "{2}" },
+        // { "type": "icons", "key": "  󰀻  Icons", "keyColor": "yellow", "format": "{2}" },
+        { 
+		"type": "terminal", 
+		"key": "  󰆍  Terminal", 
+		"keyColor": "yellow", 
+		"format": "{3}" 
+	},
+        { 
+		"type": "command", 
+		"key": "  󰞷  Shell", 
+		"keyColor": "yellow",  
+		"text": "echo $SHELL | awk -F/ '{print $NF}'"
+	},
+        { 
+		"type": "custom", 
+		"format": "└────────────────────────────────────────────┘" 
+	},
+        	"break",
+        { 
+            "type": "title", 
+            "format": "  \u001b[35m󰧂  {1}@{2}" 
+        },
+        { 
+		"type": "custom", 
+		"format": "┌────────────────────────────────────────────┐" 
+	},
+        { 
+		"type": "cpu", 
+		"key": "  󰻠  CPU", 
+		"keyColor": "blue", 
+		"format": "{1}" 
+	},
+        { 
+		"type": "gpu", 
+		"key": "  󰢮  GPU", 
+		"keyColor": "blue", 
+		"format": "{1} {2}" 
+	},
+        { 
+		"type": "memory", 
+		"key": "  󰍛  Memory", 
+		"keyColor": "blue", 
+		"format": "{1} / {2} {3}" 
+	},
+        // { "type": "disk", "key": "  󰋊  Disk", "keyColor": "magenta", "format": "{1} / {2} {3}" },
+	{ 
+		"type": "command", 
+		"key": "  󰋊  Storage", 
+		"keyColor": "magenta",
+		"text": "df -B1 --output=source,size,used | awk '$1 ~ /^\\/dev\\// {s+=$2; u+=$3} END {printf \"%.1fG / %.1fG (%.0f%%)\", u/1e9, s/1e9, (u/s)*100}'",
+		"format": "{1}"
+	},
+        { 
+            "type": "command", 
+            "key": "  󰅐  OS Age", 
+            "keyColor": "magenta", 
+            "text": "echo $(($(($(date +%s) - $(stat -c %W /))) / 86400)) days",
+            "format": "{1}" 
+        },
+        { 
+		"type": "uptime", 
+		"key": "  󰅐  Uptime", 
+		"keyColor": "magenta" 
+	},
+        { 
+		"type": "custom", 
+		"format": "└────────────────────────────────────────────┘" 
+	},
+        "break",
+        {
+            "type": "colors",
+            "symbol": "circle"
+        }
+    ]
+}

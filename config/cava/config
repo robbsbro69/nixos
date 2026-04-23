@@ -1,14 +1,22 @@
 [general]
-bars = 10
-framerate = 20
-bar_width = 1
-bar_spacing = 0
+bars = 20
+framerate = 60
+bar_width = 2
+bar_spacing = 1
 
 [output]
-method = raw
+method = ncurses
 channels = mono
-data_format = ascii
-ascii_max_range = 7
+
+[color]
+background = '#1e1e2e'
+foreground = '#89b4fa'
+
+gradient = 1
+gradient_color_1 = '#f38ba8'
+gradient_color_2 = '#cba6f7'
+gradient_color_3 = '#89b4fa'
+gradient_color_4 = '#a6e3a1'
 
 [smoothing]
 noise_reduction = 60

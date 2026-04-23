@@ -1,22 +1,36 @@
-{ config, pkgs, quickshell, ... }:
+{ config, pkgs, quickshell, spicetify-nix, ... }:
 let
+	spicePkgs = spicetify-nix.legacyPackages.${pkgs.stdenv.hostPlatform.system};
 	dotfiles = "${config.home.homeDirectory}/nixos-dotfiles/config";
 	create_symlink = path: config.lib.file.mkOutOfStoreSymlink path;
 	configs = {
-		nvim = "nvim";
-		kitty = "kitty";
-		hypr = "hypr";
-		mpv = "mpv";
-		yazi = "yazi";
-		starship = "starship";
-		quickshell = "quickshell";
-		swaync = "swaync";
 		wal = "wal";
+		mpv = "mpv";
 		cava = "cava";
+		nvim = "nvim";
+		hypr = "hypr";
+		yazi = "yazi";
+		kitty = "kitty";
+		swaync = "swaync";
 		scripts = "scripts";
+		starship = "starship";
+		fastfetch = "fastfetch";
+		quickshell = "quickshell";
   };
 in {
-
+imports = [
+	spicetify-nix.homeManagerModules.default
+];
+programs.spicetify = {
+	enable = true;
+	enabledExtensions = with spicePkgs.extensions; [
+		adblock
+		hidePodcasts
+		shuffle
+	];
+	theme = spicePkgs.themes.catppuccin;
+	colorScheme = "mocha";
+};
 wayland.windowManager.hyprland = {
 	enable = true;
 	systemd.enable = false;
@@ -54,7 +68,14 @@ programs.bash = {
 		nuprs = "nix flake update && sudo nixos-rebuild switch --flake ~/nixos-dotfiles#nixos";
 		gnrs = "git add . && git commit -m \"update\" && nrs";
 		ls = "eza --icons";
+		ff = "fastfetch --logo \"$(find ~/.config/fastfetch/logo -type f | shuf -n 1)\" --logo-type kitty --logo-height 18";
+		gf = "fastfetch --logo \"$(find ~/Pictures/Dump_fastfetch_logo/FastFetch -type f | shuf -n 1)\" --logo-type kitty --logo-height 18";
 		ll = "eza -l --icons";
+		webp2png = ''
+  			for f in *.webp; do
+			magick "$f" "''${f%.webp}.png" && rm "$f"
+			done
+		'';
 	};
 	initExtra = ''
 	  	export PATH="$HOME/.cargo/bin:$PATH"
@@ -64,7 +85,7 @@ programs.bash = {
 		--color=marker:#B4BEFE,fg+:#CDD6F4,prompt:#CBA6F7,hl+:#F38BA8 \
 		--color=selected-bg:#45475A \
 		--color=border:#6C7086,label:#CDD6F4"
-		'';
+	'';
 };
 
 programs.starship = {
@@ -79,49 +100,48 @@ xdg.configFile = builtins.mapAttrs
 configs;
 
 home.packages = with  pkgs; [
-	neovim
-	ripgrep
+	jq
 	nil
-	nixpkgs-fmt
-	nodejs
 	gcc
-  	obsidian
-  	spotify
-	evince
-	yazi
-	brave
-	adwaita-icon-theme
 	mpv
 	eza
 	fzf
+	imv
+	mpd
+	yazi
+	tmux
+	swww
+	rmpc
+	vips
+  	cava
+	pywal
+	unzip
+	brave
+	neovim
+	nodejs
+	evince
+	upower
+	figlet
+	ffmpeg
 	zoxide
-	gammastep
-	transmission_4-gtk
+	ripgrep
 	hyprlock
 	hypridle
-	hyprpaper
-	imv
-	figlet
-	tmux
-	unzip
-	video-downloader
-	quickshell.packages.${pkgs.stdenv.hostPlatform.system}.default
-	pywal
-	swww
-	playerctl
-	brightnessctl
-	libnotify
-	swaynotificationcenter
-	mpd
-	rmpc
-	imagemagick
-	vips
-	jq
-	upower
-	qt6.qt5compat      # provides Qt5Compat.GraphicalEffects
-  	qt6.qtimageformats # webp + other image formats
-  	cava
+ 	obsidian
 	fastfetch
-
+	gammastep
+	hyprpaper
+	playerctl
+	libnotify
+	imagemagick
+	nixpkgs-fmt
+	brightnessctl
+	qt6.qt5compat
+	video-downloader
+	transmission_4-gtk
+	adwaita-icon-theme
+  	qt6.qtimageformats
+	swaynotificationcenter
+	quickshell.packages.${pkgs.stdenv.hostPlatform.system}.default
 ];
 }

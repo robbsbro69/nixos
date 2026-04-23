@@ -14,3 +14,5 @@ vim.opt.number = true
 vim.opt.relativenumber = true
 
 require("lazy").setup("plugins")
+
+

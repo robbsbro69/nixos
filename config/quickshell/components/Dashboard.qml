@@ -298,6 +298,105 @@ PanelWindow {
                         PowerBtn { icon: "󰒲"; iconColor: root.walColor4; cmd: "systemctl suspend" }
                         PowerBtn { icon: "󰍃"; iconColor: root.walColor1; cmd: "hyprctl dispatch exit" }
                     }
+	    }
+	    Rectangle {
+                    id: laptopScreenToggle
+                    Layout.fillWidth: true
+                    Layout.preferredHeight: 50
+                    color: Qt.rgba(0, 0, 0, 0.5)
+                    radius: 15
+
+                    property bool laptopScreenEnabled: true
+
+                    Component.onCompleted: checkScreenProc.running = true
+
+                Process {
+    id: checkScreenProc
+    command: ["bash", "-c", "hyprctl monitors | grep -q '^Monitor eDP-1' && echo on || echo off"]
+    stdout: SplitParser {
+        onRead: data => {
+            laptopScreenToggle.laptopScreenEnabled = data.trim() === "on"
+        }
+    }
+}
+
+Process {
+    id: toggleScreenProc
+    command: {
+        if (laptopScreenToggle.laptopScreenEnabled)
+            return ["bash", "-c", "hyprctl keyword monitor eDP-1,disable"]
+        else
+            return ["bash", "-c", "hyprctl keyword monitor eDP-1,1920x1080@60,0x0,1"]
+    }
+    onExited: {
+        checkScreenProc.running = true
+    }
+}
+Timer {
+    interval: 1000
+    running: root.dashboardVisible
+    repeat: true
+    triggeredOnStart: true
+    onTriggered: {
+        if (!checkScreenProc.running) checkScreenProc.running = true
+    }
+}
+
+                    RowLayout {
+                        anchors.fill: parent
+                        anchors.margins: 15
+                        spacing: 10
+
+                        Text {
+                            text: "󰍹"
+                            color: laptopScreenToggle.laptopScreenEnabled ? root.walColor5 : root.walColor8
+                            font.pixelSize: 18
+                            font.family: "JetBrainsMono Nerd Font"
+                        }
+
+                        Text {
+                            text: "Laptop Screen"
+                            color: root.walForeground
+                            font.pixelSize: 13
+                            font.family: "JetBrainsMono Nerd Font"
+                            Layout.fillWidth: true
+                        }
+
+                        Text {
+                            text: laptopScreenToggle.laptopScreenEnabled ? "ON" : "OFF"
+                            color: laptopScreenToggle.laptopScreenEnabled ? root.walColor2 : root.walColor8
+                            font.pixelSize: 10
+                            font.bold: true
+                            font.family: "JetBrainsMono Nerd Font"
+                        }
+
+                        Rectangle {
+                            width: 44
+                            height: 24
+                            radius: 12
+                            color: laptopScreenToggle.laptopScreenEnabled ? root.walColor5 : Qt.rgba(0.3, 0.3, 0.3, 0.5)
+                            Behavior on color { ColorAnimation { duration: 200 } }
+
+                            Rectangle {
+                                width: 20
+                                height: 20
+                                radius: 10
+                                y: 2
+                                x: laptopScreenToggle.laptopScreenEnabled ? 22 : 2
+                                color: root.walBackground
+                                Behavior on x { NumberAnimation { duration: 200; easing.type: Easing.OutCubic } }
+                            }
+
+                            MouseArea {
+                                anchors.fill: parent
+                                cursorShape: Qt.PointingHandCursor
+                                onClicked: {
+                                    if (!toggleScreenProc.running)
+                                        toggleScreenProc.running = true
+                                }
+                            }
+                        }
+                    }
                 }
 
                 Rectangle {
@@ -695,7 +794,7 @@ PanelWindow {
     }
     Process {
         id: batProc
-        command: ["bash", "-c", "cat /sys/class/power_supply/BAT0/capacity 2>/dev/null || echo 100"]
+        command: ["bash", "-c", "cat /sys/class/power_supply/BAT*/capacity 2>/dev/null || echo 100"]
         stdout: SplitParser {
             onRead: data => {
                 dashboard.batVal = parseInt(data) || 100
@@ -715,7 +814,7 @@ PanelWindow {
     }
     Process {
         id: batStatusProc
-        command: ["bash", "-c", "cat /sys/class/power_supply/BAT0/status 2>/dev/null || echo Unknown"]
+        command: ["bash", "-c", "cat /sys/class/power_supply/BAT*/status 2>/dev/null || echo Unknown"]
         stdout: SplitParser {
             onRead: data => {
                 var status = data.trim()

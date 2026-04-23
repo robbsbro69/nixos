@@ -1,0 +1,4 @@
+@define-color accent_color {color5};
+@define-color accent_bg_color {color5};
+@define-color window_bg_color {background};
+@define-color window_fg_color {foreground};

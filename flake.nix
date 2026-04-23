@@ -10,11 +10,15 @@ inputs = {
     	};
 	  quickshell = {
     		url = "git+https://git.outfoxxed.me/outfoxxed/quickshell";
-    		inputs.nixpkgs.follows = "nixpkgs-unstable";  # point at unstable
+    		inputs.nixpkgs.follows = "nixpkgs-unstable";
   	};
+  	spicetify-nix = {
+    		url = "github:Gerg-L/spicetify-nix";
+    		inputs.nixpkgs.follows = "nixpkgs";
+	};
   };
 
-outputs = { self, nixpkgs, nixpkgs-unstable, home-manager, quickshell, ... }:
+outputs = { self, nixpkgs, nixpkgs-unstable, home-manager, quickshell, spicetify-nix, ... }:
 	let
 		system = "x86_64-linux";
 	in {
@@ -23,13 +27,14 @@ outputs = { self, nixpkgs, nixpkgs-unstable, home-manager, quickshell, ... }:
 	modules = [
 		./configuration.nix
 		home-manager.nixosModules.home-manager
+		  spicetify-nix.nixosModules.default
 	{
 	home-manager = {
 		useGlobalPkgs = true;
 		useUserPackages = true;
 		users.alpha = import ./home.nix;
 		extraSpecialArgs = { 
-			inherit quickshell;
+			inherit quickshell spicetify-nix;
 			pkgs-unstable = nixpkgs-unstable.legacyPackages.${system};
 		};
 		backupFileExtension = "backup";
