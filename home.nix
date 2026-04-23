@@ -133,6 +133,7 @@ home.packages = with  pkgs; [
 	hyprpaper
 	playerctl
 	libnotify
+	telegram-desktop
 	imagemagick
 	nixpkgs-fmt
 	brightnessctl
