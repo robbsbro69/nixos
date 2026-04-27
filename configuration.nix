@@ -58,7 +58,8 @@ services.jellyfin = {
     openFirewall = true;
     user = "alpha";
     group = "users";
-  };
+};
+
 services.xserver = {
 	enable = true;
 	autoRepeatDelay = 200;
@@ -83,6 +84,7 @@ services.pipewire.wireplumber.extraConfig."99-bluetooth-default" = {
     }
   ];
  };
+ 
 
 users.users.alpha = {
 	isNormalUser = true;
@@ -105,6 +107,7 @@ environment.systemPackages = with pkgs; [
 	vim
 	git
      	wget
+	htop
 	grim
 	gvfs
 	kitty
@@ -124,7 +127,7 @@ environment.systemPackages = with pkgs; [
 	wlr-randr
 	libnotify
 	wf-recorder
-   	pavucontrol
+	pavucontrol
 	imagemagick
 	wl-clipboard
     	jellyfin-web
@@ -133,14 +136,14 @@ environment.systemPackages = with pkgs; [
 	brightnessctl
 	rust-analyzer
 	kdePackages.kio
-    	jellyfin-ffmpeg
+	jellyfin-ffmpeg
 	jellyfin-desktop
 	kdePackages.qtsvg
-  	qt6.qtimageformats
-    	kdePackages.dolphin
+	qt6.qtimageformats
+	kdePackages.dolphin
 	kdePackages.kservice
-    	kdePackages.kio-fuse
-    	kdePackages.kio-extras
+	kdePackages.kio-fuse
+	kdePackages.kio-extras
 ];
 
 fonts.packages = with pkgs; [ nerd-fonts.jetbrains-mono ];
@@ -151,13 +154,6 @@ fileSystems."/mnt/ssd" = {
 	fsType = "ext4";
 	options = [ "defaults" "nofail" ];
 };
-
-fileSystems."/mnt/hdd" = {
-	device = "/dev/disk/by-uuid/b0c8283c-f138-4045-9479-71159cea34f7";
-	fsType = "ext4";
-	options = [ "defaults" "nofail" ];
-};
-
 
 nix.gc = {
 	automatic = true;

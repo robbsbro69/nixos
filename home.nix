@@ -31,6 +31,7 @@ programs.spicetify = {
 	theme = spicePkgs.themes.catppuccin;
 	colorScheme = "mocha";
 };
+
 wayland.windowManager.hyprland = {
 	enable = true;
 	systemd.enable = false;
@@ -46,6 +47,13 @@ programs.ssh = {
 		user = "git";
 		identityFile = "~/.ssh/id_ed25519";
 	};
+};
+
+programs.mpv = {
+  enable = true;
+  scripts = [ 
+  	pkgs.mpvScripts.mpris
+  ];
 };
 
 programs.git = {
@@ -103,17 +111,18 @@ home.packages = with  pkgs; [
 	jq
 	nil
 	gcc
-	mpv
 	eza
 	fzf
 	imv
 	mpd
+	htop
 	yazi
 	tmux
 	swww
 	rmpc
 	vips
   	cava
+	nitch
 	pywal
 	unzip
 	brave
@@ -125,15 +134,14 @@ home.packages = with  pkgs; [
 	ffmpeg
 	zoxide
 	ripgrep
+	cmatrix
 	hyprlock
 	hypridle
  	obsidian
 	fastfetch
 	gammastep
-	hyprpaper
 	playerctl
 	libnotify
-	telegram-desktop
 	imagemagick
 	nixpkgs-fmt
 	brightnessctl
@@ -141,7 +149,7 @@ home.packages = with  pkgs; [
 	video-downloader
 	transmission_4-gtk
 	adwaita-icon-theme
-  	qt6.qtimageformats
+	qt6.qtimageformats
 	swaynotificationcenter
 	quickshell.packages.${pkgs.stdenv.hostPlatform.system}.default
 ];

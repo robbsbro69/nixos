@@ -7,8 +7,8 @@ import QtQuick.Controls
 import Qt5Compat.GraphicalEffects
 
 PanelWindow {
-	id: musicPanel
-	   screen: root.focusedScreen ?? Quickshell.screens[0]  // add this
+    id: musicPanel
+    screen: root.focusedScreen ?? Quickshell.screens[0]  // add this
     visible: true
     exclusionMode: ExclusionMode.Ignore
     anchors { top: true; left: true; right: true }
