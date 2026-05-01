@@ -22,8 +22,6 @@ style = "bold pink"
 truncation_length = 4
 style = "bold pink"
 
-
-
 [palettes.catppuccin_mocha]
 rosewater = "#f5e0dc"
 flamingo = "#f2cdcd"
