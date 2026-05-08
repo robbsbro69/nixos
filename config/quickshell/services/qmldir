@@ -1,0 +1,3 @@
+singleton Anime 1.0 Anime.qml
+singleton Manga 1.0 Manga.qml
+singleton Movies 1.0 Movies.qml

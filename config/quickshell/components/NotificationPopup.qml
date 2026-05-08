@@ -5,7 +5,7 @@ import QtQuick
 
 PanelWindow {
 	id: popup
-	screen: root.focusedScreen ?? Quickshell.screens[0]
+	screen: Quickshell.screens.length > 0 ? (root.focusedScreen ?? Quickshell.screens[0]) : undefined
 	anchors { 
 		top: true; 
 		right: true 

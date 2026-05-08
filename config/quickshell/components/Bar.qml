@@ -29,7 +29,10 @@ PanelWindow {
     	property color notchHoverColor: Qt.rgba(0, 0, 0, 0.90)
     	property int notchRadius: 12
 		property int notchHeight: 32
+		property string mediaPlayer: "%any"
 
+		property string _pendingTitle: ""
+		property string _pendingArtist: ""
     	property int activeWsId: 1
     	property int targetWsId: 1
     	property string mediaText: ""
@@ -186,18 +189,32 @@ PanelWindow {
 			bar.cavaValues = newVals
 		}
 	}
-
 	Process {
 		id: mediaProc
-		command: ["bash", "-c", "status=$(playerctl --player=%any status 2>/dev/null); pos=$(playerctl --player=%any position 2>/dev/null | cut -d. -f1); len=$(playerctl --player=%any metadata mpris:length 2>/dev/null); len=$((len / 1000000)); if [ \"$status\" = \"Playing\" ] || [ \"$status\" = \"Paused\" ]; then artist=$(playerctl --player=%any metadata artist 2>/dev/null); title=$(playerctl --player=%any metadata title 2>/dev/null); if [ -n \"$title\" ]; then text=\"$title\"; [ -n \"$artist\" ] && text=\"$artist - $title\"; if [ ${#text} -gt 35 ]; then text=\"${text:0:32}...\"; fi; echo \"$status|$text|$pos|$len\"; else echo 'stopped||0|0'; fi; else echo 'stopped||0|0'; fi"]
-        	stdout: SplitParser {
+    	command: [Quickshell.env("HOME") + "/.config/quickshell/assets/get-player.sh", "%any"]
+    	stdout: SplitParser {
 			onRead: data => {
-				var parts = data.trim().split("|")
-				if (parts.length >= 4) {
-					bar.mediaClass = parts[0].toLowerCase()
-					bar.mediaText = parts[1]
-					bar.mediaPosition = parseInt(parts[2]) || 0
-					bar.mediaLength = parseInt(parts[3]) || 0
+				var line = data.trim()
+				var idx = line.indexOf(":")
+            	if (idx < 0) return
+            	var key = line.substring(0, idx)
+            	var val = line.substring(idx + 1)
+				switch (key) {
+					case "player": bar.mediaPlayer = val; break
+					case "status": bar.mediaClass = val.toLowerCase(); break
+                	case "pos":    bar.mediaPosition = parseInt(val) || 0; break
+                	case "len":    bar.mediaLength = parseInt(val) || 0; break
+                	case "title":
+                	case "artist": break
+				}
+				if (key === "title" || key === "artist") {
+					if (key === "title") bar._pendingTitle = val
+                	if (key === "artist") bar._pendingArtist = val
+                	var text = bar._pendingArtist
+                    	? bar._pendingArtist + " - " + bar._pendingTitle
+                    	: bar._pendingTitle
+                	if (text.length > 35) text = text.substring(0, 32) + "..."
+                	bar.mediaText = text
 				}
 			}
 		}
@@ -335,7 +352,7 @@ PanelWindow {
 
     	Process {
         	id: mediaPlayPauseProc
-        	command: ["playerctl", "play-pause"]
+        	command: ["playerctl", "--player=" + bar.mediaPlayer, "play-pause"]
 		onExited: { 
 			if (!mediaProc.running) mediaProc.running = true 
 		}
@@ -343,7 +360,7 @@ PanelWindow {
 
     	Process {
         	id: mediaNextProc
-        	command: ["playerctl", "next"]
+        	command: ["playerctl", "--player=" + bar.mediaPlayer, "next"]
 		onExited: { 
 			if (!mediaProc.running) mediaProc.running = true 
 		}
@@ -351,7 +368,7 @@ PanelWindow {
 
     	Process {
         	id: mediaPrevProc
-        	command: ["playerctl", "previous"]
+        	command: ["playerctl", "--player=" + bar.mediaPlayer, "previous"]
         	onExited: {
 			if (!mediaProc.running) mediaProc.running = true 
 		}
@@ -436,7 +453,7 @@ PanelWindow {
 					Text {
 						anchors.centerIn: parent
 						text: "󱄅"
-                        			color: root.walColor1
+                        			color: root.walColor13
                         			font.pixelSize: 16
                         			font.family: "JetBrainsMono Nerd Font"
 					}
@@ -482,7 +499,14 @@ PanelWindow {
 					anchors.fill: parent
 					hoverEnabled: true
 					cursorShape: Qt.PointingHandCursor
-					onClicked: root.toggleCalendar()
+					acceptedButtons: Qt.LeftButton | Qt.RightButton
+					onClicked: function(mouse) {
+						if (mouse.button === Qt.RightButton) {
+							root.toggleCalendar()
+						} else {
+							root.toggleClockPanel()
+						}
+					}
 				}
 				Timer {
 					interval: 1000
@@ -669,7 +693,7 @@ PanelWindow {
 							id: mediaLabel
                             				anchors.verticalCenter: parent.verticalCenter
                             				text: bar.mediaText
-                            				color: root.walColor2
+                            				color: root.walColor13
                             				font.pixelSize: 10
                           				font.bold: true
                             				font.family: "JetBrainsMono Nerd Font"
@@ -1063,36 +1087,84 @@ PanelWindow {
                         					hoverEnabled: true
                         					cursorShape: Qt.PointingHandCursor
                         					acceptedButtons: Qt.LeftButton | Qt.RightButton
-onClicked: function(mouse) {
-    if (!trayDelegate.modelData) return
-    if (mouse.button === Qt.LeftButton
-            && !trayDelegate.modelData.onlyMenu) {
-        trayDelegate.modelData.activate()
-        return
-    }
-    if (trayDelegate.modelData.hasMenu) {
-        var mapped = trayItemMa.mapToItem(null, 0, 0)
-        trayMenu.menuX = mapped.x + trayItemMa.width / 2
-        trayMenu.menu = trayDelegate.modelData.menu
-        trayMenu.open()
-    }
-}
-								onWheel: function(wheel) {
-									if (trayDelegate.modelData)
-                                					trayDelegate.modelData.activate()
+											onClicked: function(mouse) {
+												if (!trayDelegate.modelData) return
+    											if (mouse.button === Qt.LeftButton
+												&& !trayDelegate.modelData.onlyMenu) {
+													trayDelegate.modelData.activate()
+        											return
+												}
+												if (trayDelegate.modelData.hasMenu) {
+													var mapped = trayItemMa.mapToItem(null, 0, 0)
+        											trayMenu.menuX = mapped.x + trayItemMa.width / 2
+        											trayMenu.menu = trayDelegate.modelData.menu
+        											trayMenu.open()
+												}
+											}
+											onWheel: function(wheel) {
+												if (trayDelegate.modelData)
+												trayDelegate.modelData.activate()
+											}
+										}
+									}
 								}
 							}
 						}
+						QsMenuAnchor {
+							id: trayMenu
+        					anchor.window: bar
+							anchor.rect: Qt.rect(trayMenu.menuX, bar.height, 1, 1)
+    						property real menuX: 0
+						}
 					}
-				}
-			}
-			QsMenuAnchor {
-				id: trayMenu
-        		anchor.window: bar
-				anchor.rect: Qt.rect(trayMenu.menuX, bar.height, 1, 1)
-    			property real menuX: 0
-			}
-		}
+					Notch {
+						width: 36
+      					hovered: clipMA.containsMouse
+      					tooltip: "Clipboard"
+						Item {
+							anchors.fill: parent
+							Text {
+								anchors.centerIn: parent
+              					text: "󰅍"
+              					color: root.walColor13
+              					font.pixelSize: 15
+              					font.family: "JetBrainsMono Nerd Font"
+							}
+						}
+						MouseArea {
+							id: clipMA
+          					anchors.fill: parent
+          					hoverEnabled: true
+          					cursorShape: Qt.PointingHandCursor
+          					onClicked: root.toggleClipboard()
+						}
+					}
+					Notch {
+						width: 36; 
+						hovered: mediaNotchMa.containsMouse; 
+						tooltip: "Anime Movie"
+						Item { 
+							anchors.fill: parent; 
+							Text { 
+								anchors.centerIn: parent; 
+								text: "󰿎"; 
+								color: root.walColor13; 
+								font.pixelSize: 15; 
+								font.family: "JetBrainsMono Nerd Font" 
+							} 
+						}
+						MouseArea {
+							id: mediaNotchMa; 
+							anchors.fill: parent; 
+							hoverEnabled: true; 
+							cursorShape: Qt.PointingHandCursor
+							acceptedButtons: Qt.LeftButton | Qt.RightButton
+							onClicked: function(mouse) { 
+								if (mouse.button === Qt.RightButton) root.toggleAnimePanel(); else root.toggleMoviesPanel() 
+							}
+						}
+					}
+
 		Notch {
 			width: 36
 			hovered: dashMA.containsMouse
@@ -1102,7 +1174,7 @@ onClicked: function(mouse) {
 				Text {
 					anchors.centerIn: parent
 					text: "󰕮"
-					color: root.walColor1
+					color: root.walColor13
 					font.pixelSize: 15
 					font.family: "JetBrainsMono Nerd Font"
 				}

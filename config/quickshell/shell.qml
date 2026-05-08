@@ -27,6 +27,10 @@ ShellRoot {
 	property bool calendarVisible: false
 	property bool dndEnabled: false
 	property bool notifCenterVisible: false
+	property bool clipboardVisible: false
+	property bool clockPanelVisible: false
+	property bool animePanelVisible: false
+	property bool moviesPanelVisible: false
 	property var pfpFiles: []
 
 	property string searchTerm: ""
@@ -144,6 +148,10 @@ ShellRoot {
 		btVisible = false
 		calendarVisible = false
 		notifCenterVisible = false
+		clockPanelVisible = false
+		clipboardVisible = false
+		animePanelVisible = false
+		moviesPanelVisible = false
 	}
 
 	function refreshBluetooth() {
@@ -252,6 +260,22 @@ ShellRoot {
 		notifCenterVisible = !notifCenterVisible
 	}
 
+	function toggleClockPanel() {
+		clockPanelVisible = !clockPanelVisible
+	}
+
+	function toggleClipboard() {
+		clipboardVisible = !clipboardVisible
+	}
+
+	function toggleAnimePanel() { 
+		animePanelVisible = !animePanelVisible 
+	}
+	
+	function toggleMoviesPanel() { 
+		moviesPanelVisible = !moviesPanelVisible 
+	}
+
 	Component.onCompleted: {
 		initStateDir.running = true
 	}
@@ -314,7 +338,7 @@ ShellRoot {
 
 	function launchApp(app) {
 		var cmd = app.exec
-    		if (cmd.startsWith("dolphin")) cmd = "dolphin --new-window"    
+    		//if (cmd.startsWith("dolphin")) cmd = "dolphin --new-window"    
 		launchProc.command = ["bash", "-c", "nohup " + cmd + " >/dev/null 2>&1 & disown"]
         	launchProc.running = true
         	var usage = appUsage
@@ -454,8 +478,18 @@ ShellRoot {
 		}
 		onExited: {
 			if (root.walApplying) {
-				if (!walStepSwaync.running) walStepSwaync.running = true
+				if (!walStepGtk.running) walStepGtk.running = true
 			}
+		}
+	}
+	Process {
+		id: walStepGtk
+    	command: ["bash", "-c",
+        	"ln -sf ~/.cache/wal/colors-gtk.css ~/.config/gtk-3.0/gtk.css 2>/dev/null; " +
+        	"ln -sf ~/.cache/wal/colors-gtk.css ~/.config/gtk-4.0/gtk.css 2>/dev/null"
+    	]
+		onExited: {
+			if (!walStepSwaync.running) walStepSwaync.running = true
 		}
 	}
 
@@ -774,7 +808,7 @@ ShellRoot {
 		model: Quickshell.screens
 		delegate: Component {
 			Bar {
-				property var modelData
+				required property var modelData
 				screen: modelData
 			}
 		}
@@ -787,6 +821,10 @@ ShellRoot {
 	CalendarPanel {}
 	NotificationPopup {}
 	NotifCenter {}
+	ClipboardPanel{}
+	ClockPanel{}
+	AnimePanel{}
+	MoviesPanel{}
 
 
 
@@ -853,6 +891,24 @@ ShellRoot {
         	target: "bluetooth"
 		function toggle() { 
 			root.toggleBluetooth() 
+		}
+	}
+	IpcHandler {
+		target: "clipboard"
+		function toggle() {
+			root.toggleClipboard()
+		}
+	}
+	IpcHandler {
+    	target: "anime"
+		function toggle() { 
+			root.toggleAnimePanel() 
+		}
+	}
+	IpcHandler {
+    	target: "movies"
+		function toggle() { 
+			root.toggleMoviesPanel() 
 		}
 	}
 }

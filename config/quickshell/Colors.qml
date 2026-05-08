@@ -19,7 +19,6 @@ Singleton {
 		return Qt.rgba(c.r, c.g, c.b, o) 
 	}
 
-	// reload from wal on startup and when wallpaper changes
 	Process {
 		id: walProc
 		command: ["bash", "-c", "cat ~/.cache/wal/colors.json 2>/dev/null"]

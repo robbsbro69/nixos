@@ -8,7 +8,7 @@ import Qt5Compat.GraphicalEffects
 
 PanelWindow {
 	id: musicPanel
-	screen: root.focusedScreen ?? Quickshell.screens[0]
+	screen: Quickshell.screens.length > 0 ? (root.focusedScreen ?? Quickshell.screens[0]) : undefined
 	visible: true
 	exclusionMode: ExclusionMode.Ignore
 	anchors {
@@ -44,7 +44,6 @@ PanelWindow {
 		}
 	}
 
-	// ── state ──────────────────────────────────────────────────────────────
 	property string configPath: root.configPath
 	property string gifPath: configPath + "/assets/gifs"
 	property string vinylAsset: "file://" + configPath + "/assets/Vinyl.png"
@@ -58,11 +57,9 @@ PanelWindow {
 	property real length: 0
 	property bool hasTrack: playerStatus === "Playing" || playerStatus === "Paused"
 
-	// display mode: 0 = GIF, 1 = Vinyl
 	property int displayMode: 0
 	property bool vinylWithArt: true
 
-	// vinyl spin
 	property real vinylRotation: 0
 	property bool vinylHeld: false
 	property real dragStartPos: 0
@@ -71,7 +68,6 @@ PanelWindow {
 	property real totalDrag: 0
 	property bool vinylWasPlaying: false
 
-	// gif picker
 	property var gifFiles: []
 	property int currentGifIndex: root.savedGifIndex
 	property int previewGifIndex: 0
@@ -82,15 +78,13 @@ PanelWindow {
 	property string currentGifSource: "file://" + gifPath + "/current.gif"
 	property int pendingGifIndex: -1
 
-	// picker tab inside gif selector (0 = GIF, 1 = Vinyl)
 	property int pickerTab: 0
 
-	// player dropdown
 	property string activePlayer: "%any"
+	property string resolvedPlayer: "%any"
 	property var availablePlayers: []
 	property bool playerDropdownOpen: false
 
-	// ── helpers ────────────────────────────────────────────────────────────
 	function formatTime(seconds) {
 		var mins = Math.floor(seconds / 60)
 		var secs = Math.floor(seconds % 60)
@@ -125,7 +119,6 @@ PanelWindow {
 		if (!playerListProc.running) playerListProc.running = true
 	}
 
-	// ── vinyl drag-scrub ───────────────────────────────────────────────────
 	function grabVinyl(mx) {
 		vinylSpinAnim.stop()
 		vinylWasPlaying = playerStatus === "Playing"
@@ -164,7 +157,7 @@ PanelWindow {
 		id: vinylResumeTimer
 		interval: 200
 		onTriggered: {
-			playPauseProc.command = ["playerctl", "--player=" + musicPanel.activePlayer, "play-pause"]
+			playPauseProc.command = ["playerctl", "--player=" + musicPanel.resolvedPlayer, "play-pause"]
 			playPauseProc.running = true
 		}
 	}
@@ -174,12 +167,11 @@ PanelWindow {
 		onTriggered: {
 			if (!vinylHeld || length <= 0) return
 			var pos = Math.floor(Math.max(0, Math.min(length, dragStartPos + totalDrag * (length / 600))))
-			seekProc.command = ["playerctl", "--player=" + musicPanel.activePlayer, "position", pos.toString()]
+			seekProc.command = ["playerctl", "--player=" + musicPanel.resolvedPlayer, "position", pos.toString()]
 			seekProc.running = true
 		}
 	}
 
-	// ── vinyl spin animation ───────────────────────────────────────────────
 	NumberAnimation {
 		id: vinylSpinAnim
 		target: musicPanel
@@ -196,7 +188,6 @@ PanelWindow {
 		}
 	}
 
-	// ── gif helpers ────────────────────────────────────────────────────────
 	function nextGif() {
 		if (gifFiles.length > 0) previewGifIndex = (previewGifIndex + 1) % gifFiles.length
 	}
@@ -274,7 +265,6 @@ PanelWindow {
 		}
 	}
 
-	// ── keyboard handler ───────────────────────────────────────────────────
 	Item {
 		anchors.fill: parent
 		focus: root.musicVisible
@@ -313,7 +303,6 @@ PanelWindow {
 			anchors.horizontalCenter: parent.horizontalCenter
 			spacing: 8
 
-			// ── main card ─────────────────────────────────────────────────────
 			Rectangle {
 				width: 400
 				height: 180
@@ -326,7 +315,6 @@ PanelWindow {
 					anchors.margins: 15
 					spacing: 15
 
-					// ── left: info + controls ─────────────────────────────────
 					ColumnLayout {
 						Layout.fillWidth: true
 						Layout.fillHeight: true
@@ -346,7 +334,6 @@ PanelWindow {
 								elide: Text.ElideRight
 							}
 
-							// player picker button
 							Rectangle {
 								width: playerBtnRow.width + 14
 								height: 22
@@ -411,7 +398,6 @@ PanelWindow {
 
 						Item { Layout.fillHeight: true }
 
-						// seek bar
 						RowLayout {
 							Layout.fillWidth: true
 							spacing: 8
@@ -440,7 +426,7 @@ PanelWindow {
 									onClicked: function(mouse) {
 										if (musicPanel.length > 0 && !seekProc.running) {
 											var seekPos = (mouse.x / parent.width) * musicPanel.length
-											seekProc.command = ["playerctl", "--player=" + musicPanel.activePlayer, "position", seekPos.toString()]
+											seekProc.command = ["playerctl", "--player=" + musicPanel.resolvedPlayer, "position", seekPos.toString()]
 											seekProc.running = true
 										}
 									}
@@ -454,7 +440,6 @@ PanelWindow {
 							}
 						}
 
-						// transport controls
 						Row {
 							Layout.alignment: Qt.AlignHCenter
 							spacing: 12
@@ -521,12 +506,10 @@ PanelWindow {
 						}
 					}
 
-					// ── right: GIF / Vinyl display ────────────────────────────
 					Item {
 						Layout.preferredWidth: 160
 						Layout.fillHeight: true
 
-						// ── GIF mode ──────────────────────────────────────────
 						Item {
 							anchors.fill: parent
 							visible: musicPanel.displayMode === 0
@@ -558,7 +541,6 @@ PanelWindow {
 							}
 						}
 
-						// ── Vinyl mode ────────────────────────────────────────
 						Item {
 							anchors.fill: parent
 							visible: musicPanel.displayMode === 1
@@ -578,7 +560,6 @@ PanelWindow {
 									color: "#0d0d0d"
 								}
 
-								// grooves
 								Repeater {
 									model: 8
 									Rectangle {
@@ -592,7 +573,6 @@ PanelWindow {
 									}
 								}
 
-								// art / label area
 								Item {
 									anchors.centerIn: parent
 									width: parent.width * 0.75
@@ -630,7 +610,6 @@ PanelWindow {
 									}
 								}
 
-								// center hole
 								Rectangle {
 									anchors.centerIn: parent
 									width: parent.width * 0.08
@@ -641,7 +620,6 @@ PanelWindow {
 									border.color: Qt.rgba(1,1,1,0.1)
 								}
 
-								// center dot
 								Rectangle {
 									anchors.centerIn: parent
 									width: 4
@@ -652,7 +630,6 @@ PanelWindow {
 								}
 							}
 
-							// drag-to-scrub overlay (not rotating)
 							MouseArea {
 								anchors.centerIn: parent
 								width: Math.min(parent.width, parent.height) - 4
@@ -666,7 +643,6 @@ PanelWindow {
 							}
 						}
 
-						// ── edit button (always visible over display) ─────────
 						Rectangle {
 							anchors.top: parent.top
 							anchors.right: parent.right
@@ -706,7 +682,6 @@ PanelWindow {
 					}
 				}
 
-				// ── vinyl spin / stop reactions ───────────────────────────────
 				Connections {
 					target: musicPanel
 					function onPlayerStatusChanged() {
@@ -723,7 +698,6 @@ PanelWindow {
 					}
 				}
 
-				// ── player dropdown ───────────────────────────────────────────
 				Rectangle {
 					id: playerDropdownCard
 					width: 380
@@ -917,7 +891,6 @@ PanelWindow {
 				}
 			}
 
-			// ── picker / selector card ─────────────────────────────────────────
 			Rectangle {
 				id: dropdownCard
 				width: 380
@@ -944,7 +917,6 @@ PanelWindow {
 					anchors.margins: 14
 					spacing: 10
 
-					// header row
 					RowLayout {
 						Layout.fillWidth: true
 						Layout.preferredHeight: 20
@@ -996,7 +968,6 @@ PanelWindow {
 						}
 					}
 
-					// tab switcher: GIF | VINYL
 					Row {
 						spacing: 6
 
@@ -1073,12 +1044,10 @@ PanelWindow {
 						}
 					}
 
-					// preview area
 					Item {
 						Layout.fillWidth: true
 						Layout.fillHeight: true
 
-						// ── GIF tab preview ───────────────────────────────
 						Rectangle {
 							anchors.fill: parent
 							radius: 12
@@ -1148,12 +1117,10 @@ PanelWindow {
 							}
 						}
 
-						// ── Vinyl tab preview ─────────────────────────────
 						Item {
 							anchors.fill: parent
 							visible: musicPanel.pickerTab === 1
 
-							// mini vinyl preview
 							Item {
 								anchors.centerIn: parent
 								width: Math.min(parent.width, parent.height) - 16
@@ -1237,7 +1204,6 @@ PanelWindow {
 								}
 							}
 
-							// With Art / No Art toggles
 							Row {
 								anchors.bottom: parent.bottom
 								anchors.horizontalCenter: parent.horizontalCenter
@@ -1315,7 +1281,6 @@ PanelWindow {
 						}
 					}
 
-					// bottom buttons row (GIF tab)
 					RowLayout {
 						Layout.fillWidth: true
 						Layout.preferredHeight: 32
@@ -1438,7 +1403,6 @@ PanelWindow {
 						}
 					}
 
-					// vinyl apply button row
 					RowLayout {
 						Layout.fillWidth: true
 						Layout.preferredHeight: 32
@@ -1480,7 +1444,6 @@ PanelWindow {
 						}
 					}
 
-					// hint bar
 					Rectangle {
 						Layout.fillWidth: true
 						height: 22
@@ -1520,7 +1483,6 @@ PanelWindow {
 			}
 		}
 
-		// ── connections & timers ───────────────────────────────────────────────
 		Connections {
 			target: root
 			function onMusicVisibleChanged() {
@@ -1553,7 +1515,6 @@ PanelWindow {
 			}
 		}
 
-		// ── processes ──────────────────────────────────────────────────────────
 		Process {
 			id: gifListProc
 			command: ["sh", "-c", "find '" + musicPanel.gifPath + "' -maxdepth 1 -name '*.gif' ! -name 'current.gif' -type f 2>/dev/null | sort"]
@@ -1602,7 +1563,6 @@ PanelWindow {
 			onTriggered: { if (!musicStatusProc.running) musicStatusProc.running = true }
 		}
 
-		// position ticker when playing
 		Timer {
 			interval: 1000
 			running: musicPanel.playerStatus === "Playing" && !musicPanel.vinylHeld
@@ -1612,94 +1572,58 @@ PanelWindow {
 					musicPanel.position += 1
 			}
 		}
-
 		Process {
 			id: musicStatusProc
-			command: ["playerctl", "--player=" + musicPanel.activePlayer, "status"]
-			stdout: SplitParser {
+    		command: [musicPanel.configPath + "/assets/get-player.sh", musicPanel.activePlayer]
+    		stdout: SplitParser {
 				onRead: data => {
-					var newStatus = data.trim()
-					if (newStatus === "") newStatus = "Stopped"
-					musicPanel.playerStatus = newStatus
-					if (!musicTitleProc.running) musicTitleProc.running = true
-					if (!musicArtistProc.running) musicArtistProc.running = true
-					if (!musicLenProc.running) musicLenProc.running = true
-					if (!musicArtProc.running) musicArtProc.running = true
-					if (newStatus === "Playing") {
-						if (!musicPosProc.running) musicPosProc.running = true
+					var line = data.trim()
+            		var idx = line.indexOf(":")
+            		if (idx < 0) return
+            		var key = line.substring(0, idx)
+            		var val = line.substring(idx + 1)
+            		switch (key) {
+						case "player": musicPanel.resolvedPlayer = val; break
+                		case "status": musicPanel.playerStatus = val || "Stopped"; break
+                		case "title":  musicPanel.trackTitle  = val; break
+                		case "artist": musicPanel.trackArtist = val; break
+                		case "arturl": musicPanel.trackArtUrl = val; break
+                		case "pos":    musicPanel.position    = parseFloat(val) || 0; break
+                		case "len":    musicPanel.length      = parseFloat(val) || 0; break
 					}
 				}
 			}
 			onExited: code => {
 				if (code !== 0) {
 					musicPanel.playerStatus = "Stopped"
-					musicPanel.trackTitle = ""
-					musicPanel.trackArtist = ""
-					musicPanel.trackArtUrl = ""
+            		musicPanel.trackTitle   = ""
+            		musicPanel.trackArtist  = ""
+            		musicPanel.trackArtUrl  = ""
 				}
 			}
-		}
-
-		Process {
-			id: musicTitleProc
-			command: ["playerctl", "--player=" + musicPanel.activePlayer, "metadata", "title"]
-			stdout: SplitParser { onRead: data => musicPanel.trackTitle = data.trim() }
-			onExited: code => { if (code !== 0) musicPanel.trackTitle = "" }
-		}
-
-		Process {
-			id: musicArtistProc
-			command: ["playerctl", "--player=" + musicPanel.activePlayer, "metadata", "artist"]
-			stdout: SplitParser { onRead: data => musicPanel.trackArtist = data.trim() }
-			onExited: code => { if (code !== 0) musicPanel.trackArtist = "" }
-		}
-
-		Process {
-			id: musicArtProc
-			command: ["playerctl", "--player=" + musicPanel.activePlayer, "metadata", "mpris:artUrl"]
-			stdout: SplitParser { onRead: data => musicPanel.trackArtUrl = data.trim() }
-			onExited: code => { if (code !== 0) musicPanel.trackArtUrl = "" }
-		}
-
-		Process {
-			id: musicPosProc
-			command: ["playerctl", "--player=" + musicPanel.activePlayer, "position"]
-			stdout: SplitParser {
-				onRead: data => {
-					var pos = parseFloat(data.trim()) || 0
-					musicPanel.position = pos
-					musicPanel.lastPosition = pos
-				}
-			}
-		}
-
-		Process {
-			id: musicLenProc
-			command: ["sh", "-c", "playerctl --player=" + musicPanel.activePlayer + " metadata mpris:length 2>/dev/null | awk '{print $1/1000000}'"]
-			stdout: SplitParser { onRead: data => musicPanel.length = parseFloat(data.trim()) || 0 }
 		}
 
 		Process {
 			id: playPauseProc
-			command: ["playerctl", "--player=" + musicPanel.activePlayer, "play-pause"]
+			command: ["playerctl", "--player=" + musicPanel.resolvedPlayer, "play-pause"]
 			onExited: { if (!musicStatusProc.running) musicStatusProc.running = true }
 		}
 
 		Process {
 			id: nextProc
-			command: ["playerctl", "--player=" + musicPanel.activePlayer, "next"]
+			command: ["playerctl", "--player=" + musicPanel.resolvedPlayer, "next"]
 			onExited: { if (!musicStatusProc.running) musicStatusProc.running = true }
 		}
 
 		Process {
 			id: prevProc
-			command: ["playerctl", "--player=" + musicPanel.activePlayer, "previous"]
+			command: ["playerctl", "--player=" + musicPanel.resolvedPlayer, "previous"]
 			onExited: { if (!musicStatusProc.running) musicStatusProc.running = true }
 		}
 
 		Process {
 			id: seekProc
-			command: ["playerctl", "--player=" + musicPanel.activePlayer, "position", "0"]
+			command: ["playerctl", "--player=" + musicPanel.resolvedPlayer, "position", "0"]
 		}
 	}
 }

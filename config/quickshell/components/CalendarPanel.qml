@@ -5,7 +5,7 @@ import QtQuick.Layouts
 
 PanelWindow {
 	id: calendarPanel
-    	screen: root.focusedScreen ?? Quickshell.screens[0]
+    	screen: Quickshell.screens.length > 0 ? (root.focusedScreen ?? Quickshell.screens[0]) : undefined
     	visible: true
     	exclusionMode: ExclusionMode.Ignore
     	anchors { 

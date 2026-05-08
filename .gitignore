@@ -6,4 +6,7 @@
 commit.txt
 config/programs/eww/hotfile-eww/*
 config/fastfetch/logo/*
-config/firefox-home/*
+config/quickshell/tmdb_account_id
+config/quickshell/tmdb_token
+config/quickshell/anilist_token
+config/quickshell/scripts/__pycache__

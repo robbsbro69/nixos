@@ -33,10 +33,6 @@
     enable = true;
     xwayland.enable = true;
   };
-  programs.firefox = {
-    enable = true;
-    languagePacks = ["en-US"];
-  };
   programs.appimage.enable = true;
 
   virtualisation.virtualbox.host = {
@@ -51,8 +47,15 @@
   };
 
   networking.hostName = "nixos";
-  networking.networkmanager.enable = true;
-
+  networking.networkmanager = {
+    enable = true;
+    dns = "none";
+  };
+  networking.nameservers = [
+    "1.1.1.1"
+    "8.8.8.8"
+    "one.one.one.one"
+  ];
   time.timeZone = "Asia/Kathmandu";
 
   services.jellyfin = {
@@ -101,7 +104,6 @@
     WLR_GAMMA_CONTROL = "1";
     WLR_NO_HARDWARE_CURSORS = "1";
     WLR_DRM_DEVICES = "/dev/dri/card1";
-    QML2_IMPORT_PATH = "/run/current-system/sw/lib/qt-6/qml";
   };
 
   environment.systemPackages = with pkgs; [
@@ -127,28 +129,28 @@
     playerctl
     wlr-randr
     libnotify
+    xfce.thunar
     wf-recorder
     pavucontrol
     imagemagick
+    xfce.tumbler
     wl-clipboard
     jellyfin-web
     android-tools
     qt6.qt5compat
     brightnessctl
     rust-analyzer
-    kdePackages.kio
     jellyfin-ffmpeg
     jellyfin-desktop
-    kdePackages.qtsvg
     qt6.qtimageformats
-    kdePackages.dolphin
-    kdePackages.kservice
-    kdePackages.kio-fuse
-    kdePackages.kio-extras
+    xfce.thunar-volman
+    xfce.thunar-archive-plugin
     (python3.withPackages (ps:
       with ps; [
         dbus-python
         pygobject3
+        flask
+        requests
       ]))
   ];
 

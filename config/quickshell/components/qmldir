@@ -7,3 +7,7 @@ MusicPanel 1.0 MusicPanel.qml
 NotifCenter 1.0 NotifCenter.qml
 NotificationPopup 1.0 NotificationPopup.qml
 WifiPanel 1.0 WifiPanel.qml
+ClockPanel 1.0 ClockPanel.qml
+ClipboardPanel 1.0 ClipboardPanel.qml
+AnimePanel 1.0 AnimePanel.qml
+MoviesPanel 1.0 MoviesPanel.qml

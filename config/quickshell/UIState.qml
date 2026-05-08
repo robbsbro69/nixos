@@ -36,17 +36,17 @@ Singleton {
 		notifications = []
 	}
 
-	// Kill any stale daemon instances before starting fresh
+	
 	Process {
 		id: killProc
 		command: ["pkill", "-f", "notif-daemon.py"]
 		running: true
-		onExited: daemonProc.running = true  // start daemon only after kill completes
+		onExited: daemonProc.running = true  
 	}
 	
 	Process {
 		id: daemonProc
-		running: false  // started by killProc.onExited
+		running: false  
 		command: ["python3", Quickshell.env("HOME") + "/.config/quickshell/assets/notif-daemon.py"]
 		stdout: SplitParser {
 			onRead: data => {

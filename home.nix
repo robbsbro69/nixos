@@ -1,6 +1,7 @@
 {
   config,
   pkgs,
+  zen-browser,
   quickshell,
   spicetify-nix,
   ...
@@ -23,8 +24,18 @@
   };
 in {
   imports = [
+    zen-browser.homeModules.default
     spicetify-nix.homeManagerModules.default
   ];
+  programs.zen-browser = {
+    enable = true;
+    setAsDefaultBrowser = true;
+    policies = {
+      DisableAppUpdate = true;
+      DisableTelemetry = true;
+      DisablePocket = true;
+    };
+  };
   programs.spicetify = {
     enable = true;
     enabledExtensions = with spicePkgs.extensions; [
@@ -104,16 +115,61 @@ in {
     enable = true;
   };
 
+  gtk = {
+    enable = true;
+    theme = {
+      name = "adw-gtk3-dark";
+      package = pkgs.adw-gtk3;
+    };
+    iconTheme = {
+      name = "Adwaita";
+      package = pkgs.adwaita-icon-theme;
+    };
+    font = {
+      name = "JetBrainsMono Nerd Font";
+      size = 11;
+    };
+  };
+
+  qt = {
+    enable = true;
+    platformTheme.name = "gtk";
+    style = {
+      name = "adwaita-dark";
+      package = pkgs.adwaita-qt;
+    };
+  };
+
+  dconf.settings = {
+    "org/gnome/desktop/interface" = {
+      color-scheme = "prefer-dark";
+      gtk-theme = "adw-gtk3-dark";
+      cursor-theme = "Adwaita";
+      cursor-size = 24;
+    };
+  };
+  home.pointerCursor = {
+    gtk.enable = true;
+    name = "Adwaita";
+    package = pkgs.adwaita-icon-theme;
+    size = 24;
+  };
+
   xdg.configFile =
-    builtins.mapAttrs
-    (name: subpath: {
-      source = create_symlink "${dotfiles}/${subpath}";
-      recursive = true;
-    })
-    configs;
+    (builtins.mapAttrs
+      (name: subpath: {
+        source = create_symlink "${dotfiles}/${subpath}";
+        recursive = true;
+      })
+      configs)
+    // {
+      "gtk-3.0/gtk.css".enable = false;
+      "gtk-4.0/gtk.css".enable = false;
+    };
 
   home.packages = with pkgs; [
     jq
+    zip
     nil
     gcc
     eza
@@ -138,8 +194,11 @@ in {
     ffmpeg
     zoxide
     stylua
+    yt-dlp
     ripgrep
     cmatrix
+    adw-gtk3
+    cliphist
     hyprlock
     hypridle
     obsidian
@@ -149,13 +208,14 @@ in {
     libnotify
     alejandra
     prettierd
+    librewolf
+    libreoffice
     imagemagick
     nixpkgs-fmt
     brightnessctl
     qt6.qt5compat
     video-downloader
     transmission_4-gtk
-    adwaita-icon-theme
     qt6.qtimageformats
     nodePackages.prettier
     quickshell.packages.${pkgs.stdenv.hostPlatform.system}.default
