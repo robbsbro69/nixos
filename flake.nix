@@ -13,7 +13,7 @@
       inputs.nixpkgs.follows = "nixpkgs";
     };
     quickshell = {
-      url = "git+https://git.outfoxxed.me/outfoxxed/quickshell?rev=fb08eced449e87e47321e95beeb890a63d2c67bd";
+      url = "git+https://git.outfoxxed.me/outfoxxed/quickshell";
       inputs.nixpkgs.follows = "nixpkgs-unstable";
     };
     spicetify-nix = {
