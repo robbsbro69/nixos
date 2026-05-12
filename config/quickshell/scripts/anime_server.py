@@ -13,7 +13,6 @@ from datetime import datetime, timezone
 from http.server import BaseHTTPRequestHandler, HTTPServer
 from pathlib import Path
 from socketserver import ThreadingMixIn
-
 import requests
 
 PORT        = 5050
@@ -24,19 +23,15 @@ HEADERS = {
     "Accept":       "application/json",
 }
 
-# ── Persistent storage ─────────────────────────────────────────────────────
 DATA_DIR = Path.home() / ".local/share/quickshell-anime"
 DATA_DIR.mkdir(parents=True, exist_ok=True)
 DB_PATH  = DATA_DIR / "library.db"
-
 _db_lock = threading.Lock()
-
 
 def _get_db():
     conn = sqlite3.connect(str(DB_PATH), check_same_thread=False)
     conn.row_factory = sqlite3.Row
     return conn
-
 
 def _init_db():
     with _db_lock:
@@ -58,14 +53,11 @@ def _init_db():
         """)
         conn.commit()
         conn.close()
-
-
 _init_db()
 
 ANIME_STATUSES = ["watching", "completed", "planning", "on_hold", "dropped", "rewatching"]
 MANGA_STATUSES = ["reading", "completed", "planning", "on_hold", "dropped", "rereading"]
 
-# AniList status mapping: local -> AniList
 LOCAL_TO_AL_ANIME = {
     "watching":   "CURRENT",
     "completed":  "COMPLETED",
@@ -83,7 +75,6 @@ LOCAL_TO_AL_MANGA = {
     "rereading":  "REPEATING",
 }
 
-# AniList token (optional — needed for writing to AniList lists)
 AL_TOKEN = ""
 for _f in ["~/.config/quickshell/anilist_token"]:
     _p = Path(_f).expanduser()
@@ -97,23 +88,8 @@ AL_HEADERS = {
     **({"Authorization": f"Bearer {AL_TOKEN}"} if AL_TOKEN else {}),
 }
 
-
-# ── TTL cache ──────────────────────────────────────────────────────────────
 _cache      = {}
 _cache_lock = threading.Lock()
-
-
-# def _cached(key, ttl, fn):
-#     with _cache_lock:
-#         entry = _cache.get(key)
-#     if entry:
-#         val, exp = entry
-#         if time.monotonic() < exp:
-#             return val
-#     val = fn()
-#     with _cache_lock:
-#         _cache[key] = (val, time.monotonic() + ttl)
-#     return val
 
 def _cached(key, ttl, fn):
     with _cache_lock:
@@ -124,8 +100,7 @@ def _cached(key, ttl, fn):
             return val
     val = fn()
     with _cache_lock:
-        if len(_cache) > 200:  # cap at 200 entries
-            # evict oldest expired first, then oldest overall
+        if len(_cache) > 200:
             now = time.monotonic()
             expired = [k for k, (_, e) in _cache.items() if e < now]
             for k in expired[:50]:
@@ -143,22 +118,13 @@ def _invalidate(prefix):
                 del _cache[k]
 
 
-# ── Image byte cache ───────────────────────────────────────────────────────
 _img_cache = {}
 _img_lock  = threading.Lock()
 _img_sem   = threading.Semaphore(8)
 
-
 def _img_get(url):
     with _img_lock:
         return _img_cache.get(url)
-
-
-# def _img_put(url, body, ct):
-#     with _img_lock:
-#         if len(_img_cache) > 400:
-#             _img_cache.pop(next(iter(_img_cache)))
-#         _img_cache[url] = (body, ct)
 
 def _img_put(url, body, ct):
     with _img_lock:
@@ -168,7 +134,6 @@ def _img_put(url, body, ct):
             total -= len(evicted[0])
         _img_cache[url] = (body, ct)
 
-# ── AniList GQL helper ─────────────────────────────────────────────────────
 def gql(query, variables, use_auth=False):
     hdrs = AL_HEADERS if use_auth else HEADERS
     r = requests.post(
@@ -180,8 +145,6 @@ def gql(query, variables, use_auth=False):
     r.raise_for_status()
     return r.json()
 
-
-# ── Normalise AniList show (browse) ───────────────────────────────────────
 def _norm(media, mode="sub"):
     title = media.get("title") or {}
     avail = media.get("episodes") or 0
@@ -203,7 +166,6 @@ def _norm(media, mode="sub"):
         "lastEpisode": None,
     }
 
-
 def _norm_list_entry(entry, media_type="ANIME"):
     media = entry.get("media") or {}
     base  = _norm(media)
@@ -216,8 +178,6 @@ def _norm_list_entry(entry, media_type="ANIME"):
         base["volumes"]  = media.get("volumes") or 0
     return base
 
-
-# ── Popular ────────────────────────────────────────────────────────────────
 POPULAR_Q = """
 query($page:Int,$perPage:Int){
   Page(page:$page,perPage:$perPage){
@@ -231,7 +191,6 @@ query($page:Int,$perPage:Int){
 }
 """
 
-
 def popular(size=20, page=1):
     def _fetch():
         data      = gql(POPULAR_Q, {"page": page, "perPage": size})
@@ -242,8 +201,6 @@ def popular(size=20, page=1):
                 "count": len(shows), "shows": shows}
     return _cached(f"popular:{page}:{size}", 600, _fetch)
 
-
-# ── Latest ─────────────────────────────────────────────────────────────────
 LATEST_Q = """
 query($page:Int,$perPage:Int,$country:CountryCode){
   Page(page:$page,perPage:$perPage){
@@ -256,7 +213,6 @@ query($page:Int,$perPage:Int,$country:CountryCode){
   }
 }
 """
-
 
 def latest(limit=26, page=1, country="ALL"):
     def _fetch():
@@ -271,8 +227,6 @@ def latest(limit=26, page=1, country="ALL"):
                 "count": len(shows), "shows": shows}
     return _cached(f"latest:{page}:{limit}:{country}", 300, _fetch)
 
-
-# ── Search ─────────────────────────────────────────────────────────────────
 SEARCH_Q = """
 query($q:String,$page:Int){
   Page(page:$page,perPage:40){
@@ -285,15 +239,12 @@ query($q:String,$page:Int){
 }
 """
 
-
 def search(query):
     def _fetch():
         data = gql(SEARCH_Q, {"q": query, "page": 1})
         return [_norm(m) for m in data["data"]["Page"]["media"]]
     return _cached(f"search:{query}", 600, _fetch)
 
-
-# ── Detail (full info for anime detail view) ───────────────────────────────
 DETAIL_Q = """
 query($id:Int){
   Media(id:$id,type:ANIME){
@@ -320,7 +271,6 @@ query($id:Int){
   }
 }
 """
-
 
 def detail(show_id):
     def _fetch():
@@ -390,10 +340,7 @@ def detail(show_id):
         }
     return _cached(f"detail:{show_id}", 1800, _fetch)
 
-
-# ── Episode list ───────────────────────────────────────────────────────────
 EP_Q = "query($id:Int){Media(id:$id,type:ANIME){episodes}}"
-
 
 def episodes(show_id):
     def _fetch():
@@ -402,8 +349,6 @@ def episodes(show_id):
         return [str(i) for i in range(1, count + 1)]
     return _cached(f"eps:{show_id}", 1800, _fetch)
 
-
-# ── Stream links ───────────────────────────────────────────────────────────
 def stream_links(show_id, ep_no, mode="sub"):
     def _fetch_name():
         data = gql("query($id:Int){Media(id:$id){title{romaji}}}", {"id": int(show_id)})
@@ -422,8 +367,6 @@ def stream_links(show_id, ep_no, mode="sub"):
         "all_links": [link], "selected": link, "requested_quality": "best",
     }
 
-
-# ── AniList user list (read) ───────────────────────────────────────────────
 USER_LIST_Q = """
 query($username:String,$status:MediaListStatus,$type:MediaType){
   MediaListCollection(userName:$username,status:$status,type:$type){
@@ -462,7 +405,6 @@ query($username:String,$status:MediaListStatus,$type:MediaType){
 }
 """
 
-# AniList mutation: save media list entry (upserts — works for add AND update)
 SAVE_MEDIA_LIST_Q = """
 mutation($mediaId:Int,$status:MediaListStatus,$progress:Int){
   SaveMediaListEntry(mediaId:$mediaId,status:$status,progress:$progress){
@@ -474,7 +416,6 @@ mutation($mediaId:Int,$status:MediaListStatus,$progress:Int){
 }
 """
 
-# AniList mutation: delete media list entry
 DELETE_MEDIA_LIST_Q = """
 mutation($id:Int){
   DeleteMediaListEntry(id:$id){
@@ -483,7 +424,6 @@ mutation($id:Int){
 }
 """
 
-# Query to get the list entry ID for a given media
 GET_LIST_ENTRY_Q = """
 query($mediaId:Int,$type:MediaType){
   Media(id:$mediaId,type:$type){
@@ -494,7 +434,6 @@ query($mediaId:Int,$type:MediaType){
   }
 }
 """
-
 
 def _norm_manga_entry(entry):
     media = entry.get("media") or {}
@@ -516,7 +455,6 @@ def _norm_manga_entry(entry):
         "userScore":       entry.get("score", 0),
         "updatedAt":       entry.get("updatedAt", 0),
     }
-
 
 def get_user_list(username, status, media_type="ANIME"):
     cache_key = f"userlist:{username}:{status}:{media_type}"
@@ -540,7 +478,6 @@ def get_user_list(username, status, media_type="ANIME"):
             return {"entries": [], "error": str(ex)}
     return _cached(cache_key, 300, _fetch)
 
-
 def get_all_user_lists(username, media_type="ANIME"):
     statuses = ["CURRENT", "COMPLETED", "PLANNING", "PAUSED", "DROPPED", "REPEATING"]
     result   = {}
@@ -549,8 +486,6 @@ def get_all_user_lists(username, media_type="ANIME"):
         result[s] = d.get("entries", [])
     return {"lists": result, "total": sum(len(v) for v in result.values()), "username": username}
 
-
-# ── AniList write: save/update/delete list entry ───────────────────────────
 def al_save_entry(media_id, al_status, progress=0):
     """
     Save or update a media list entry on AniList.
@@ -575,7 +510,6 @@ def al_save_entry(media_id, al_status, progress=0):
         print(f"[anime-server] AniList save exception for {media_id}: {e}")
         return {"ok": False, "error": str(e)}
 
-
 def al_delete_entry(media_id, media_type="ANIME"):
     """Delete a media list entry from AniList. Requires AL_TOKEN."""
     if not AL_TOKEN:
@@ -594,8 +528,6 @@ def al_delete_entry(media_id, media_type="ANIME"):
         print(f"[anime-server] AniList delete exception for {media_id}: {e}")
         return {"ok": False, "error": str(e)}
 
-
-# ── Local library (SQLite) ─────────────────────────────────────────────────
 def lib_get_all(media_type="anime"):
     statuses = ANIME_STATUSES if media_type == "anime" else MANGA_STATUSES
     with _db_lock:
@@ -625,7 +557,6 @@ def lib_get_all(media_type="anime"):
         result[status].append(item)
     return result
 
-
 def lib_get_status(item_id, media_type="anime"):
     with _db_lock:
         conn = _get_db()
@@ -634,7 +565,6 @@ def lib_get_status(item_id, media_type="anime"):
             (str(item_id), media_type)).fetchone()
         conn.close()
     return row["status"] if row else ""
-
 
 def lib_add(item_id, title, cover_url, status, media_type="anime", item_data=None):
     now = datetime.now(timezone.utc).isoformat()
@@ -652,7 +582,6 @@ def lib_add(item_id, title, cover_url, status, media_type="anime", item_data=Non
         conn.close()
     return {"ok": True}
 
-
 def lib_update(item_id, status, media_type="anime"):
     now = datetime.now(timezone.utc).isoformat()
     with _db_lock:
@@ -664,7 +593,6 @@ def lib_update(item_id, status, media_type="anime"):
         conn.close()
     return {"ok": True}
 
-
 def lib_remove(item_id, media_type="anime"):
     with _db_lock:
         conn = _get_db()
@@ -674,12 +602,9 @@ def lib_remove(item_id, media_type="anime"):
         conn.close()
     return {"ok": True}
 
-
-# ── HTTP Server ────────────────────────────────────────────────────────────
 class ThreadingHTTPServer(ThreadingMixIn, HTTPServer):
     daemon_threads      = True
     allow_reuse_address = True
-
 
 class Handler(BaseHTTPRequestHandler):
     def log_message(self, fmt, *args):
@@ -742,7 +667,6 @@ class Handler(BaseHTTPRequestHandler):
                 results = search(q)
                 self._json({"query": q, "count": len(results), "results": results})
 
-            # Full detail — episodes + metadata combined
             elif path == "/detail":
                 show_id = p("id")
                 if not show_id:
@@ -775,7 +699,6 @@ class Handler(BaseHTTPRequestHandler):
                 else:
                     self._json(get_user_list(username, status_val.upper(), media_type))
 
-            # ── Local library ─────────────────────────────────────────────
             elif path == "/library/all":
                 mt = p("type", "anime")
                 self._json(lib_get_all(mt))
@@ -826,7 +749,6 @@ class Handler(BaseHTTPRequestHandler):
                 if not item_id:
                     return self._error("missing id", 400)
 
-                # Write to local DB
                 result = lib_add(
                     item_id,
                     body.get("title", ""),
@@ -836,13 +758,11 @@ class Handler(BaseHTTPRequestHandler):
                     body.get("item", {}),
                 )
 
-                # Always write to AniList if token available (SaveMediaListEntry upserts)
                 al_result = None
                 if AL_TOKEN:
                     al_map    = LOCAL_TO_AL_ANIME if media_type == "anime" else LOCAL_TO_AL_MANGA
                     al_status = al_map.get(status_key, "PLANNING")
                     al_result = al_save_entry(item_id, al_status)
-                    # Invalidate userlist cache so My Lists tab shows update immediately
                     _invalidate("userlist:")
 
                 result["anilist"] = al_result
@@ -855,16 +775,13 @@ class Handler(BaseHTTPRequestHandler):
                 if not item_id:
                     return self._error("missing id", 400)
 
-                # Update local DB
                 result = lib_update(item_id, status_key, media_type)
 
-                # Always update AniList (SaveMediaListEntry is an upsert — handles both add and update)
                 al_result = None
                 if AL_TOKEN:
                     al_map    = LOCAL_TO_AL_ANIME if media_type == "anime" else LOCAL_TO_AL_MANGA
                     al_status = al_map.get(status_key, "PLANNING")
                     al_result = al_save_entry(item_id, al_status)
-                    # Invalidate userlist cache so My Lists tab shows update immediately
                     _invalidate("userlist:")
 
                 result["anilist"] = al_result
@@ -876,15 +793,12 @@ class Handler(BaseHTTPRequestHandler):
                 if not item_id:
                     return self._error("missing id", 400)
 
-                # Remove from local DB
                 result = lib_remove(item_id, media_type)
 
-                # Also remove from AniList
                 al_result = None
                 if AL_TOKEN:
                     al_media_type = "ANIME" if media_type == "anime" else "MANGA"
                     al_result = al_delete_entry(item_id, al_media_type)
-                    # Invalidate userlist cache
                     _invalidate("userlist:")
 
                 result["anilist"] = al_result
@@ -898,7 +812,6 @@ class Handler(BaseHTTPRequestHandler):
         except Exception as e:
             import traceback; traceback.print_exc()
             self._error(str(e))
-
 
 if __name__ == "__main__":
     print(f"[anime-server] AniList backend on http://127.0.0.1:{PORT}")

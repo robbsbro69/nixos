@@ -5,11 +5,8 @@ import Quickshell.Io
 
 Singleton {
     id: root
-
     readonly property string apiUrl: "http://127.0.0.1:5250"
-
-    // ── Browse ────────────────────────────────────────────────────────────────
-   property list<var> itemList: []
+   	property list<var> itemList: []
 	property bool isFetching: false
     property string fetchError: ""
 	property bool hasMore: false
@@ -20,40 +17,33 @@ Singleton {
     property string currentSearch: ""
     property string currentGenreId: ""
     property list<var> genreList: []
-
-    // ── Detail ────────────────────────────────────────────────────────────────
     property var currentItem: null
     property bool isFetchingDetail: false
     property string detailError: ""
-
-    // ── Account ───────────────────────────────────────────────────────────────
     property bool hasAccount: false
     property string accountId: ""
-
-    // ── Local DB watchlist / favorites — separate named props per type ─────────
     property var watchlistMovie: []
     property var watchlistTv: []
     property var favoritesMovie: []
-    property var favoritesTv: []
-
+	property var favoritesTv: []
+    property var _movieGenres: ({})
+    property var _tvGenres: ({})
     property bool isFetchingWatchlist: false
-    property bool isFetchingFavorites: false
-
-    // ── Local userlist — stored as flat arrays per status+type ────────────────
+	property bool isFetchingFavorites: false
+	property bool serverReady: false
+    property list<var> libraryList: []
+    property bool libraryLoaded: false
     property var userListMovieWatching:  []
     property var userListMovieCompleted: []
     property var userListMoviePlanning:  []
     property var userListMovieOnHold:    []
     property var userListMovieDropped:   []
-
     property var userListTvWatching:  []
     property var userListTvCompleted: []
     property var userListTvPlanning:  []
     property var userListTvOnHold:    []
     property var userListTvDropped:   []
-
     property bool isFetchingUserList: false
-
     readonly property var userListStatuses: [
         { key: "watching",  label: "Watching",   icon: "󰐊", color: "#89b4fa" },
         { key: "completed", label: "Completed",  icon: "󰄬", color: "#a6e3a1" },
@@ -62,12 +52,8 @@ Singleton {
         { key: "dropped",   label: "Dropped",    icon: "󰅖", color: "#f38ba8" }
     ]
 
-    // ── Local quick-save library ──────────────────────────────────────────────
-    property list<var> libraryList: []
-    property bool libraryLoaded: false
     readonly property string _libPath:
         Quickshell.env("HOME") + "/.local/share/quickshell/movies_library.json"
-
     FileView { id: libFile; path: root._libPath
         onLoaded: {
             try { root.libraryList = JSON.parse(libFile.text()) || [] }
@@ -76,8 +62,10 @@ Singleton {
         }
         onLoadFailed: { root.libraryList = []; root.libraryLoaded = true }
     }
-    FileView { id: libWriter; path: root._libPath }
-
+    FileView { 
+		id: libWriter; 
+		path: root._libPath 
+	}
     function _saveLib() {
         libWriter.setText(JSON.stringify(root.libraryList, null, 2))
         libWriter.save()
@@ -99,10 +87,6 @@ Singleton {
     Component.onCompleted: {
         libFile.reload()
     }
-
-    // ── Backend server ────────────────────────────────────────────────────────
-    property bool serverReady: false
-
     Process {
         id: serverProc
         command: [Quickshell.env("HOME") + "/.venv/movies/bin/python3",
@@ -148,7 +132,6 @@ Singleton {
         }
     }
 
-    // ── HTTP helpers ──────────────────────────────────────────────────────────
     function _get(url, cb) {
         var xhr = new XMLHttpRequest()
         xhr.onreadystatechange = function() {
@@ -172,10 +155,6 @@ Singleton {
         xhr.send(JSON.stringify(data))
     }
 
-    // ── Genre cache ───────────────────────────────────────────────────────────
-    property var _movieGenres: ({})
-    property var _tvGenres: ({})
-
     function fetchGenres(type) {
         _get(apiUrl + "/genres?type=" + type, function(err, body) {
             if (err) return
@@ -195,7 +174,6 @@ Singleton {
         return map[id] || ""
     }
 
-    // ── Browse ────────────────────────────────────────────────────────────────
     function fetchTrending(type, reset) {
         if (isFetching) return
         if (reset) { itemList = []; currentPage = 1 }
@@ -276,7 +254,6 @@ function _parseList(json) {
         else if (currentView === "discover") discover(currentType, currentGenreId, false)
     }
 
-    // ── Detail ────────────────────────────────────────────────────────────────
     function fetchDetail(id, type) {
         if (isFetchingDetail) return
         isFetchingDetail = true
@@ -295,14 +272,12 @@ function _parseList(json) {
 
     function clearDetail() { currentItem = null; detailError = "" }
 
-    // ── Local DB watchlist ────────────────────────────────────────────────────
     function fetchLocalWatchlist(type) {
         _get(apiUrl + "/local/watchlist?type=" + type, function(err, body) {
             if (err) { console.warn("[Movies] watchlist fetch error:", err); return }
             try {
                 var d = JSON.parse(body)
                 var results = d.results || []
-                // Always assign to both props to keep bindings alive
                 if (type === "movie") root.watchlistMovie = results
                 else root.watchlistTv = results
             } catch(e) { console.warn("[Movies] watchlist parse error:", e) }
@@ -339,10 +314,8 @@ function _parseList(json) {
         return list.some(e => String(e.id) === String(id))
     }
 
-    // ── Watchlist add/remove ───────────────────────────────────────────────────
     function addToWatchlist(item) {
         var mt = item.type || "movie"
-        // Optimistic update
         if (!isInWatchlist(item.id, mt)) {
             var entry = Object.assign({}, item)
             if (mt === "movie") root.watchlistMovie = [entry, ...root.watchlistMovie]
@@ -361,7 +334,6 @@ function _parseList(json) {
 
     function removeFromWatchlist(item) {
         var mt = item.type || "movie"
-        // Optimistic update
         if (mt === "movie")
             root.watchlistMovie = root.watchlistMovie.filter(e => String(e.id) !== String(item.id))
         else
@@ -378,10 +350,8 @@ function _parseList(json) {
         }
     }
 
-    // ── Favorites add/remove ──────────────────────────────────────────────────
     function addToFavorites(item) {
         var mt = item.type || "movie"
-        // Optimistic update
         if (!isInFavorites(item.id, mt)) {
             var entry = Object.assign({}, item)
             if (mt === "movie") root.favoritesMovie = [entry, ...root.favoritesMovie]
@@ -400,7 +370,6 @@ function _parseList(json) {
 
     function removeFromFavorites(item) {
         var mt = item.type || "movie"
-        // Optimistic update
         if (mt === "movie")
             root.favoritesMovie = root.favoritesMovie.filter(e => String(e.id) !== String(item.id))
         else
@@ -429,7 +398,6 @@ function _parseList(json) {
         })
     }
 
-    // ── Local userlist — named properties so QML bindings react ──────────────
     function fetchAllUserLists(type) {
         _get(apiUrl + "/userlist/all?type=" + type, function(err, body) {
             if (err) { console.warn("[Movies] userlist fetch error:", err); return }
@@ -452,7 +420,6 @@ function _parseList(json) {
         })
     }
 
-    // Return the named property for a given status+type — keeps bindings reactive
     function getUserListProperty(status, type) {
         var t = type || "movie"
         if (t === "movie") {
@@ -471,7 +438,6 @@ function _parseList(json) {
         return []
     }
 
-    // Status badge lookup — reads named props so bindings stay reactive
     function getUserListStatus(id, type) {
         var t = type || "movie"
         var allBuckets = t === "movie"
@@ -493,7 +459,6 @@ function _parseList(json) {
 
     function addToUserList(item, status) {
         var mt = item.type || "movie"
-        // Optimistic update
         var entry = Object.assign({}, item, { status: status, type: mt })
         _setUserListBucket(mt, status, [entry, ...getUserListProperty(status, mt)])
 
@@ -508,7 +473,6 @@ function _parseList(json) {
     function updateUserListStatus(item, newStatus) {
         var mt     = item.type || "movie"
         var oldSt  = getUserListStatus(item.id, mt)
-        // Optimistic: remove from old bucket, add to new
         if (oldSt) {
             _setUserListBucket(mt, oldSt,
                 getUserListProperty(oldSt, mt).filter(e => String(e.id) !== String(item.id)))
@@ -527,7 +491,6 @@ function _parseList(json) {
     function removeFromUserList(item) {
         var mt   = item.type || "movie"
         var oldSt = getUserListStatus(item.id, mt)
-        // Optimistic removal
         if (oldSt) {
             _setUserListBucket(mt, oldSt,
                 getUserListProperty(oldSt, mt).filter(e => String(e.id) !== String(item.id)))
@@ -541,7 +504,6 @@ function _parseList(json) {
             })
     }
 
-    // Helper: set a named bucket property so QML bindings fire
     function _setUserListBucket(type, status, arr) {
         if (type === "movie") {
             if (status === "watching")  { root.userListMovieWatching  = arr; return }

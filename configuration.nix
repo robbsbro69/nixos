@@ -2,6 +2,7 @@
   config,
   lib,
   pkgs,
+  pkgs-unstable,
   ...
 }: {
   imports = [
@@ -32,6 +33,8 @@
   programs.hyprland = {
     enable = true;
     xwayland.enable = true;
+    package = pkgs-unstable.hyprland;
+    portalPackage = pkgs-unstable.xdg-desktop-portal-hyprland;
   };
   programs.appimage.enable = true;
 

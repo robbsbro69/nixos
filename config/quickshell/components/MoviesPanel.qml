@@ -26,7 +26,6 @@ PanelWindow {
         NumberAnimation { duration: 300; easing.type: Easing.OutCubic }
     }
 
-    // ── State ─────────────────────────────────────────────────────────────
     property int mainTab: 0
     property int stack: 0
     property bool searchOpen: false
@@ -104,19 +103,16 @@ PanelWindow {
         { label: "Saved",     idx: 5, icon: "󰐚" }
     ]
 
-    // ── Root rectangle ────────────────────────────────────────────────────
     Rectangle {
         anchors.fill: parent; radius: 20
         color: Qt.rgba(root.walBackground.r, root.walBackground.g, root.walBackground.b, 0.97)
 
-        // ── Background click-away for status dropdown ──────────────────────
         MouseArea {
             anchors.fill: parent; z: 499
             visible: moviesPanel.statusMenuOpen
             onClicked: moviesPanel.statusMenuOpen = false
         }
 
-        // ── Status dropdown — direct child of root rect so z works globally ─
         Rectangle {
             id: statusDropdown
             visible: moviesPanel.statusMenuOpen
@@ -127,7 +123,7 @@ PanelWindow {
             border.color: Qt.rgba(root.walColor13.r, root.walColor13.g, root.walColor13.b, 0.3)
             border.width: 1
             height: sdCol.implicitHeight + 16
-            MouseArea { anchors.fill: parent }  // eat background clicks
+            MouseArea { anchors.fill: parent }
 
             Column {
                 id: sdCol
@@ -181,7 +177,6 @@ PanelWindow {
                     }
                 }
 
-                // Remove row
                 Rectangle {
                     width: parent.width; height: 32; radius: 8
                     visible: moviesPanel.currentItemListStatus !== ""
@@ -208,7 +203,6 @@ PanelWindow {
         ColumnLayout {
             anchors.fill: parent; spacing: 0
 
-            // ── Header ────────────────────────────────────────────────────
             Rectangle {
                 Layout.fillWidth: true; height: 44
                 color: Qt.rgba(0,0,0,0.4); radius: 20
@@ -303,7 +297,6 @@ PanelWindow {
                 }
             }
 
-            // ── Tab bar ────────────────────────────────────────────────────
             Rectangle {
                 Layout.fillWidth: true; height: 38; color: Qt.rgba(0,0,0,0.25)
                 ListView {
@@ -370,7 +363,6 @@ PanelWindow {
                 }
             }
 
-            // ── Type switcher for watchlist & favorites ────────────────────
             Rectangle {
                 Layout.fillWidth: true; height: 38; color: Qt.rgba(0,0,0,0.15)
                 visible: moviesPanel.stack === 0 &&
@@ -419,7 +411,6 @@ PanelWindow {
                 }
             }
 
-            // ── Genre chips ────────────────────────────────────────────────
             Rectangle {
                 Layout.fillWidth: true; height: 42; color: Qt.rgba(0,0,0,0.2)
                 visible: moviesPanel.stack === 0
@@ -458,7 +449,6 @@ PanelWindow {
                 }
             }
 
-            // ── My List sub-bar ────────────────────────────────────────────
             Rectangle {
                 Layout.fillWidth: true; height: 78; color: Qt.rgba(0,0,0,0.2)
                 visible: moviesPanel.mainTab === 4 && moviesPanel.stack === 0
@@ -525,11 +515,9 @@ PanelWindow {
                 }
             }
 
-            // ── Content area ───────────────────────────────────────────────
             Item {
                 Layout.fillWidth: true; Layout.fillHeight: true
 
-                // ── Reusable media card ────────────────────────────────────
                 component MediaCard: Item {
                     id: cardRoot
                     property var itemData: null
@@ -633,7 +621,6 @@ PanelWindow {
                     }
                 }
 
-                // ── TAB 0/1 — BROWSE ──────────────────────────────────────
                 Item {
                     anchors.fill: parent
                     visible: moviesPanel.stack === 0
@@ -652,37 +639,36 @@ PanelWindow {
                         }
                     }
 
-MediaGrid {
-    id: browseGrid
-    sourceModel: Movies.itemList
-    visible: Movies.itemList.length > 0
-    onItemClicked: function(item) {
-        Movies.fetchDetail(item.id, item.type); moviesPanel.stack = 1
-    }
-    property real _savedY: 0
-    onContentYChanged: {
-        if (contentY > _savedY) _savedY = contentY
-        if (!Movies.isFetching && contentY > 100
-                && contentY + height > contentHeight - cellHeight * 2)
-            Movies.fetchNextPage()
-    }
-    Connections {
-        target: Movies
-        function onIsFetchingChanged() {
-            if (!Movies.isFetching && browseGrid.contentY < browseGrid._savedY)
-                browseGrid.contentY = browseGrid._savedY
-        }
-        function onCurrentViewChanged() {
-            browseGrid._savedY = 0
-        }
-        function onCurrentTypeChanged() {
-            browseGrid._savedY = 0
-        }
-    }
-}
+	MediaGrid {
+	    id: browseGrid
+	    sourceModel: Movies.itemList
+	    visible: Movies.itemList.length > 0
+	    onItemClicked: function(item) {
+	        Movies.fetchDetail(item.id, item.type); moviesPanel.stack = 1
+	    }
+	    property real _savedY: 0
+	    onContentYChanged: {
+	        if (contentY > _savedY) _savedY = contentY
+	        if (!Movies.isFetching && contentY > 100
+	                && contentY + height > contentHeight - cellHeight * 2)
+	            Movies.fetchNextPage()
+	    }
+	    Connections {
+	        target: Movies
+	        function onIsFetchingChanged() {
+	            if (!Movies.isFetching && browseGrid.contentY < browseGrid._savedY)
+	                browseGrid.contentY = browseGrid._savedY
+	        }
+	        function onCurrentViewChanged() {
+	            browseGrid._savedY = 0
+	        }
+	        function onCurrentTypeChanged() {
+	            browseGrid._savedY = 0
+	        }
+	    }
+	}
                 }
 
-                // ── TAB 2 — WATCHLIST ─────────────────────────────────────
                 Item {
                     anchors.fill: parent
                     visible: moviesPanel.stack === 0 && moviesPanel.mainTab === 2
@@ -707,7 +693,6 @@ MediaGrid {
                     }
                 }
 
-                // ── TAB 3 — FAVORITES ─────────────────────────────────────
                 Item {
                     anchors.fill: parent
                     visible: moviesPanel.stack === 0 && moviesPanel.mainTab === 3
@@ -732,13 +717,11 @@ MediaGrid {
                     }
                 }
 
-                // ── TAB 4 — MY LIST ───────────────────────────────────────
                 Item {
                     anchors.fill: parent
                     visible: moviesPanel.stack === 0 && moviesPanel.mainTab === 4
 
                     property var currentBucket: {
-                        // Touch all properties unconditionally so QML tracks all as dependencies
                         var _mw  = Movies.userListMovieWatching
                         var _mc  = Movies.userListMovieCompleted
                         var _mp  = Movies.userListMoviePlanning
@@ -784,7 +767,6 @@ MediaGrid {
                     }
                 }
 
-                // ── TAB 5 — SAVED ─────────────────────────────────────────
                 Item {
                     anchors.fill: parent
                     visible: moviesPanel.stack === 0 && moviesPanel.mainTab === 5
@@ -802,7 +784,6 @@ MediaGrid {
                     }
                 }
 
-                // ── DETAIL VIEW ───────────────────────────────────────────
                 Item {
                     anchors.fill: parent
                     visible: moviesPanel.stack === 1
@@ -810,7 +791,6 @@ MediaGrid {
                     ColumnLayout {
                         anchors.fill: parent; spacing: 0
 
-                        // Back + action header
                         Rectangle {
                             Layout.fillWidth: true; height: 46; color: Qt.rgba(0,0,0,0.3)
                             RowLayout {
@@ -836,7 +816,6 @@ MediaGrid {
                                     font.family: "JetBrainsMono Nerd Font"; color: root.walColor13; elide: Text.ElideRight }
 
                                 Row { spacing: 6
-                                    // My List button
                                     Rectangle {
                                         visible: Movies.currentItem !== null; height: 28; radius: 14
                                         width: myListBtnRow.implicitWidth + 16
@@ -869,7 +848,6 @@ MediaGrid {
                                             onClicked: moviesPanel.statusMenuOpen = !moviesPanel.statusMenuOpen }
                                     }
 
-                                    // Watchlist button
                                     Rectangle {
                                         visible: Movies.currentItem !== null; height: 28; radius: 14
                                         property bool inWl: Movies.currentItem
@@ -896,7 +874,6 @@ MediaGrid {
                                         }
                                     }
 
-                                    // Favorites button
                                     Rectangle {
                                         visible: Movies.currentItem !== null; height: 28; radius: 14
                                         property bool inFav: Movies.currentItem
@@ -923,7 +900,6 @@ MediaGrid {
                                         }
                                     }
 
-                                    // Local Save
                                     Rectangle {
                                         visible: Movies.currentItem !== null; height: 28; radius: 14
                                         property bool saved: Movies.currentItem
@@ -954,7 +930,6 @@ MediaGrid {
                             }
                         }
 
-                        // Loading
                         Item { Layout.fillWidth: true; Layout.fillHeight: true
                             visible: Movies.isFetchingDetail
                             Column { anchors.centerIn: parent; spacing: 10
@@ -969,7 +944,6 @@ MediaGrid {
                             }
                         }
 
-                        // Detail scroll content
                         ScrollView {
                             Layout.fillWidth: true; Layout.fillHeight: true
                             visible: !Movies.isFetchingDetail && Movies.currentItem !== null

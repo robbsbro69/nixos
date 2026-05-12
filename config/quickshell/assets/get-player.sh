@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-
+export PATH="/run/current-system/sw/bin:$HOME/.nix-profile/bin:$PATH"
 ACTIVE_PLAYER="${1:-%any}"
 
 if [ "$ACTIVE_PLAYER" != "%any" ]; then

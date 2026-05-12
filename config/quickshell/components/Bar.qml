@@ -189,36 +189,41 @@ PanelWindow {
 			bar.cavaValues = newVals
 		}
 	}
-	Process {
-		id: mediaProc
-    	command: [Quickshell.env("HOME") + "/.config/quickshell/assets/get-player.sh", "%any"]
-    	stdout: SplitParser {
-			onRead: data => {
-				var line = data.trim()
-				var idx = line.indexOf(":")
-            	if (idx < 0) return
-            	var key = line.substring(0, idx)
-            	var val = line.substring(idx + 1)
-				switch (key) {
-					case "player": bar.mediaPlayer = val; break
-					case "status": bar.mediaClass = val.toLowerCase(); break
-                	case "pos":    bar.mediaPosition = parseInt(val) || 0; break
-                	case "len":    bar.mediaLength = parseInt(val) || 0; break
-                	case "title":
-                	case "artist": break
-				}
-				if (key === "title" || key === "artist") {
-					if (key === "title") bar._pendingTitle = val
-                	if (key === "artist") bar._pendingArtist = val
-                	var text = bar._pendingArtist
-                    	? bar._pendingArtist + " - " + bar._pendingTitle
-                    	: bar._pendingTitle
-                	if (text.length > 35) text = text.substring(0, 32) + "..."
-                	bar.mediaText = text
-				}
-			}
-		}
-	}
+
+Process {
+    id: mediaProc
+    command: [Quickshell.env("HOME") + "/.config/quickshell/assets/get-player.sh", "%any"]
+    stdout: SplitParser {
+        splitMarker: ""
+        onRead: data => {
+            var lines = data.split("\n")
+            for (var i = 0; i < lines.length; i++) {
+                var line = lines[i].trim()
+                var idx = line.indexOf(":")
+                if (idx < 0) continue
+                var key = line.substring(0, idx)
+                var val = line.substring(idx + 1)
+                switch (key) {
+                    case "player": bar.mediaPlayer = val; break
+                    case "status": bar.mediaClass = val.toLowerCase(); break
+                    case "pos":    bar.mediaPosition = parseInt(val) || 0; break
+                    case "len":    bar.mediaLength = parseInt(val) || 0; break
+                    case "title":  bar._pendingTitle = val; break
+                    case "artist":
+                        bar._pendingArtist = val
+                        var text = bar._pendingArtist
+                            ? bar._pendingArtist + " - " + bar._pendingTitle
+                            : bar._pendingTitle
+                        if (text.length > 35) text = text.substring(0, 32) + "..."
+                        bar.mediaText = text
+                        break
+                }
+            }
+        }
+    }
+}
+
+
 	Timer {
 		interval: 1000
 		running: bar.mediaClass === "playing"
@@ -689,62 +694,46 @@ PanelWindow {
 								}
 							}
 						}
-						Text {
-							id: mediaLabel
-                            				anchors.verticalCenter: parent.verticalCenter
-                            				text: bar.mediaText
-                            				color: root.walColor13
-                            				font.pixelSize: 10
-                          				font.bold: true
-                            				font.family: "JetBrainsMono Nerd Font"
-                            				opacity: bar.mediaClass === "playing" ? 1.0 : 0.7
-							layer.enabled: true
-                            				layer.effect: DropShadow {
-								horizontalOffset: 0
-                                				verticalOffset: 1
-                                				radius: 4
-                                				samples: 9
-                                				spread: 0.2
-                                				color: Qt.rgba(0, 0, 0, 0.8)
-                                				transparentBorder: true
-							}
-							Behavior on opacity { 
-								NumberAnimation { 
-									duration: 300;
-									easing.type: Easing.OutCubic 
-								} 
-							}
-						}
+Text {
+    id: mediaLabel
+    anchors.verticalCenter: parent.verticalCenter
+    text: bar.mediaText
+    color: root.walColor13
+    font.pixelSize: 10
+    font.bold: true
+    font.family: "JetBrainsMono Nerd Font"
+    opacity: 1.0
+    Behavior on opacity {
+        NumberAnimation {
+            duration: 300;
+            easing.type: Easing.OutCubic
+        }
+    }
+}
 					}
-					Rectangle {
-						width: mediaContent.width
+Rectangle {
+						width: 200
 						height: 3
 						radius: 1.5
 						color: Qt.rgba(0, 0, 0, 0.4)
 						visible: bar.mediaLength > 0
 						Rectangle {
 							width: bar.mediaLength > 0 ? parent.width * (bar.mediaPosition / bar.mediaLength) : 0
-                            				height: parent.height
-                            				radius: 1.5
-                            				color: root.walColor2
-                        				layer.enabled: true
-                            				layer.effect: Glow {
-								radius: 3
-                                				samples: 7
-                                				color: root.walColor2
-                               					transparentBorder: true
-							}
-							Behavior on width { 
-								NumberAnimation { 
-									duration: 200; 
-									easing.type: Easing.Linear 
-								} 
+							height: parent.height
+							radius: 1.5
+							color: root.walColor2
+							Behavior on width {
+								NumberAnimation {
+									duration: 200
+									easing.type: Easing.Linear
+								}
 							}
 						}
 					}
+
+					}
 				}
-			}
-			MouseArea {
+								MouseArea {
 				id: mediaMA
                 		anchors.fill: parent
                 		hoverEnabled: true
@@ -767,8 +756,10 @@ PanelWindow {
 					}
 				}
 			}
+			}
 
-		}
+
+		
 		Row {
 			id: rightSection
             		anchors.right: parent.right
@@ -1012,111 +1003,152 @@ PanelWindow {
 					}
 				}
 			}
-			Notch {
+Notch {
 				id: trayNotch
-    				visible: SystemTray.items.values.length > 0
-    				width: visible ? trayRow.implicitWidth + 20 : 0
-    				hovered: false
+				visible: trayRow.implicitWidth > 0
+				width: visible ? trayRow.implicitWidth + 20 : 0
+				hovered: false
 				Behavior on width {
-					NumberAnimation { 
-						duration: 200; 
-						easing.type: Easing.OutCubic 
+					NumberAnimation {
+						duration: 200
+						easing.type: Easing.OutCubic
 					}
 				}
+
+				property var stableTrayItems: []
+				property int _lastCount: 0
+
+				Connections {
+					target: SystemTray.items
+					function onValuesChanged() {
+						traySnapshotTimer.restart()
+					}
+				}
+				Timer {
+					id: traySnapshotTimer
+					interval: 300
+					repeat: false
+					onTriggered: {
+						trayNotch.stableTrayItems = SystemTray.items.values.slice()
+					}
+				}
+				Component.onCompleted: {
+					trayNotch.stableTrayItems = SystemTray.items.values.slice()
+				}
+
+				Process {
+					id: trayCleanupProc
+					command: ["bash", "-c",
+						"sleep 1 && " +
+						"for name in $(qdbus 2>/dev/null | grep -E 'spotify|Spotify'); do " +
+						"  qdbus $name / org.freedesktop.Application.Quit 2>/dev/null || true; " +
+						"done"
+					]
+				}
+
+				QsMenuAnchor {
+					id: trayMenu
+					anchor.window: bar
+					anchor.rect: Qt.rect(trayMenu.menuX, bar.height, 1, 1)
+					property real menuX: 0
+					onClosed: {
+						traySnapshotTimer.restart()
+						trayCleanupProc.running = true
+					}
+				}
+
 				Item {
 					anchors.fill: parent
 					Row {
 						id: trayRow
-            					anchors.centerIn: parent
-            					spacing: 6
+						anchors.centerIn: parent
+						spacing: 6
+
 						Repeater {
-							model: SystemTray.items.values
+							model: trayNotch.stableTrayItems
+
 							delegate: Item {
 								id: trayDelegate
 								required property SystemTrayItem modelData
 								width: 20
-                    						height: 20
-                    						anchors.verticalCenter: parent ? parent.verticalCenter : undefined
+								height: 20
+								anchors.verticalCenter: parent ? parent.verticalCenter : undefined
+
 								property string iconSrc: {
-                        					var icon = trayDelegate.modelData?.icon ?? ""
-                        					if (typeof icon !== "string") return ""
-                        					if (icon.includes("?path=")) {
-									var parts = icon.split("?path=")
-                            						if (parts.length !== 2) return icon
-                            						var name = parts[0]
-                            						var path = parts[1]
-                            						var file = name.substring(name.lastIndexOf("/") + 1)
-                            						return "file://" + path + "/" + file
+									var icon = trayDelegate.modelData?.icon ?? ""
+									if (typeof icon !== "string") return ""
+									if (icon.includes("?path=")) {
+										var parts = icon.split("?path=")
+										if (parts.length !== 2) return icon
+										var name = parts[0]
+										var path = parts[1]
+										var file = name.substring(name.lastIndexOf("/") + 1)
+										return "file://" + path + "/" + file
+									}
+									return icon
 								}
-								return icon
-							}
-							Rectangle {
-								anchors.fill: parent
-                        					radius: 4
-								color: trayItemMa.containsMouse
-								? Qt.rgba(root.walColor5.r, root.walColor5.g, root.walColor5.b, 0.2) : "transparent"
-								Behavior on color {
-									ColorAnimation { 
-										duration: 150; 
-										easing.type: Easing.OutCubic 
+
+								Rectangle {
+									anchors.fill: parent
+									radius: 4
+									color: trayItemMa.containsMouse
+										? Qt.rgba(root.walColor5.r, root.walColor5.g, root.walColor5.b, 0.2)
+										: "transparent"
+									Behavior on color {
+										ColorAnimation { duration: 150; easing.type: Easing.OutCubic }
 									}
 								}
-							}
-							Image {
-								anchors.centerIn: parent
-                        					width: 14
-                        					height: 14
-                        					source: trayDelegate.iconSrc
-                       		 				fillMode: Image.PreserveAspectFit
-                        					smooth: true
-                        					asynchronous: true
-                        					cache: true
-                        					visible: status !== Image.Error
-							}
-							Text {
-								anchors.centerIn: parent
-                        					visible: parent.children[1].status === Image.Error
-                        					text: "󰀻"
-                        					color: root.walColor8
-                        					font.pixelSize: 12
-                        					font.family: "JetBrainsMono Nerd Font"
-							}
-							MouseArea {
-								id: trayItemMa
-                        					anchors.fill: parent
-                        					hoverEnabled: true
-                        					cursorShape: Qt.PointingHandCursor
-                        					acceptedButtons: Qt.LeftButton | Qt.RightButton
-											onClicked: function(mouse) {
-												if (!trayDelegate.modelData) return
-    											if (mouse.button === Qt.LeftButton
+
+								Image {
+									anchors.centerIn: parent
+									width: 14; height: 14
+									source: trayDelegate.iconSrc
+									fillMode: Image.PreserveAspectFit
+									smooth: true; asynchronous: true; cache: true
+									visible: status !== Image.Error
+								}
+
+								Text {
+									anchors.centerIn: parent
+									visible: trayDelegate.children[1].status === Image.Error
+									text: "󰀻"
+									color: root.walColor8
+									font.pixelSize: 12
+									font.family: "JetBrainsMono Nerd Font"
+								}
+
+								MouseArea {
+									id: trayItemMa
+									anchors.fill: parent
+									hoverEnabled: true
+									cursorShape: Qt.PointingHandCursor
+									acceptedButtons: Qt.LeftButton | Qt.RightButton
+
+									onClicked: function(mouse) {
+										if (!trayDelegate.modelData) return
+										if (mouse.button === Qt.LeftButton
 												&& !trayDelegate.modelData.onlyMenu) {
-													trayDelegate.modelData.activate()
-        											return
-												}
-												if (trayDelegate.modelData.hasMenu) {
-													var mapped = trayItemMa.mapToItem(null, 0, 0)
-        											trayMenu.menuX = mapped.x + trayItemMa.width / 2
-        											trayMenu.menu = trayDelegate.modelData.menu
-        											trayMenu.open()
-												}
-											}
-											onWheel: function(wheel) {
-												if (trayDelegate.modelData)
-												trayDelegate.modelData.activate()
-											}
+											trayDelegate.modelData.activate()
+											return
+										}
+										if (trayDelegate.modelData.hasMenu) {
+											var mapped = trayItemMa.mapToItem(null, 0, 0)
+											trayMenu.menu = trayDelegate.modelData.menu
+											trayMenu.menuX = mapped.x + trayItemMa.width / 2
+											trayMenu.open()
 										}
 									}
+
+									onWheel: function(wheel) {
+										if (trayDelegate.modelData)
+											trayDelegate.modelData.activate()
+									}
 								}
 							}
 						}
-						QsMenuAnchor {
-							id: trayMenu
-        					anchor.window: bar
-							anchor.rect: Qt.rect(trayMenu.menuX, bar.height, 1, 1)
-    						property real menuX: 0
-						}
 					}
+				}
+			}
 					Notch {
 						width: 36
       					hovered: clipMA.containsMouse
@@ -1164,7 +1196,6 @@ PanelWindow {
 							}
 						}
 					}
-
 		Notch {
 			width: 36
 			hovered: dashMA.containsMouse

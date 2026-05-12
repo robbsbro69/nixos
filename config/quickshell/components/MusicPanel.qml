@@ -268,6 +268,7 @@ PanelWindow {
 	Item {
 		anchors.fill: parent
 		focus: root.musicVisible
+
 		Keys.onPressed: function(event) {
 			if (event.key === Qt.Key_Escape) {
 				if (musicPanel.playerDropdownOpen) {
@@ -318,6 +319,7 @@ PanelWindow {
 					ColumnLayout {
 						Layout.fillWidth: true
 						Layout.fillHeight: true
+						Layout.minimumWidth: 180
 						spacing: 6
 
 						RowLayout {
@@ -378,6 +380,7 @@ PanelWindow {
 									hoverEnabled: true
 									cursorShape: Qt.PointingHandCursor
 									onClicked: {
+										musicPanel.gifSelectorOpen = false
 										musicPanel.playerDropdownOpen = !musicPanel.playerDropdownOpen
 										if (musicPanel.playerDropdownOpen) musicPanel.refreshPlayers()
 									}
@@ -508,6 +511,7 @@ PanelWindow {
 
 					Item {
 						Layout.preferredWidth: 160
+						Layout.maximumWidth: 160
 						Layout.fillHeight: true
 
 						Item {
@@ -668,10 +672,10 @@ PanelWindow {
 								hoverEnabled: true
 								cursorShape: Qt.PointingHandCursor
 								onClicked: {
+									musicPanel.playerDropdownOpen = false
 									if (!musicPanel.gifSelectorOpen) {
 										musicPanel.loadGifs()
 										musicPanel.gifSelectorOpen = true
-										musicPanel.playerDropdownOpen = false
 										musicPanel.pickerTab = musicPanel.displayMode
 									} else {
 										musicPanel.gifSelectorOpen = false
@@ -709,15 +713,6 @@ PanelWindow {
 					border.width: 1
 					visible: musicPanel.playerDropdownOpen && !musicPanel.gifSelectorOpen
 					clip: true
-					layer.enabled: true
-					layer.effect: DropShadow {
-						transparentBorder: true
-						horizontalOffset: 0
-						verticalOffset: 4
-						radius: 14
-						samples: 17
-						color: Qt.rgba(0,0,0,0.35)
-					}
 
 					Item {
 						id: pdHeader
@@ -902,15 +897,6 @@ PanelWindow {
 				border.width: 1
 				visible: musicPanel.gifSelectorOpen
 				clip: true
-				layer.enabled: true
-				layer.effect: DropShadow {
-					transparentBorder: true
-					horizontalOffset: 0
-					verticalOffset: 4
-					radius: 16
-					samples: 17
-					color: Qt.rgba(0,0,0,0.35)
-				}
 
 				ColumnLayout {
 					anchors.fill: parent
@@ -1478,7 +1464,6 @@ PanelWindow {
 							}
 						}
 					}
-
 				}
 			}
 		}
@@ -1487,31 +1472,13 @@ PanelWindow {
 			target: root
 			function onMusicVisibleChanged() {
 				if (root.musicVisible) {
-					focusTimer.start()
 					if (musicPanel.displayMode === 1 && musicPanel.playerStatus === "Playing" && !musicPanel.vinylHeld)
 						vinylSpinAnim.kickoff()
 				} else {
 					musicPanel.playerDropdownOpen = false
+					musicPanel.gifSelectorOpen = false
 					vinylSpinAnim.stop()
 				}
-			}
-		}
-
-		Timer {
-			id: focusTimer
-			interval: 50
-			repeat: false
-			onTriggered: {
-				musicPanel.WlrLayershell.keyboardFocus = WlrKeyboardFocus.Exclusive
-				releaseTimer.start()
-			}
-		}
-		Timer {
-			id: releaseTimer
-			interval: 100
-			repeat: false
-			onTriggered: {
-				musicPanel.WlrLayershell.keyboardFocus = WlrKeyboardFocus.OnDemand
 			}
 		}
 
@@ -1572,37 +1539,42 @@ PanelWindow {
 					musicPanel.position += 1
 			}
 		}
-		Process {
-			id: musicStatusProc
-    		command: [musicPanel.configPath + "/assets/get-player.sh", musicPanel.activePlayer]
-    		stdout: SplitParser {
-				onRead: data => {
-					var line = data.trim()
-            		var idx = line.indexOf(":")
-            		if (idx < 0) return
-            		var key = line.substring(0, idx)
-            		var val = line.substring(idx + 1)
-            		switch (key) {
-						case "player": musicPanel.resolvedPlayer = val; break
-                		case "status": musicPanel.playerStatus = val || "Stopped"; break
-                		case "title":  musicPanel.trackTitle  = val; break
-                		case "artist": musicPanel.trackArtist = val; break
-                		case "arturl": musicPanel.trackArtUrl = val; break
-                		case "pos":    musicPanel.position    = parseFloat(val) || 0; break
-                		case "len":    musicPanel.length      = parseFloat(val) || 0; break
-					}
-				}
-			}
-			onExited: code => {
-				if (code !== 0) {
-					musicPanel.playerStatus = "Stopped"
-            		musicPanel.trackTitle   = ""
-            		musicPanel.trackArtist  = ""
-            		musicPanel.trackArtUrl  = ""
-				}
-			}
-		}
 
+	Process {
+	    id: musicStatusProc
+	    command: [musicPanel.configPath + "/assets/get-player.sh", musicPanel.activePlayer]
+	    stdout: SplitParser {
+	        splitMarker: ""
+	        onRead: data => {
+	            var lines = data.split("\n")
+	            for (var i = 0; i < lines.length; i++) {
+	                var line = lines[i].trim()
+	                var idx = line.indexOf(":")
+	                if (idx < 0) continue
+	                var key = line.substring(0, idx)
+	                var val = line.substring(idx + 1)
+	                switch (key) {
+	                    case "player": musicPanel.resolvedPlayer = val; break
+	                    case "status": musicPanel.playerStatus = val || "Stopped"; break
+	                    case "title":  musicPanel.trackTitle  = val; break
+	                    case "artist": musicPanel.trackArtist = val; break
+	                    case "arturl": musicPanel.trackArtUrl = val; break
+	                    case "pos":    musicPanel.position    = parseFloat(val) || 0; break
+	                    case "len":    musicPanel.length      = parseFloat(val) || 0; break
+	                }
+	            }
+	        }
+	    }
+	    onExited: code => {
+	        if (code !== 0) {
+	            musicPanel.playerStatus = "Stopped"
+	            musicPanel.trackTitle   = ""
+	            musicPanel.trackArtist  = ""
+	            musicPanel.trackArtUrl  = ""
+	        }
+	    }
+	}
+	
 		Process {
 			id: playPauseProc
 			command: ["playerctl", "--player=" + musicPanel.resolvedPlayer, "play-pause"]

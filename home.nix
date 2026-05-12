@@ -1,6 +1,7 @@
 {
   config,
   pkgs,
+  pkgs-unstable,
   zen-browser,
   quickshell,
   spicetify-nix,
@@ -50,6 +51,7 @@ in {
   wayland.windowManager.hyprland = {
     enable = true;
     systemd.enable = false;
+    package = pkgs-unstable.hyprland;
   };
 
   home.username = "alpha";
@@ -208,13 +210,12 @@ in {
     libnotify
     alejandra
     prettierd
-    librewolf
-    libreoffice
     imagemagick
     nixpkgs-fmt
     brightnessctl
     qt6.qt5compat
     video-downloader
+    telegram-desktop
     transmission_4-gtk
     qt6.qtimageformats
     nodePackages.prettier

@@ -21,29 +21,18 @@ PanelWindow {
     focusable: true
     WlrLayershell.keyboardFocus: root.animePanelVisible
         ? WlrKeyboardFocus.OnDemand : WlrKeyboardFocus.None
-
     Behavior on margins.left {
         NumberAnimation { duration: 300; easing.type: Easing.OutCubic }
     }
-
-    // ── Main tabs: 0=Anime 1=Manga 2=Personal ──────────────────────────────
     property int mainTab: 0
-
-    // ── Anime browse state ─────────────────────────────────────────────────
-    property int browseStack: 0      // 0=grid  1=detail  2=library
+    property int browseStack: 0
     property int animeChip: 0
-
-    // ── Manga browse state ─────────────────────────────────────────────────
-    property int mangaStack: 0       // 0=grid  1=detail  2=library
+    property int mangaStack: 0
     property int mangaOriginTab: 0
     property bool mangaInitialized: false
-
-    // ── Status picker overlay (shared for anime + manga) ───────────────────
     property bool statusPickerOpen: false
-    property string statusPickerFor: "anime"   // "anime" | "manga"
-    property var statusPickerItem: null         // the show/manga object
-
-    // ── AniList personal (My Lists tab) ────────────────────────────────────
+    property string statusPickerFor: "anime"
+    property var statusPickerItem: null
     property string anilistUsername: "robbsbro69"
     property bool   usernameEditing: false
     property string usernameInput:   "robbsbro69"
@@ -52,8 +41,6 @@ PanelWindow {
     property list<var> personalItems: []
     property bool isFetchingPersonal: false
     property string personalError: ""
-
-    // ── Status definitions ─────────────────────────────────────────────────
     readonly property var animeStatuses: [
         { key: "watching",   label: "Watching",    icon: "󰐊", color: "#89b4fa" },
         { key: "completed",  label: "Completed",   icon: "󰄬", color: "#a6e3a1" },
@@ -70,8 +57,6 @@ PanelWindow {
         { key: "dropped",    label: "Dropped",     icon: "󰅖", color: "#f38ba8" },
         { key: "rereading",  label: "Rereading",   icon: "󰑓", color: "#89b4fa" }
     ]
-
-    // AniList personal tab labels (uses AniList status names)
     readonly property var alAnimeLabels: ({
         "CURRENT":   { label: "Watching",   icon: "󰐊", color: "walColor5"  },
         "COMPLETED": { label: "Completed",  icon: "󰄬", color: "walColor2"  },
@@ -95,14 +80,12 @@ PanelWindow {
             if (list[i].key === key) return list[i].color
         return root.walColor8
     }
-
     function alStatusColor(status) {
         var labels = personalMediaKind === "MANGA" ? alMangaLabels : alAnimeLabels
         var entry  = labels[status]
         if (!entry) return root.walColor8
         return root[entry.color] || root.walColor8
     }
-
     function fetchPersonalList() {
         if (!anilistUsername || isFetchingPersonal) return
         isFetchingPersonal = true
@@ -124,10 +107,8 @@ PanelWindow {
         }
         xhr.open("GET", url); xhr.send()
     }
-
     onPersonalStatusChanged:    { if (mainTab === 2) fetchPersonalList() }
     onPersonalMediaKindChanged: { if (mainTab === 2) fetchPersonalList() }
-
     onMainTabChanged: {
         if (mainTab === 1 && !mangaInitialized) {
             mangaInitialized = true
@@ -135,20 +116,14 @@ PanelWindow {
         }
         if (mainTab === 2 && personalItems.length === 0) fetchPersonalList()
     }
-
-    // ── Open status picker ─────────────────────────────────────────────────
     function openStatusPicker(item, forType) {
         statusPickerItem  = item
         statusPickerFor   = forType
         statusPickerOpen  = true
     }
-
-    // ── Main background ────────────────────────────────────────────────────
     Rectangle {
         anchors.fill: parent; radius: 20
         color: Qt.rgba(root.walBackground.r, root.walBackground.g, root.walBackground.b, 0.97)
-
-        // ── Status picker overlay ──────────────────────────────────────────
         Rectangle {
             id: statusPickerOverlay
             visible: animePanel.statusPickerOpen
@@ -162,13 +137,11 @@ PanelWindow {
                 ? Qt.rgba(root.walColor5.r, root.walColor5.g, root.walColor5.b, 0.4)
                 : Qt.rgba(root.walColor13.r, root.walColor13.g, root.walColor13.b, 0.4)
             border.width: 1
-            MouseArea { anchors.fill: parent }   // eat clicks
-
+            MouseArea { anchors.fill: parent }
             Column {
                 id: spCol
                 anchors { top: parent.top; left: parent.left; right: parent.right; margins: 10 }
                 spacing: 4
-
                 Row {
                     width: parent.width; height: 30
                     Text {
@@ -189,8 +162,6 @@ PanelWindow {
                             onClicked: animePanel.statusPickerOpen = false }
                     }
                 }
-
-                // If already in library, show current status + remove option
                 Rectangle {
                     width: parent.width; height: 30; radius: 8; color: Qt.rgba(0,0,0,0.2)
                     visible: {
@@ -213,7 +184,6 @@ PanelWindow {
                             color: animePanel.statusPickerFor === "anime" ? root.walColor5 : root.walColor13 }
                     }
                 }
-
                 Repeater {
                     model: animePanel.statusPickerFor === "anime" ? animePanel.animeStatuses : animePanel.mangaStatuses
                     Rectangle {
@@ -258,8 +228,6 @@ PanelWindow {
                         }
                     }
                 }
-
-                // Remove from library
                 Rectangle {
                     width: parent.width; height: 32; radius: 8
                     visible: {
@@ -290,18 +258,13 @@ PanelWindow {
                 Item { height: 4 }
             }
         }
-
-        // Close status picker on background click
         MouseArea {
             anchors.fill: parent; z: 200
             visible: animePanel.statusPickerOpen
             onClicked: animePanel.statusPickerOpen = false
         }
-
         ColumnLayout {
             anchors.fill: parent; spacing: 0
-
-            // ── Header bar ─────────────────────────────────────────────────
             Rectangle {
                 Layout.fillWidth: true; height: 44
                 color: Qt.rgba(0,0,0,0.4); radius: 20
@@ -319,7 +282,6 @@ PanelWindow {
                             cursorShape: Qt.PointingHandCursor
                             onClicked: root.animePanelVisible = false }
                     }
-
                     Text {
                         text: animePanel.mainTab === 0 ? "Anime"
                             : animePanel.mainTab === 1 ? "Manga" : "My Lists"
@@ -330,8 +292,6 @@ PanelWindow {
                              : root.walColor2
                         Behavior on color { ColorAnimation { duration: 200 } }
                     }
-
-                    // Server status dots
                     Row { spacing: 4
                         Rectangle { width: 7; height: 7; radius: 3.5
                             color: Anime.serverReady ? root.walColor2 : root.walColor1
@@ -341,10 +301,7 @@ PanelWindow {
                             color: Manga.serverReady ? root.walColor2 : root.walColor1
                             Behavior on color { ColorAnimation { duration: 400 } } }
                     }
-
                     Item { Layout.fillWidth: true }
-
-                    // Sub/Dub toggle (anime tab)
                     Row { spacing: 4; visible: animePanel.mainTab === 0
                         Repeater {
                             model: ["sub", "dub"]
@@ -365,8 +322,6 @@ PanelWindow {
                             }
                         }
                     }
-
-                    // Main tabs
                     Row { spacing: 4
                         Repeater {
                             model: [
@@ -400,20 +355,11 @@ PanelWindow {
                     }
                 }
             }
-
-            // ── Content area ───────────────────────────────────────────────
             Item {
                 Layout.fillWidth: true; Layout.fillHeight: true
-
-                // ════════════════════════════════════════════════════════════
-                // TAB 0 — ANIME
-                // ════════════════════════════════════════════════════════════
                 Item {
                     anchors.fill: parent; visible: animePanel.mainTab === 0
-
                     ColumnLayout { anchors.fill: parent; spacing: 0
-
-                        // Chip bar (browse/library)
                         Rectangle { Layout.fillWidth: true; height: 36
                             color: Qt.rgba(0,0,0,0.2)
                             visible: animePanel.browseStack !== 1
@@ -448,7 +394,6 @@ PanelWindow {
                                         }
                                     }
                                 }
-                                // Library button
                                 footer: Item { width: libBtn.implicitWidth + 28; height: 36
                                     Rectangle { id: libBtn; anchors.centerIn: parent
                                         implicitWidth: libBtnT.implicitWidth + 20; height: 26; radius: 10
@@ -475,9 +420,7 @@ PanelWindow {
 
                         Item { Layout.fillWidth: true; Layout.fillHeight: true
 
-                            // ── Anime grid ─────────────────────────────────
                             Item { anchors.fill: parent; visible: animePanel.browseStack === 0
-                                // Loading spinner
                                 Rectangle { anchors.fill: parent; color: "transparent"
                                     visible: Anime.isFetchingAnime && Anime.animeList.length === 0
                                     Column { anchors.centerIn: parent; spacing: 10
@@ -494,7 +437,6 @@ PanelWindow {
                                     anchors { fill: parent; margins: 8 }
                                     cellWidth: Math.floor(width/3); cellHeight: cellWidth * 1.55
                                     clip: true; boundsBehavior: Flickable.StopAtBounds; model: Anime.animeList
-                                    // KEY FIX: don't use reuseItems, use displayMarginBeginning to keep position
                                     displayMarginBeginning: 0; displayMarginEnd: 0
                                     ScrollBar.vertical: ScrollBar { policy: ScrollBar.AsNeeded
                                         contentItem: Rectangle { implicitWidth: 3; color: root.walColor5; opacity: 0.4; radius: 2 } }
@@ -520,14 +462,12 @@ property real _savedY: 0
                                                 Behavior on opacity { NumberAnimation { duration: 250 } }
                                                 Rectangle { anchors.fill: parent; color: Qt.rgba(0,0,0,0.4)
                                                     visible: parent.status !== Image.Ready }
-                                                // Score badge
                                                 Rectangle { visible: modelData.score !== null && modelData.score !== undefined
                                                     anchors { top: parent.top; left: parent.left; topMargin: 6; leftMargin: 6 }
                                                     height: 18; width: scoreT.implicitWidth + 10; radius: 9; color: Qt.rgba(0,0,0,0.75)
                                                     Text { id: scoreT; anchors.centerIn: parent
                                                         text: modelData.score ? "★ " + modelData.score.toFixed(1) : ""
                                                         font.pixelSize: 8; font.bold: true; font.family: "JetBrainsMono Nerd Font"; color: "#f5c518" } }
-                                                // Library status dot
                                                 Rectangle {
                                                     anchors { top: parent.top; right: parent.right; topMargin: 6; rightMargin: 6 }
                                                     width: 8; height: 8; radius: 4
@@ -559,10 +499,8 @@ property real _savedY: 0
                                 }
                             }
 
-                            // ── Anime detail ───────────────────────────────
                             Item { anchors.fill: parent; visible: animePanel.browseStack === 1
                                 ColumnLayout { anchors.fill: parent; spacing: 0
-                                    // Detail header
                                     Rectangle { Layout.fillWidth: true; height: 46; color: Qt.rgba(0,0,0,0.3)
                                         RowLayout { anchors { fill: parent; leftMargin: 8; rightMargin: 12 } spacing: 6
                                             Item { width: 34; height: 34
@@ -578,8 +516,6 @@ property real _savedY: 0
                                                 text: Anime.currentAnime ? (Anime.currentAnime.englishName || Anime.currentAnime.name || "") : ""
                                                 font.pixelSize: 13; font.bold: true
                                                 font.family: "JetBrainsMono Nerd Font"; color: root.walColor5; elide: Text.ElideRight }
-
-                                            // Library button with status picker
                                             Rectangle {
                                                 visible: Anime.currentAnime !== null
                                                 height: 28; radius: 14
@@ -612,7 +548,6 @@ property real _savedY: 0
                                         }
                                     }
 
-                                    // Loading
                                     Item { Layout.fillWidth: true; Layout.fillHeight: true
                                         visible: Anime.isFetchingDetail
                                         Column { anchors.centerIn: parent; spacing: 10
@@ -627,7 +562,6 @@ property real _savedY: 0
                                         }
                                     }
 
-                                    // Episode list
                                     ListView { Layout.fillWidth: true; Layout.fillHeight: true
                                         visible: !Anime.isFetchingDetail && Anime.currentAnime !== null
                                         clip: true; boundsBehavior: Flickable.StopAtBounds
@@ -665,12 +599,9 @@ property real _savedY: 0
                                 }
                             }
 
-                            // ── Anime library ──────────────────────────────
                             Item { anchors.fill: parent; visible: animePanel.browseStack === 2
 
-                                // Library status pills
                                 Column { anchors.fill: parent; spacing: 0
-                                    // Status selector row
                                     Rectangle { width: parent.width; height: 44; color: Qt.rgba(0,0,0,0.2)
                                         ListView { anchors { fill: parent; leftMargin: 8; rightMargin: 8 }
                                             orientation: ListView.Horizontal; spacing: 6; clip: true
@@ -706,7 +637,6 @@ property real _savedY: 0
                                         }
                                     }
 
-                                    // Grid of items for selected status
                                     Item { width: parent.width; height: parent.height - 44
                                         property var _items: Anime.libraryAll[animeLibStatusList.selectedStatus] || []
                                         Column { anchors.centerIn: parent; spacing: 10
@@ -750,14 +680,9 @@ property real _savedY: 0
                         }
                     }
                 }
-
-                // ════════════════════════════════════════════════════════════
-                // TAB 1 — MANGA
-                // ════════════════════════════════════════════════════════════
                 Item { anchors.fill: parent; visible: animePanel.mainTab === 1
                     ColumnLayout { anchors.fill: parent; spacing: 0
 
-                        // Origin chips — only show when on grid (stack 0)
                         Rectangle { Layout.fillWidth: true; height: 42; color: Qt.rgba(0,0,0,0.25)
                             visible: animePanel.mangaStack === 0
                             ListView { anchors { fill: parent; leftMargin: 10; rightMargin: 10 }
@@ -807,7 +732,6 @@ property real _savedY: 0
 
                         Item { Layout.fillWidth: true; Layout.fillHeight: true
 
-                            // ── STACK 0: Manga grid ────────────────────────
                             Item {
                                 anchors.fill: parent
                                 visible: animePanel.mangaStack === 0
@@ -893,13 +817,11 @@ property real _savedY: 0
                                 }
                             }
 
-                            // ── STACK 1: Manga detail ──────────────────────
                             Item {
                                 anchors.fill: parent
                                 visible: animePanel.mangaStack === 1
 
                                 ColumnLayout { anchors.fill: parent; spacing: 0
-                                    // Detail header
                                     Rectangle { Layout.fillWidth: true; height: 46; color: Qt.rgba(0,0,0,0.3)
                                         RowLayout { anchors { fill: parent; leftMargin: 8; rightMargin: 12 } spacing: 6
                                             Item { width: 34; height: 34
@@ -912,7 +834,6 @@ property real _savedY: 0
                                                 text: Manga.currentManga ? (Manga.currentManga.title || "") : ""
                                                 font.pixelSize: 13; font.bold: true
                                                 font.family: "JetBrainsMono Nerd Font"; color: root.walColor13; elide: Text.ElideRight }
-                                            // Library button
                                             Rectangle {
                                                 visible: Manga.currentManga !== null; height: 28; radius: 14
                                                 property string curSt: Manga.currentManga ? Manga.getLibraryStatus(Manga.currentManga.id) : ""
@@ -942,7 +863,6 @@ property real _savedY: 0
                                         }
                                     }
 
-                                    // Loading spinner
 									Item { 
 										Layout.fillWidth: true; 
 										Layout.fillHeight: true;
@@ -963,14 +883,12 @@ property real _savedY: 0
                                         }
                                     }
 
-                                    // ── FIX: Manga detail content — was empty Rectangle, now fully implemented ──
 									Item { 
 										Layout.fillWidth: true
 										Layout.fillHeight: true
 										clip: true
                                         visible: !Manga.isFetchingDetail && Manga.currentManga !== null
 
-                                        // Empty state: no chapters indexed
                                         Column { anchors.centerIn: parent; spacing: 12
                                             visible: Manga.currentManga !== null && Manga.currentManga.chapters.length === 0
 
@@ -988,7 +906,6 @@ property real _savedY: 0
                                                 color: root.walColor8; opacity: 0.4
                                                 visible: Manga.currentManga && (Manga.currentManga.extLinks || []).length > 0 }
 
-                                            // External read links
                                             Repeater {
                                                 model: Manga.currentManga ? (Manga.currentManga.extLinks || []) : []
                                                 Rectangle {
@@ -1014,7 +931,6 @@ property real _savedY: 0
                                             }
                                         }
 
-                                        // Chapter list — shown when chapters exist
                                         ListView {
                                             anchors {fill: parent; topMargin: 0}
                                             visible: Manga.currentManga && Manga.currentManga.chapters.length > 0
@@ -1027,14 +943,12 @@ property real _savedY: 0
                                                 color: chMa.containsMouse ? Qt.rgba(1,1,1,0.05) : "transparent"
                                                 Behavior on color { ColorAnimation { duration: 100 } }
 
-                                                // Bottom divider
                                                 Rectangle { anchors { bottom: parent.bottom; left: parent.left; right: parent.right; leftMargin: 56; rightMargin: 12 }
                                                     height: 1; color: root.walColor8; opacity: 0.12 }
 
                                                 RowLayout {
                                                     anchors { fill: parent; leftMargin: 14; rightMargin: 14 } spacing: 12
 
-                                                    // Chapter number pill
                                                     Rectangle {
                                                         width: chPill.implicitWidth + 14; height: 24; radius: 12
                                                         color: Qt.rgba(root.walColor13.r,root.walColor13.g,root.walColor13.b,0.2)
@@ -1044,7 +958,6 @@ property real _savedY: 0
                                                             font.family: "JetBrainsMono Nerd Font"; color: root.walColor13 }
                                                     }
 
-                                                    // Chapter title
                                                     Column { Layout.fillWidth: true; spacing: 2
                                                         Text {
                                                             width: parent.width
@@ -1058,7 +971,6 @@ property real _savedY: 0
                                                             color: root.walColor8; opacity: 0.6 }
                                                     }
 
-                                                    // Read icon
                                                     Text { text: "󰌷"; font.pixelSize: 14
                                                         font.family: "JetBrainsMono Nerd Font"
                                                         color: chMa.containsMouse ? root.walColor13 : root.walColor8
@@ -1070,10 +982,8 @@ property real _savedY: 0
                                                     cursorShape: Qt.PointingHandCursor
                                                     onClicked: {
                                                         if (!modelData) return
-                                                        // Try to fetch pages; if synthetic id, open external link
                                                         var chId = modelData.id || ""
                                                         if (chId.indexOf("-ch") !== -1) {
-                                                            // Synthetic chapter — look for external read link
                                                             var links = Manga.currentManga ? (Manga.currentManga.extLinks || []) : []
                                                             if (links.length > 0) {
                                                                 Qt.openUrlExternally(links[0].url)
@@ -1089,14 +999,12 @@ property real _savedY: 0
                                 }
                             }
 
-                            // ── STACK 2: Manga library ─────────────────────
                             Item {
                                 anchors.fill: parent
                                 visible: animePanel.mangaStack === 2
 
                                 ColumnLayout { anchors.fill: parent; spacing: 0
 
-                                    // Header bar with back button
                                     Rectangle { Layout.fillWidth: true; height: 46; color: Qt.rgba(0,0,0,0.3)
                                         RowLayout { anchors { fill: parent; leftMargin: 8; rightMargin: 12 } spacing: 6
                                             Item { width: 34; height: 34
@@ -1114,7 +1022,6 @@ property real _savedY: 0
                                         }
                                     }
 
-                                    // Status pill row
                                     Rectangle { Layout.fillWidth: true; height: 44; color: Qt.rgba(0,0,0,0.2)
                                         ListView {
                                             id: mangaLibStatusList
@@ -1150,7 +1057,6 @@ property real _savedY: 0
                                         }
                                     }
 
-                                    // Grid
                                     Item {
                                         Layout.fillWidth: true; Layout.fillHeight: true
                                         property var libItems: Manga.libraryAll[mangaLibStatusList.selectedStatus] || []
@@ -1210,13 +1116,9 @@ property real _savedY: 0
                     }
                 }
 
-                // ════════════════════════════════════════════════════════════
-                // TAB 2 — MY LISTS (AniList personal)
-                // ════════════════════════════════════════════════════════════
                 Item { anchors.fill: parent; visible: animePanel.mainTab === 2
                     ColumnLayout { anchors.fill: parent; spacing: 0
 
-                        // Username + controls bar
                         Rectangle { Layout.fillWidth: true; height: 40; color: Qt.rgba(0,0,0,0.3)
                             RowLayout { anchors { fill: parent; leftMargin: 12; rightMargin: 12 } spacing: 8
                                 Text { text: ""; font.pixelSize: 13; font.family: "JetBrainsMono Nerd Font"; color: root.walColor5 }
@@ -1236,7 +1138,6 @@ property real _savedY: 0
                                         Keys.onReturnPressed: { animePanel.anilistUsername = animePanel.usernameInput; animePanel.usernameEditing = false; animePanel.fetchPersonalList() }
                                         Keys.onEscapePressed: animePanel.usernameEditing = false }
                                 }
-                                // Anime/Manga kind toggle
                                 Row { spacing: 4
                                     Repeater { model: [{ label: "Anime", k: "ANIME" }, { label: "Manga", k: "MANGA" }]
                                         Rectangle { width: kindT.implicitWidth + 16; height: 26; radius: 13
@@ -1254,7 +1155,6 @@ property real _savedY: 0
                             }
                         }
 
-                        // Status pills
                         Rectangle { Layout.fillWidth: true; height: 42; color: Qt.rgba(0,0,0,0.2)
                             ListView { anchors { fill: parent; leftMargin: 8; rightMargin: 8 }
                                 orientation: ListView.Horizontal; spacing: 6; clip: true; boundsBehavior: Flickable.StopAtBounds
@@ -1275,7 +1175,6 @@ property real _savedY: 0
                             }
                         }
 
-                        // List content
                         Item { Layout.fillWidth: true; Layout.fillHeight: true
                             Rectangle { anchors.fill: parent; color: "transparent"; visible: animePanel.isFetchingPersonal && animePanel.personalItems.length === 0
                                 Column { anchors.centerIn: parent; spacing: 10
@@ -1326,7 +1225,6 @@ property real _savedY: 0
         }
     }
 
-    // MPV playback
     Process { id: mpvProc }
     Connections {
         target: Anime
@@ -1354,7 +1252,6 @@ property real _savedY: 0
                     animePanel.mangaInitialized = true
                     Manga.fetchByOrigin("", true)
                 }
-                // Only fetch library if not already loaded — avoids scroll reset
                 if (!Anime.libraryLoaded) Anime.fetchAllLibrary()
                 if (!Manga.libraryLoaded) Manga.fetchAllLibrary()
             }

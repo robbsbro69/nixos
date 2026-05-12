@@ -4,7 +4,6 @@
 **/.env.*
 /result
 commit.txt
-config/programs/eww/hotfile-eww/*
 config/fastfetch/logo/*
 config/quickshell/tmdb_account_id
 config/quickshell/tmdb_token

@@ -5,9 +5,7 @@ import Quickshell.Io
 
 Singleton {
     id: root
-
     readonly property string apiUrl: "http://127.0.0.1:5050"
-
     property var animeList: []
     property bool isFetchingAnime: false
     property string animeError: ""
@@ -18,26 +16,20 @@ Singleton {
     property string currentMode: "sub"
     property string currentCountry: "ALL"
     property string currentView: ""
-
-    // signal emitted ONLY on append (not on reset) so GridView can save/restore scroll
     signal itemsAppended()
-
     property var currentAnime: null
     property bool isFetchingDetail: false
     property string detailError: ""
-
     property var streamLinks: []
     property var selectedLink: null
     property bool isFetchingLinks: false
     property string linksError: ""
     property string currentEpisode: ""
-
     property var libraryAll: ({
         watching: [], completed: [], planning: [],
         on_hold: [], dropped: [], rewatching: []
     })
     property bool libraryLoaded: false
-
     readonly property var libraryStatuses: [
         { key: "watching",   label: "Watching",    icon: "󰐊", color: "#89b4fa" },
         { key: "completed",  label: "Completed",   icon: "󰄬", color: "#a6e3a1" },
@@ -46,9 +38,7 @@ Singleton {
         { key: "dropped",    label: "Dropped",     icon: "󰅖", color: "#f38ba8" },
         { key: "rewatching", label: "Rewatching",  icon: "󰑓", color: "#89b4fa" }
     ]
-
     property bool serverReady: false
-
     Process {
         id: serverProcess
         command: [Quickshell.env("HOME") + "/ani-env/bin/python3",
@@ -61,8 +51,8 @@ Singleton {
         }
     }
     Timer { id: serverRestartTimer; interval: 3000; repeat: false
-        onTriggered: serverProcess.running = true }
-
+        onTriggered: serverProcess.running = true 
+	}
     Timer {
         id: healthPoller
         interval: 150; repeat: true; running: true
@@ -80,7 +70,6 @@ Singleton {
             xhr.send()
         }
     }
-
     function _get(url, onDone) {
         var xhr = new XMLHttpRequest()
         xhr.onreadystatechange = function() {
@@ -91,7 +80,6 @@ Singleton {
         xhr.open("GET", url)
         xhr.send()
     }
-
     function _post(url, data, onDone) {
         var xhr = new XMLHttpRequest()
         xhr.onreadystatechange = function() {
@@ -103,8 +91,6 @@ Singleton {
         xhr.setRequestHeader("Content-Type", "application/json")
         xhr.send(JSON.stringify(data))
     }
-
-    // ── Browse — "reset" clears list, "append" emits itemsAppended signal ─
     function fetchPopular(reset) {
         if (isFetchingAnime) return
         if (reset === undefined || reset) { animeList = []; popularPage = 1 }
@@ -125,7 +111,6 @@ Singleton {
                 } catch(e) { animeError = "Parse error: " + e }
             })
     }
-
     function fetchLatest(reset) {
         if (isFetchingAnime) return
         if (reset === undefined || reset) { animeList = []; latestPage = 1 }
@@ -146,7 +131,6 @@ Singleton {
                 } catch(e) { animeError = "Parse error: " + e }
             })
     }
-
     function searchAnime(query, reset) {
         if (isFetchingAnime) return
         if (reset === undefined || reset) animeList = []
@@ -164,13 +148,11 @@ Singleton {
                 } catch(e) { animeError = "Parse error: " + e }
             })
     }
-
     function fetchNextPage() {
         if (!hasMoreAnime || isFetchingAnime) return
         if (currentView === "popular") { popularPage++; fetchPopular(false) }
         else if (currentView === "latest") { latestPage++; fetchLatest(false) }
     }
-
     function _normaliseShow(s) {
         var avail = s.available_episodes || {}
         return {
@@ -184,8 +166,6 @@ Singleton {
             views: s.views||null, season: s.season||null, lastEpisode: s.lastEpisode||null
         }
     }
-
-    // ── Detail ────────────────────────────────────────────────────────────
     function fetchAnimeDetail(show) {
         if (isFetchingDetail) return
         isFetchingDetail = true; detailError = ""
@@ -206,10 +186,9 @@ Singleton {
                 } catch(e) { detailError = "Parse error: " + e }
             })
     }
-
-    function clearDetail() { currentAnime = null; detailError = ""; clearStreamLinks() }
-
-    // ── Stream links ──────────────────────────────────────────────────────
+	function clearDetail() { 
+		currentAnime = null; detailError = ""; clearStreamLinks() 
+	}
     function fetchStreamLinks(showId, episodeNum, quality) {
         if (isFetchingLinks) return
         isFetchingLinks = true; streamLinks = []; selectedLink = null
@@ -237,11 +216,9 @@ Singleton {
                 } catch(e) { linksError = "Parse error: " + e }
             })
     }
-
     function selectLink(link) { selectedLink = link }
     function clearStreamLinks() { streamLinks=[]; selectedLink=null; linksError=""; currentEpisode="" }
     function clearAnimeList() { animeList=[]; hasMoreAnime=false; popularPage=1; latestPage=1; animeError="" }
-
     function setMode(mode) {
         if (mode === currentMode) return
         currentMode = mode
@@ -249,14 +226,11 @@ Singleton {
         else if (currentView === "latest") fetchLatest(true)
         else if (currentView === "search" && currentSearchText) searchAnime(currentSearchText, true)
     }
-
     function setCountry(country) {
         if (country === currentCountry) return
         currentCountry = country
         if (currentView === "latest") fetchLatest(true)
     }
-
-    // ── Library ───────────────────────────────────────────────────────────
     function fetchAllLibrary() {
         _get(root.apiUrl + "/library/all?type=anime", function(err, body) {
             libraryLoaded = true
@@ -264,7 +238,6 @@ Singleton {
             try { root.libraryAll = JSON.parse(body) } catch(e) {}
         })
     }
-
     function getLibraryStatus(animeId) {
         var ss = ["watching","completed","planning","on_hold","dropped","rewatching"]
         for (var i = 0; i < ss.length; i++) {
@@ -274,9 +247,7 @@ Singleton {
         }
         return ""
     }
-
     function isInLibrary(animeId) { return getLibraryStatus(animeId) !== "" }
-
     function addToLibrary(anime, status) {
         var st = status || "planning"
         var entry = { id:String(anime.id), name:anime.englishName||anime.name||"",
@@ -290,7 +261,6 @@ Singleton {
               coverUrl:anime.thumbnail||"", status:st, type:"anime", item:anime },
             function(err) { if (!err) fetchAllLibrary() })
     }
-
     function updateLibraryStatus(animeId, status) {
         var up = Object.assign({}, root.libraryAll)
         var existing = null
@@ -316,7 +286,6 @@ Singleton {
             { id:String(animeId), status:status, type:"anime" },
             function(err) { if (!err) fetchAllLibrary() })
     }
-
     function removeFromLibrary(animeId) {
         var up = Object.assign({}, root.libraryAll)
         var ss = ["watching","completed","planning","on_hold","dropped","rewatching"]
@@ -327,9 +296,7 @@ Singleton {
             { id:String(animeId), type:"anime" },
             function(err) { if (!err) fetchAllLibrary() })
     }
-
     function getLibraryItems(status) { return root.libraryAll[status] || [] }
-
     function getLibraryEntry(animeId) {
         var ss = ["watching","completed","planning","on_hold","dropped","rewatching"]
         for (var i = 0; i < ss.length; i++) {

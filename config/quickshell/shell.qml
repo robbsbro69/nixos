@@ -1,4 +1,5 @@
 //@ pragma UseQApplication
+//@ pragma ShellId nixos-alpha-shell
 import Quickshell
 import Quickshell.Io
 import Quickshell.Wayland
@@ -11,13 +12,11 @@ import "."
 import "./components"
 ShellRoot {
 	id: root
-
 	property string configPath: Quickshell.env("HOME") + "/.config/quickshell"
 	property string homePath: Quickshell.env("HOME")
 	property string wallpaperPath: homePath + "/wallpapers"
 	property string cachePath: homePath + "/.cache"
 	property string statePath: configPath + "/state"
-
 	property bool dashboardVisible: false
 	property var _ui: UIState
 	property bool musicVisible: false
@@ -32,7 +31,6 @@ ShellRoot {
 	property bool animePanelVisible: false
 	property bool moviesPanelVisible: false
 	property var pfpFiles: []
-
 	property string searchTerm: ""
 	property var appList: []
 	property var notifications: []
@@ -59,11 +57,11 @@ ShellRoot {
 		})
 		return sorted
 	}
-    	property int selectedIndex: 0
-    	property int activeTab: 0
-    	property string wallSearchTerm: ""
-    	property var wallpaperList: []
-    	property var filteredWallpapers: {
+    property int selectedIndex: 0
+    property int activeTab: 0
+    property string wallSearchTerm: ""
+    property var wallpaperList: []
+    property var filteredWallpapers: {
 		if (wallSearchTerm === "") return wallpaperList
 		var result = []
 		for (var i = 0; i < wallpaperList.length; i++) {
@@ -79,7 +77,6 @@ ShellRoot {
 	property bool thumbsReady: false
 	property bool walApplying: false
 	property var wallpaperHashes: ({})
-
 	property bool wifiEnabled: true
 	property string wifiCurrentSSID: ""
 	property int wifiSignal: 0
@@ -87,13 +84,11 @@ ShellRoot {
 	property bool wifiScanning: false
 	property string wifiPasswordSSID: ""
 	property bool wifiConnecting: false
-
 	property bool btEnabled: true
 	property var btPairedDevices: []
 	property var btAvailableDevices: []
 	property bool btScanning: false
 	property string btConnectingMAC: ""
-
 	property color walBackground: "#1e1e2e"
 	property color walForeground: "#cdd6f4"
 	property color walColor1: "#f38ba8"
@@ -102,26 +97,22 @@ ShellRoot {
 	property color walColor5: "#89b4fa"
 	property color walColor8: "#6c7086"
 	property color walColor13: "#f5c2e7"
-
 	property int savedGifIndex: 0
 	property var focusedScreen: Quickshell.screens[0]
 
 	function toggleLauncher() { 
 		launcherVisible = !launcherVisible 
 	}
-
 	function toggleDashboard() {
 		dashboardVisible = !dashboardVisible
 		if (dashboardVisible) { 
 			wifiVisible = false; 
 			btVisible = false 
 		}
-    	}
-
+	}
 	function toggleMusic() { 
 		musicVisible = !musicVisible 
 	}
-
 	function toggleWifi() {
 		wifiVisible = !wifiVisible
 		if (wifiVisible) { 
@@ -130,7 +121,6 @@ ShellRoot {
 			refreshWifi() 
 		}
 	}
-
 	function toggleBluetooth() {
 		btVisible = !btVisible
 		if (btVisible) { 
@@ -139,7 +129,6 @@ ShellRoot {
 			refreshBluetooth() 
 		}
 	}
-
 	function closeAllPanels() {
 		dashboardVisible = false
 		musicVisible = false
@@ -153,7 +142,6 @@ ShellRoot {
 		animePanelVisible = false
 		moviesPanelVisible = false
 	}
-
 	function refreshBluetooth() {
 		root.btPairedDevices = []
 		root.btAvailableDevices = []
@@ -161,29 +149,24 @@ ShellRoot {
 		root.btConnectingMAC = ""
 		if (!btStatusProc.running) btStatusProc.running = true
 	}
-
 	function connectBt(mac) {
 		root.btConnectingMAC = mac
 		btActionProc.command = ["bash", "-c", "(echo 'trust " + mac + "'; echo 'connect " + mac + "'; sleep 2; echo 'quit') | bluetoothctl 2>/dev/null"]
 		btActionProc.running = true
 	}
-
 	function disconnectBt(mac) {
 		btActionProc.command = ["bash", "-c", "echo -e 'disconnect " + mac + "\\nquit' | bluetoothctl 2>/dev/null"]
 		btActionProc.running = true
 	}
-
 	function pairBt(mac) {
 		root.btConnectingMAC = mac
 		btActionProc.command = ["bash", "-c", "echo -e 'pair " + mac + "\\nquit' | bluetoothctl 2>/dev/null; sleep 2; echo -e 'trust " + mac + "\\nquit' | bluetoothctl 2>/dev/null; sleep 1; echo -e 'connect " + mac + "\\nquit' | bluetoothctl 2>/dev/null"]
 		btActionProc.running = true
 	}
-
 	function forgetBt(mac) {
 		btActionProc.command = ["bash", "-c", "echo -e 'remove " + mac + "\\nquit' | bluetoothctl 2>/dev/null"]
 		btActionProc.running = true
 	}
-
 	function refreshWifi() {
 		root.wifiNetworks = []
 		root.wifiScanning = true
@@ -191,19 +174,16 @@ ShellRoot {
 		if (!wifiCurrentProc.running) wifiCurrentProc.running = true
         	if (!wifiScanProc.running) wifiScanProc.running = true
 	}
-
 	function saveState(key, value) {
 		saveStateProc.command = ["bash", "-c", "mkdir -p '" + statePath + "' && echo '" + value + "' > '" + statePath + "/" + key + "'"]
 		saveStateProc.running = true
 	}
-
 	function loadState(key, callback) {
 		loadStateProc.stateKey = key
 		loadStateProc.callback = callback
         	loadStateProc.command = ["cat", statePath + "/" + key]
         	loadStateProc.running = true
 	}
-
 	function toggleCalendar() {
 		calendarVisible = !calendarVisible
 		if (calendarVisible) {
@@ -227,8 +207,6 @@ ShellRoot {
 			duration: dur 
 		})
 		notifications = current
-
-		// Also add to history
 		var hist = notificationHistory.slice()
 		hist.unshift({
 			nid: nid,
@@ -240,11 +218,9 @@ ShellRoot {
 		if (hist.length > 50) hist.pop()
 		notificationHistory = hist
 	}
-
 	function clearNotifHistory() {
 		notificationHistory = []
 	}
-
 	function removeNotification(nid) {
 		var current = notifications.slice()
 		for (var i = 0; i < current.length; i++) {
@@ -255,29 +231,31 @@ ShellRoot {
 			}
 		}
 	}
-
 	function toggleNotifCenter() {
 		notifCenterVisible = !notifCenterVisible
 	}
-
 	function toggleClockPanel() {
 		clockPanelVisible = !clockPanelVisible
 	}
-
 	function toggleClipboard() {
 		clipboardVisible = !clipboardVisible
 	}
-
 	function toggleAnimePanel() { 
 		animePanelVisible = !animePanelVisible 
 	}
-	
 	function toggleMoviesPanel() { 
 		moviesPanelVisible = !moviesPanelVisible 
 	}
-
 	Component.onCompleted: {
 		initStateDir.running = true
+		if (Hyprland.focusedMonitor) {
+			for (var i = 0; i < Quickshell.screens.length; i++) {
+				if (Quickshell.screens[i].name === Hyprland.focusedMonitor.name) {
+					root.focusedScreen = Quickshell.screens[i]
+                	break
+				}
+			}
+		}
 	}
 	Connections {
 		target: UIState
@@ -294,7 +272,6 @@ ShellRoot {
 			root.notificationHistory = hist
 		}
 	}
-
 	Process {
 		id: initStateDir
 		command: ["mkdir", "-p", root.statePath]
@@ -307,7 +284,6 @@ ShellRoot {
             		loadGifIndexProc.running = true
 		}
 	}
-
 	Process {
 		id: loadGifIndexProc
 		command: ["bash", "-c", "cat '" + root.statePath + "/gif-index' 2>/dev/null || echo '0'"]
@@ -318,11 +294,9 @@ ShellRoot {
 			}
 		}
 	}
-
 	Process {
 		id: saveStateProc
 	}
-
 	Process {
 		id: loadStateProc
 		property string stateKey: ""
@@ -335,7 +309,6 @@ ShellRoot {
 			}
 		}
 	}
-
 	function launchApp(app) {
 		var cmd = app.exec
     		//if (cmd.startsWith("dolphin")) cmd = "dolphin --new-window"    
@@ -350,7 +323,6 @@ ShellRoot {
         	saveUsageProc.running = true
         	root.launcherVisible = false
 	}
-
 	function applyWallpaper(wallpaper) {
 		root.currentWallpaper = wallpaper.path
         	root.walApplying = true
@@ -362,20 +334,17 @@ ShellRoot {
 		]
 		applyWallProc.running = true
 	}
-
 	function loadWallpapers() {
 		root.wallpaperList = []
 		root.wallsLoaded = false
 		root.thumbsReady = false
 		if (!wallpaperListProc.running) wallpaperListProc.running = true
 	}
-
 	Process {
 		id: thumbDirProc
 		command: ["mkdir", "-p", root.cachePath + "/wallpaper-thumbs"]
 		onExited: root.loadWallpapers()
 	}
-
 	Process {
 		id: wallpaperListProc
         	command: ["bash", "-c", "find '" + root.wallpaperPath + "' -maxdepth 1 -type f \\( -iname '*.jpg' -o -iname '*.jpeg' -o -iname '*.gif' -o -iname '*.png' -o -iname '*.webp' \\) ! -name '.*' 2>/dev/null | sort"]
@@ -398,7 +367,6 @@ ShellRoot {
 			if (!thumbGenProc.running) thumbGenProc.running = true
 		}
 	}
-
 	Process {
 		id: thumbGenProc
 		command: ["bash", "-c",
@@ -429,7 +397,6 @@ ShellRoot {
 			if (!hashAllProc.running) hashAllProc.running = true
 		}
 	}
-
 	Process {
 		id: hashAllProc
     		command: ["bash", "-c", "for f in '" + root.wallpaperPath + "'/*; do [ -f \"$f\" ] && echo \"$f|$(echo -n \"$f\" | md5sum | cut -d' ' -f1)\"; done"]
@@ -445,14 +412,12 @@ ShellRoot {
 			}
 		}
 	}
-
 	Process {
 		id: applyWallProc
 		onExited: {
 			if (!walColorsProc.running) walColorsProc.running = true
 		}
 	}
-
 	Process {
 		id: walColorsProc
 		command: ["bash", "-c", "cat '" + root.cachePath + "/wal/colors.json' 2>/dev/null"]
@@ -492,7 +457,6 @@ ShellRoot {
 			if (!walStepSwaync.running) walStepSwaync.running = true
 		}
 	}
-
 	Process {
 		id: walStepSwaync
 		command: ["bash", "-c",
@@ -516,15 +480,13 @@ ShellRoot {
 		}
 		onExited: root.walApplying = false
 	}
-
 	Process {
 		id: currentWallProc
-        	command: ["bash", "-c", "readlink -f '" + root.wallpaperPath + "/current' 2>/dev/null || echo ''"]
+        command: ["bash", "-c", "readlink -f '" + root.wallpaperPath + "/current' 2>/dev/null || echo ''"]
 		stdout: SplitParser { 
 			onRead: data => root.currentWallpaper = data.trim() 
 		}
-    	}
-
+	}
 	Process {
 		id: loadUsageProc
 		command: ["bash", "-c", "cat '" + root.configPath + "/app_usage.json' 2>/dev/null || echo '{}'"]
@@ -539,39 +501,29 @@ ShellRoot {
 			}
 		}
 	}
-
-    	Process { 
+    Process { 
 		id: saveUsageProc 
 	}
-	Process {
-		id: focusedMonProc
-		command: ["bash", "-c", "hyprctl activeworkspace -j | jq -r '.monitor'"]
-		stdout: SplitParser {
-			onRead: data => {
-				var monName = data.trim()
-				for (var i = 0; i < Quickshell.screens.length; i++) {
-					if (Quickshell.screens[i].name === monName) {
-						root.focusedScreen = Quickshell.screens[i]
-						break
+	Connections {
+		target: Hyprland
+    	function onRawEvent(event) {
+			if (event.name === "focusedmon") {
+				var parts = event.data.split(",")
+            	if (parts.length >= 1) {
+					var monName = parts[0].trim()
+                	for (var i = 0; i < Quickshell.screens.length; i++) {
+						if (Quickshell.screens[i].name === monName) {
+							root.focusedScreen = Quickshell.screens[i]
+                        	break
+						}
 					}
 				}
 			}
 		}
 	}
-
-	Timer {
-		interval: 500
-		running: true
-		repeat: true
-		triggeredOnStart: true
-		onTriggered: {
-			if (!focusedMonProc.running) focusedMonProc.running = true
-		}
-	}
 	Process { 
 		id: launchProc 
 	}
-
 	Process {
 		id: appListProc
 		command: ["bash", "-c",
@@ -607,7 +559,6 @@ ShellRoot {
 			}
 		}
 	}
-
 	Process {
 		id: wifiStatusProc
 		command: ["bash", "-c", "nmcli radio wifi 2>/dev/null || echo 'disabled'"]
@@ -615,7 +566,6 @@ ShellRoot {
 			onRead: data => root.wifiEnabled = data.trim() === "enabled" 
 		}
 	}
-
 	Process {
 		id: wifiCurrentProc
 		command: ["bash", "-c", "nmcli -t -f active,ssid,signal dev wifi 2>/dev/null | grep '^yes' | head -1"]
@@ -632,7 +582,6 @@ ShellRoot {
 			}
 		}
 	}
-
 	Process {
 		id: wifiScanProc
 		command: ["bash", "-c", "nmcli -t -f ssid,signal,security dev wifi list --rescan yes 2>/dev/null | head -20"]
@@ -659,7 +608,6 @@ ShellRoot {
 		}
 		onExited: root.wifiScanning = false
 	}
-
 	Process {
 		id: wifiToggleProc
 		command: ["bash", "-c", root.wifiEnabled ? "nmcli radio wifi off" : "nmcli radio wifi on"]
@@ -668,14 +616,12 @@ ShellRoot {
 			if (!root.wifiEnabled) wifiScanDelayTimer.start()
 		}
 	}
-
 	Timer {
 		id: wifiScanDelayTimer
 		interval: 2000
 		repeat: false
 		onTriggered: refreshWifi()
 	}
-
 	Process {
 		id: wifiConnectProc
 		property string ssid: ""
@@ -692,7 +638,6 @@ ShellRoot {
 			if (!wifiCurrentProc.running) wifiCurrentProc.running = true
 		}
 	}
-
 	Process {
 		id: wifiDisconnectProc
 		command: ["bash", "-c", "nmcli dev disconnect wlan0 2>/dev/null; nmcli dev disconnect wlp0s20f3 2>/dev/null; nmcli dev disconnect $(nmcli -t -f device,type dev | grep ':wifi$' | cut -d: -f1 | head -1) 2>/dev/null"]
@@ -701,7 +646,6 @@ ShellRoot {
 			root.wifiSignal = 0
 		}
 	}
-
 	Process {
 		id: btStatusProc
 		command: ["bash", "-c", "echo -e 'show\\nquit' | bluetoothctl 2>/dev/null | grep -q 'Powered: yes' && echo 'true' || echo 'false'"]
@@ -712,20 +656,17 @@ ShellRoot {
 			if (root.btEnabled && !btDevicesProc.running) btDevicesProc.running = true
 		}
 	}
-
 	Process {
 		id: btToggleOnProc
 		command: ["bash", "-c", "echo -e 'power on\\nquit' | bluetoothctl 2>/dev/null"]
 		onExited: btToggleDelayTimer.start()
 	}
-
 	Timer {
 		id: btToggleDelayTimer
 		interval: 1000
 		repeat: false
 		onTriggered: refreshBluetooth()
 	}
-
 	Process {
 		id: btToggleOffProc
 		command: ["bash", "-c", "echo -e 'power off\\nquit' | bluetoothctl 2>/dev/null"]
@@ -735,7 +676,6 @@ ShellRoot {
             		root.btAvailableDevices = []
 		}
 	}
-
 	Process {
 		id: btDevicesProc
         	command: ["bash", "-c", "echo -e 'devices\\nquit' | bluetoothctl 2>/dev/null | grep '^Device' | while read -r line; do mac=$(echo \"$line\" | awk '{print $2}'); name=$(echo \"$line\" | cut -d' ' -f3-); info=$(echo -e \"info $mac\\nquit\" | bluetoothctl 2>/dev/null); paired=$(echo \"$info\" | grep -oP 'Paired: \\K\\w+'); connected=$(echo \"$info\" | grep -oP 'Connected: \\K\\w+'); if [ \"$paired\" = \"yes\" ]; then echo \"${mac}|${name}|${connected}\"; fi; done"]
@@ -761,7 +701,6 @@ ShellRoot {
 			}
 		}
 	}
-
 	Process {
 		id: btScanProc
 		command: ["bash", "-c", "echo -e 'scan on\\nquit' | bluetoothctl 2>/dev/null; sleep 5; echo -e 'scan off\\nquit' | bluetoothctl 2>/dev/null; sleep 1; echo -e 'devices\\nquit' | bluetoothctl 2>/dev/null | grep '^Device' | while read -r line; do mac=$(echo \"$line\" | awk '{print $2}'); name=$(echo \"$line\" | cut -d' ' -f3-); info=$(echo -e \"info $mac\\nquit\" | bluetoothctl 2>/dev/null); paired=$(echo \"$info\" | grep -oP 'Paired: \\K\\w+'); if [ \"$paired\" != \"yes\" ] && [ -n \"$name\" ] && [ \"$name\" != \"$mac\" ]; then echo \"${mac}|${name}\"; fi; done"]
@@ -787,7 +726,6 @@ ShellRoot {
 		}
 		onExited: root.btScanning = false
 	}
-
 	Process {
 		id: btActionProc
 		onExited: {
@@ -795,15 +733,12 @@ ShellRoot {
 			btActionDelayTimer.start()
 		}
 	}
-
 	Timer {
 		id: btActionDelayTimer
 		interval: 1500
 		repeat: false
 		onTriggered: refreshBluetooth()
 	}
-
-	//Bar {}
 	Variants {
 		model: Quickshell.screens
 		delegate: Component {
@@ -825,8 +760,6 @@ ShellRoot {
 	ClockPanel{}
 	AnimePanel{}
 	MoviesPanel{}
-
-
 
 	IpcHandler {
 		target: "notifcenter"

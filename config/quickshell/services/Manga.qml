@@ -5,9 +5,7 @@ import Quickshell.Io
 
 Singleton {
     id: root
-
     readonly property string apiUrl: "http://127.0.0.1:5150"
-
     property var mangaList: []
     property bool isFetchingManga: false
     property string mangaError: ""
@@ -16,29 +14,22 @@ Singleton {
     property int latestPage: 1
     property string currentSearchText: ""
     property string currentOrigin: ""
-
-    // signal emitted ONLY on append so GridView can save/restore scroll
     signal itemsAppended()
-
     property var currentManga: null
     property bool isFetchingDetail: false
     property string detailError: ""
-
     property var chapterPages: []
     property bool isFetchingPages: false
     property string pagesError: ""
     property string currentChapterId: ""
-
     property var favoritesList: []
     property bool isFetchingFavs: false
-    property int favNewCount: 0
-
+	property int favNewCount: 0
     property var libraryAll: ({
         reading: [], completed: [], planning: [],
         on_hold: [], dropped: [], rereading: []
     })
     property bool libraryLoaded: false
-
     readonly property var libraryStatuses: [
         { key: "reading",   label: "Reading",    icon: "󰐊", color: "#89b4fa" },
         { key: "completed", label: "Completed",  icon: "󰄬", color: "#a6e3a1" },
@@ -47,10 +38,9 @@ Singleton {
         { key: "dropped",   label: "Dropped",    icon: "󰅖", color: "#f38ba8" },
         { key: "rereading", label: "Rereading",  icon: "󰑓", color: "#89b4fa" }
     ]
-
     property bool serverReady: false
-
-    Process {
+	
+	Process {
         id: serverProcess
         command: [Quickshell.env("HOME") + "/.venv/manga/bin/python3",
             Quickshell.env("HOME") + "/.config/quickshell/scripts/manga_server.py"]
@@ -62,8 +52,8 @@ Singleton {
         }
     }
     Timer { id: serverRestartTimer; interval: 3000; repeat: false
-        onTriggered: serverProcess.running = true }
-
+		onTriggered: serverProcess.running = true 
+	}
     Timer {
         id: healthPoller
         interval: 150; repeat: true; running: true
@@ -82,14 +72,12 @@ Singleton {
             xhr.send()
         }
     }
-
     Timer {
         id: favChecker
         interval: 900000; repeat: true
         running: root.serverReady && root.favoritesList.length > 0
         onTriggered: root.checkFavoritesForUpdates()
     }
-
     function _get(url, onDone) {
         var xhr = new XMLHttpRequest()
         xhr.onreadystatechange = function() {
@@ -100,7 +88,6 @@ Singleton {
         xhr.open("GET", url)
         xhr.send()
     }
-
     function _post(url, data, onDone) {
         var xhr = new XMLHttpRequest()
         xhr.onreadystatechange = function() {
@@ -112,7 +99,6 @@ Singleton {
         xhr.setRequestHeader("Content-Type", "application/json")
         xhr.send(JSON.stringify(data))
     }
-
     function fetchByOrigin(origin, reset) {
         if (isFetchingManga) return
         if (reset) { mangaList = []; currentOffset = 0; latestPage = 1 }
@@ -128,7 +114,6 @@ Singleton {
             _parseMangaResults(body, origin === "")
         })
     }
-
     function searchManga(query, reset) {
         if (isFetchingManga) return
         if (reset) { mangaList = []; currentOffset = 0 }
@@ -139,21 +124,18 @@ Singleton {
                 _parseMangaResults(body, false)
             })
     }
-
     function fetchNextMangaPage() {
         if (!hasMoreManga || isFetchingManga) return
         if (currentSearchText.length > 0) searchManga(currentSearchText, false)
         else if (currentOrigin === "latest") { latestPage++; fetchByOrigin("latest", false) }
         else fetchByOrigin(currentOrigin, false)
     }
-
     function _originType(origin) {
         if (origin === "ko") return "Manhwa"
         if (origin === "ja") return "Manga"
         if (origin === "zh") return "Manhua"
         return ""
     }
-
     function _parseMangaResults(json, isHot) {
         try {
             var data  = JSON.parse(json)
@@ -174,44 +156,12 @@ Singleton {
         } catch(e) { mangaError = "Parse error: " + e }
         isFetchingManga = false
     }
-
-//    function fetchMangaDetail(mangaId) {
-//        if (isFetchingDetail) return
-//        isFetchingDetail = true; currentManga = null; detailError = ""
-//        _get(root.apiUrl + "/info?id=" + encodeURIComponent(mangaId),
-//            function(err, body) {
-//                isFetchingDetail = false
-//                if (err) { detailError = err; return }
-//                try {
-//                    var data = JSON.parse(body)
-//                    if (data.error) { detailError = data.error; return }
-//                    currentManga = {
-//                        id:          data.id          || "",
-//                        title:       data.title       || "",
-//                        description: data.description || "",
-//                        status:      data.status      || "",
-//                        coverUrl:    data.image       || "",
-//                        authors:     data.authors     || [],
-//                        tags:        data.tags        || [],
-//                        genres:      data.genres      || [],
-//                        score:       data.score       || 0,
-//                        chapters:    (data.chapters || []).map(function(ch) {
-//                            return { id:ch.id||"", chapter:ch.chapter||"",
-//                                     title:ch.title||"", publishAt:ch.publishAt||"" }
-//                        }),
-//                        extLinks:    data.extLinks    || [],
-//                        allExtLinks: data.allExtLinks || [],
-//                        bannerImage: data.bannerImage || ""
-//                    }
-//                } catch(e) { detailError = "Parse error: " + e }
-//            })
-//    }
-function fetchMangaDetail(mangaId) {
-    if (isFetchingDetail) return
-    isFetchingDetail = true; currentManga = null; detailError = ""
-    console.log("[Manga] fetching detail for id:", mangaId)
-    _get(root.apiUrl + "/info?id=" + encodeURIComponent(mangaId),
-        function(err, body) {
+	function fetchMangaDetail(mangaId) {
+		if (isFetchingDetail) return
+    	isFetchingDetail = true; currentManga = null; detailError = ""
+    	console.log("[Manga] fetching detail for id:", mangaId)
+    	_get(root.apiUrl + "/info?id=" + encodeURIComponent(mangaId),
+	function(err, body) {
             isFetchingDetail = false
             if (err) { detailError = err; console.log("[Manga] detail error:", err); return }
             try {
@@ -241,7 +191,7 @@ function fetchMangaDetail(mangaId) {
                 console.log("[Manga] currentManga set, chapters:", currentManga.chapters.length)
             } catch(e) { detailError = "Parse error: " + e; console.log("[Manga] parse error:", e) }
         })
-}
+	}
     function fetchChapterPages(chapterId) {
         if (isFetchingPages) return
         isFetchingPages = true; currentChapterId = chapterId
@@ -260,7 +210,6 @@ function fetchMangaDetail(mangaId) {
                 } catch(e) { pagesError = "Parse error: " + e }
             })
     }
-
     function fetchFavorites() {
         if (isFetchingFavs) return
         isFetchingFavs = true
@@ -274,28 +223,23 @@ function fetchMangaDetail(mangaId) {
             } catch(e) {}
         })
     }
-
     function addFavorite(manga) {
         _post(root.apiUrl + "/favorites/add",
             { id:manga.id, title:manga.title||"",
               imageUrl:manga.coverUrl||manga.image||manga.thumbUrl||"" },
             function(err) { if (!err) fetchFavorites() })
     }
-
     function removeFavorite(mangaId) {
         _post(root.apiUrl + "/favorites/remove", { id:mangaId },
             function(err) { if (!err) fetchFavorites() })
     }
-
     function isFavorite(mangaId) {
         return favoritesList.some(function(f){ return f.id === mangaId })
     }
-
     function markChapterSeen(mangaId, chapterId) {
         _post(root.apiUrl + "/favorites/mark-seen", { id:mangaId, chapterId:chapterId },
             function(err) { if (!err) fetchFavorites() })
     }
-
     function checkFavoritesForUpdates() {
         _get(root.apiUrl + "/favorites/check", function(err, body) {
             if (err) return
@@ -305,7 +249,6 @@ function fetchMangaDetail(mangaId) {
             } catch(e) {}
         })
     }
-
     function fetchAllLibrary() {
         _get(root.apiUrl + "/library/all", function(err, body) {
             libraryLoaded = true
@@ -313,7 +256,6 @@ function fetchMangaDetail(mangaId) {
             try { root.libraryAll = JSON.parse(body) } catch(e) {}
         })
     }
-
     function getLibraryStatus(mangaId) {
         var ss = ["reading","completed","planning","on_hold","dropped","rereading"]
         for (var i = 0; i < ss.length; i++) {
@@ -323,9 +265,7 @@ function fetchMangaDetail(mangaId) {
         }
         return ""
     }
-
     function isInLibrary(mangaId) { return getLibraryStatus(mangaId) !== "" }
-
     function addToLibrary(manga, status) {
         var st = status || "planning"
         var entry = { id:String(manga.id), title:manga.title||manga.name||"",
@@ -339,7 +279,6 @@ function fetchMangaDetail(mangaId) {
               coverUrl:manga.coverUrl||manga.image||manga.thumbUrl||"", status:st },
             function(err) { if (!err) fetchAllLibrary() })
     }
-
     function updateLibraryStatus(mangaId, status) {
         var up = Object.assign({}, root.libraryAll)
         var existing = null
@@ -364,7 +303,6 @@ function fetchMangaDetail(mangaId) {
         _post(root.apiUrl + "/library/update", { id:String(mangaId), status:status },
             function(err) { if (!err) fetchAllLibrary() })
     }
-
     function removeFromLibrary(mangaId) {
         var up = Object.assign({}, root.libraryAll)
         var ss = ["reading","completed","planning","on_hold","dropped","rereading"]
@@ -374,9 +312,7 @@ function fetchMangaDetail(mangaId) {
         _post(root.apiUrl + "/library/remove", { id:String(mangaId) },
             function(err) { if (!err) fetchAllLibrary() })
     }
-
     function getLibraryItems(status) { return root.libraryAll[status] || [] }
-
     function getLibraryEntry(mangaId) {
         var ss = ["reading","completed","planning","on_hold","dropped","rereading"]
         for (var i = 0; i < ss.length; i++) {
@@ -386,7 +322,6 @@ function fetchMangaDetail(mangaId) {
         }
         return null
     }
-
     function clearChapterPages() { chapterPages=[]; currentChapterId=""; pagesError="" }
     function clearMangaList() {
         mangaList=[]; hasMoreManga=false; currentOffset=0; latestPage=1; mangaError=""
