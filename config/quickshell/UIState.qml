@@ -10,9 +10,9 @@ Singleton {
     	property var notifications: []
     	property int _nid: 0
     	signal notificationReceived(int nid, string app, string title, string body)
+		signal notificationAdded(int nid, string app, string title, string body)
 
 	function addNotification(app, title, body) {
-		if (dndEnabled) return
 		if (title === "" && body === "") return
 		var id = _nid++
 		var list = notifications.slice()
@@ -25,7 +25,10 @@ Singleton {
 		})
 		if (list.length > 50) list = list.slice(0, 50)
 		notifications = list
-		notificationReceived(id, app, title, body)
+		    notificationAdded(id, app, title, body)
+		    if (!dndEnabled) {
+        notificationReceived(id, app, title, body)
+    }
 	}
 
 	function dismissNotif(id) {

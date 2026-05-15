@@ -955,6 +955,14 @@ Rectangle {
 						id: networkRow
 						anchors.centerIn: parent
 						spacing: 8
+						    Text {
+        anchors.verticalCenter: parent.verticalCenter
+        visible: root.ethConnected
+        text: "󰈀"
+        color: root.walColor2
+        font.pixelSize: 14
+        font.family: "JetBrainsMono Nerd Font"
+    }
 						Text {
 							anchors.verticalCenter: parent.verticalCenter
 							text: {

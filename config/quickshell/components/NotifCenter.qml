@@ -152,16 +152,8 @@ PanelWindow {
 							cursorShape: Qt.PointingHandCursor
 							onClicked: {
 								root.dndEnabled = !root.dndEnabled
-                                				dndProc.running = true
+
 							}
-						}
-						Process {
-							id: dndProc
-                            				command: ["bash", "-c",
-								root.dndEnabled
-								? "swaync-client -dn"
-								: "swaync-client -df"
-							]
 						}
 					}
 					Rectangle {

@@ -25,13 +25,16 @@ ShellRoot {
 	property bool btVisible: false
 	property bool calendarVisible: false
 	property bool dndEnabled: false
+	onDndEnabledChanged: UIState.dndEnabled = dndEnabled
 	property bool notifCenterVisible: false
 	property bool clipboardVisible: false
 	property bool clockPanelVisible: false
 	property bool animePanelVisible: false
 	property bool moviesPanelVisible: false
+	property bool ethConnected: false
 	property var pfpFiles: []
 	property string searchTerm: ""
+	property string ethDevice: ""
 	property var appList: []
 	property var notifications: []
 	property var notificationHistory: []
@@ -259,7 +262,7 @@ ShellRoot {
 	}
 	Connections {
 		target: UIState
-		function onNotificationReceived(nid, app, title, body) {
+		function onNotificationAdded(nid, app, title, body) {
 			var hist = root.notificationHistory.slice()
 			hist.unshift({
 				nid: nid,
@@ -454,21 +457,10 @@ ShellRoot {
         	"ln -sf ~/.cache/wal/colors-gtk.css ~/.config/gtk-4.0/gtk.css 2>/dev/null"
     	]
 		onExited: {
-			if (!walStepSwaync.running) walStepSwaync.running = true
-		}
-	}
-	Process {
-		id: walStepSwaync
-		command: ["bash", "-c",
-			"cp '" + root.cachePath + "/wal/colors-swaync.css' '" + root.configPath + "/../swaync/style.css' 2>/dev/null; " +
-        		"echo '.notification-row { opacity: 0; min-height: 0; min-width: 0; } " +
-        		".blank-window { background: transparent; }' >> '" + root.configPath + "/../swaync/style.css' 2>/dev/null; " +
-        		"pkill -SIGUSR1 swaync 2>/dev/null"
-		]
-		onExited: {
 			if (!walStepBlur.running) walStepBlur.running = true
 		}
 	}
+
 	Process {
 		id: walStepBlur
         	command: {
@@ -646,6 +638,28 @@ ShellRoot {
 			root.wifiSignal = 0
 		}
 	}
+Process {
+    id: ethProc
+command: ["bash", "-c", "result=$(nmcli -t -f device,type,state dev 2>/dev/null | grep ':ethernet:connected$' | head -1 | cut -d: -f1); if [ -n \"$result\" ]; then echo \"1|$result\"; else echo \"0|\"; fi"]
+    stdout: SplitParser {
+        onRead: data => {
+            var parts = data.trim().split("|")
+            root.ethConnected = parts[0] === "1"
+            root.ethDevice = parts.length > 1 ? parts[1] : ""
+        }
+    }
+}
+
+Timer {
+    interval: 5000
+    running: true
+    repeat: true
+    triggeredOnStart: true
+    onTriggered: {
+        if (!ethProc.running) ethProc.running = true
+    }
+}
+
 	Process {
 		id: btStatusProc
 		command: ["bash", "-c", "echo -e 'show\\nquit' | bluetoothctl 2>/dev/null | grep -q 'Powered: yes' && echo 'true' || echo 'false'"]
@@ -703,7 +717,15 @@ ShellRoot {
 	}
 	Process {
 		id: btScanProc
-		command: ["bash", "-c", "echo -e 'scan on\\nquit' | bluetoothctl 2>/dev/null; sleep 5; echo -e 'scan off\\nquit' | bluetoothctl 2>/dev/null; sleep 1; echo -e 'devices\\nquit' | bluetoothctl 2>/dev/null | grep '^Device' | while read -r line; do mac=$(echo \"$line\" | awk '{print $2}'); name=$(echo \"$line\" | cut -d' ' -f3-); info=$(echo -e \"info $mac\\nquit\" | bluetoothctl 2>/dev/null); paired=$(echo \"$info\" | grep -oP 'Paired: \\K\\w+'); if [ \"$paired\" != \"yes\" ] && [ -n \"$name\" ] && [ \"$name\" != \"$mac\" ]; then echo \"${mac}|${name}\"; fi; done"]
+    command: ["bash", "-c", 
+        "bluetoothctl scan on & SCAN_PID=$!; sleep 8; kill $SCAN_PID 2>/dev/null; " +
+        "bluetoothctl devices | grep '^Device' | while read -r line; do " +
+        "mac=$(echo \"$line\" | awk '{print $2}'); " +
+        "name=$(echo \"$line\" | cut -d' ' -f3-); " +
+        "paired=$(bluetoothctl info \"$mac\" 2>/dev/null | grep -oP 'Paired: \\K\\w+'); " +
+        "[ \"$paired\" != 'yes' ] && [ -n \"$name\" ] && [ \"$name\" != \"$mac\" ] && echo \"${mac}|${name}\"; " +
+        "done"
+    ]
 		stdout: SplitParser {
 		onRead: data => {
 			var line = data.trim()

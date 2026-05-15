@@ -170,27 +170,16 @@ PanelWindow {
 	}
 
 	Process {
-		id: timerSoundProc
-		command: ["bash", "-c",
-			"paplay /usr/share/sounds/freedesktop/stereo/complete.oga 2>/dev/null || " +
-			"paplay /usr/share/sounds/freedesktop/stereo/bell.oga 2>/dev/null || " +
-			"pw-play /usr/share/sounds/freedesktop/stereo/complete.oga 2>/dev/null || " +
-			"aplay /usr/share/sounds/alsa/Front_Center.wav 2>/dev/null || " +
-			"( speaker-test -t sine -f 880 -l 1 -D default 2>/dev/null ) || true"
-		]
+	    id: timerSoundProc
+	    command: ["pw-play", Quickshell.env("HOME") + "/.config/quickshell/assets/timer.wav"]
 	}
 	Process {
-		id: alarmSoundProc
-		command: ["bash", "-c",
-			"for i in 1 2 3; do " +
-			"  paplay /usr/share/sounds/freedesktop/stereo/alarm-clock-elapsed.oga 2>/dev/null || " +
-			"  paplay /usr/share/sounds/freedesktop/stereo/complete.oga 2>/dev/null || " +
-			"  pw-play /usr/share/sounds/freedesktop/stereo/alarm-clock-elapsed.oga 2>/dev/null || " +
-			"  aplay /usr/share/sounds/alsa/Front_Center.wav 2>/dev/null || " +
-			"  ( speaker-test -t sine -f 1000 -l 1 -D default 2>/dev/null ); " +
-			"  sleep 0.7; " +
-			"done; true"
-		]
+	    id: alarmSoundProc
+	    command: ["bash", "-c",
+	        "for i in 1 2 3; do " +
+	        "pw-play " + Quickshell.env("HOME") + "/.config/quickshell/assets/timer.wav; " +
+	        "sleep 0.3; done"
+	    ]
 	}
 	Process { id: timerNotifyProc; command: ["bash", "-c", "notify-send -u normal '󱎫 Timer' 'Timer finished!' 2>/dev/null || true"] }
 	Process { id: alarmNotifyProc; command: ["bash", "-c", "notify-send -u critical '󰂟 Alarm' 'Alarm ringing!' 2>/dev/null || true"] }

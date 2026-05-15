@@ -100,6 +100,44 @@ PanelWindow {
 						}
 					}
 				}
+				    Rectangle {
+        Layout.fillWidth: true
+        Layout.preferredHeight: 50
+        radius: 12
+        color: Qt.rgba(0, 0, 0, 0.5)
+        visible: root.ethConnected
+        RowLayout {
+            anchors.fill: parent
+            anchors.margins: 12
+            spacing: 10
+            Text {
+                text: "󰈀"
+                color: root.walColor2
+                font.pixelSize: 18
+                font.family: "JetBrainsMono Nerd Font"
+            }
+            ColumnLayout {
+                Layout.fillWidth: true
+                spacing: 2
+                Text {
+                    text: root.ethDevice || "Ethernet"
+                    color: root.walColor2
+                    font.pixelSize: 13
+                    font.bold: true
+                    font.family: "JetBrainsMono Nerd Font"
+                    elide: Text.ElideRight
+                    Layout.fillWidth: true
+                }
+                Text {
+                    text: "Connected"
+                    color: root.walColor8
+                    font.pixelSize: 10
+                    font.family: "JetBrainsMono Nerd Font"
+                }
+            }
+        }
+	}
+
 				Rectangle {
 					Layout.fillWidth: true
                     			Layout.preferredHeight: 50
