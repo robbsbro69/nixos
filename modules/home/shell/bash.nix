@@ -1,6 +1,4 @@
-{
-  ...
-}: {
+{...}: {
   programs.bash = {
     enable = true;
     shellAliases = {
@@ -17,6 +15,11 @@
           magick "$f" "''${f%.webp}.png" && rm "$f"
         done
       '';
+      zip2cbz = ''
+        for f in *.zip; do
+          mv -- "$f" "''${f%.zip}.cbz"
+        done
+      '';
     };
     initExtra = ''
       export PATH="$HOME/.cargo/bin:$PATH"
@@ -27,9 +30,5 @@
       --color=selected-bg:#45475A \
       --color=border:#6C7086,label:#CDD6F4"
     '';
-  };
-
-  programs.starship = {
-    enable = true;
   };
 }

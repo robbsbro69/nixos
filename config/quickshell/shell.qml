@@ -144,6 +144,7 @@ ShellRoot {
 		clipboardVisible = false
 		animePanelVisible = false
 		moviesPanelVisible = false
+
 	}
 	function refreshBluetooth() {
 		root.btPairedDevices = []
@@ -249,6 +250,7 @@ ShellRoot {
 	function toggleMoviesPanel() { 
 		moviesPanelVisible = !moviesPanelVisible 
 	}
+
 	Component.onCompleted: {
 		initStateDir.running = true
 		if (Hyprland.focusedMonitor) {

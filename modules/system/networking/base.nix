@@ -1,16 +1,9 @@
-{
-  ...
-}: {
+{...}: {
   networking.hostName = "nixos";
   networking.networkmanager = {
     enable = true;
-    dns = "none";
+    dns = "systemd-resolved";
   };
-  networking.nameservers = [
-    "1.1.1.1"
-    "8.8.8.8"
-    "one.one.one.one"
-  ];
-
+  networking.nameservers = [];
   time.timeZone = "Asia/Kathmandu";
 }

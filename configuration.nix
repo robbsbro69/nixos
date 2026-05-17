@@ -5,11 +5,17 @@
 }: {
   imports = [
     ./hardware-configuration.nix
-    ./modules/system/hardware.nix
-    ./modules/system/networking.nix
+    ./modules/system/boot
+    ./modules/system/hardware
+    ./modules/system/display
+    ./modules/system/networking
+    ./modules/system/services
+    ./modules/system/fonts.nix
     ./modules/system/nix.nix
-    ./modules/system/services.nix
+    ./modules/system/security.nix
     ./modules/system/users.nix
+    ./modules/system/vpn.nix
+    ./modules/system/packages.nix
   ];
 
   nixpkgs.config.allowUnfree = true;

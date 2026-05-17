@@ -432,6 +432,178 @@ PanelWindow {
 						}
 					}
 				}
+
+				Rectangle {
+    id: vpnToggle
+    Layout.fillWidth: true
+    Layout.preferredHeight: 50
+    color: Qt.rgba(0, 0, 0, 0.5)
+    radius: 15
+    property bool vpnEnabled: false
+
+    Component.onCompleted: vpnCheckProc.running = true
+
+    Process {
+		id: vpnCheckProc
+		command: ["bash", "-c", "systemctl is-active wg-quick-protonvpn-sys 2>/dev/null | grep -q '^active$' && echo on || echo off"]
+        stdout: SplitParser {
+            onRead: data => vpnToggle.vpnEnabled = data.trim() === "on"
+        }
+    }
+Process {
+    id: vpnNotifyProc
+    property string msg: ""
+    command: ["bash", "-c", "notify-send -a 'ProtonVPN' -i network-vpn '" + msg + "'"]
+}
+    Process {
+		id: vpnToggleProc
+		property bool wantEnabled: false
+command: {
+    if (vpnToggle.vpnEnabled)
+        return ["bash", "-c", "sudo systemctl stop wg-quick-protonvpn-sys 2>&1"]
+    else
+        return ["bash", "-c", "sudo systemctl start wg-quick-protonvpn-sys 2>&1"]
+}
+        onExited: {
+            vpnCheckTimer.start()
+        }
+    }
+
+    Timer {
+        id: vpnCheckTimer
+        interval: 1500
+        repeat: false
+		onTriggered: {
+
+			vpnCheckProc.running = true
+			        vpnResultTimer.start()
+
+		}
+	}
+	Timer {
+    id: vpnResultTimer
+    interval: 500
+    repeat: false
+    onTriggered: {
+        var wanted = !vpnToggle.vpnEnabled  // what we tried to do before check
+        // re-read after check completes
+        vpnResultCheckProc.running = true
+    }
+}
+
+Process {
+    id: vpnResultCheckProc
+    property bool previousState: false
+    command: ["bash", "-c", "systemctl is-active wg-quick-protonvpn-sys 2>/dev/null | grep -q '^active$' && echo on || echo off"]
+    stdout: SplitParser {
+        onRead: data => {
+            var isOn = data.trim() === "on"
+            vpnToggle.vpnEnabled = isOn
+            if (isOn) {
+                vpnNotifyProc.msg = "VPN Connected — ProtonVPN is active"
+                vpnNotifyProc.running = true
+            } else {
+                vpnNotifyProc.msg = "VPN Disconnected — ProtonVPN is off"
+                vpnNotifyProc.running = true
+            }
+        }
+    }
+}
+
+Timer {
+    id: vpnCrashWatcher
+    interval: 10000
+    running: vpnToggle.vpnEnabled
+    repeat: true
+    onTriggered: {
+        vpnCrashCheckProc.running = true
+    }
+}
+
+Process {
+    id: vpnCrashCheckProc
+    property bool wasEnabled: false
+    command: ["bash", "-c", "systemctl is-active wg-quick-protonvpn-sys 2>/dev/null | grep -q '^active$' && echo on || echo off"]
+    stdout: SplitParser {
+        onRead: data => {
+            var isOn = data.trim() === "on"
+            if (vpnToggle.vpnEnabled && !isOn) {
+                // was on, now off = crash
+                vpnToggle.vpnEnabled = false
+                vpnNotifyProc.msg = "VPN Crashed — ProtonVPN dropped unexpectedly!"
+                vpnNotifyProc.running = true
+            }
+        }
+    }
+}
+
+    Timer {
+        interval: 5000
+        running: root.dashboardVisible
+        repeat: true
+        triggeredOnStart: false
+        onTriggered: {
+            if (!vpnCheckProc.running) vpnCheckProc.running = true
+        }
+    }
+
+    RowLayout {
+        anchors.fill: parent
+        anchors.margins: 15
+        spacing: 10
+
+        Text {
+            text: "󰦝"
+            color: vpnToggle.vpnEnabled ? root.walColor2 : root.walColor8
+            font.pixelSize: 18
+            font.family: "JetBrainsMono Nerd Font"
+            Behavior on color { ColorAnimation { duration: 200 } }
+        }
+
+        Text {
+            text: "ProtonVPN"
+            color: root.walForeground
+            font.pixelSize: 13
+            font.family: "JetBrainsMono Nerd Font"
+            Layout.fillWidth: true
+        }
+
+        Text {
+            text: vpnToggle.vpnEnabled ? "ON" : "OFF"
+            color: vpnToggle.vpnEnabled ? root.walColor2 : root.walColor8
+            font.pixelSize: 10
+            font.bold: true
+            font.family: "JetBrainsMono Nerd Font"
+            Behavior on color { ColorAnimation { duration: 200 } }
+        }
+
+        Rectangle {
+            width: 44
+            height: 24
+            radius: 12
+            color: vpnToggle.vpnEnabled ? root.walColor2 : Qt.rgba(0.3, 0.3, 0.3, 0.5)
+            Behavior on color { ColorAnimation { duration: 200 } }
+
+            Rectangle {
+                width: 20
+                height: 20
+                radius: 10
+                y: 2
+                x: vpnToggle.vpnEnabled ? 22 : 2
+                color: root.walBackground
+                Behavior on x { NumberAnimation { duration: 200; easing.type: Easing.OutCubic } }
+            }
+
+            MouseArea {
+                anchors.fill: parent
+                cursorShape: Qt.PointingHandCursor
+                onClicked: {
+                    if (!vpnToggleProc.running) vpnToggleProc.running = true
+                }
+            }
+        }
+    }
+}
 				Rectangle {
 					Layout.fillWidth: true
                    	 		Layout.preferredHeight: 70

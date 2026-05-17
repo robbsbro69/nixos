@@ -8,6 +8,7 @@
     nvim = "nvim";
     hypr = "hypr";
     yazi = "yazi";
+    rmpc = "rmpc";
     kitty = "kitty";
     scripts = "scripts";
     starship = "starship";

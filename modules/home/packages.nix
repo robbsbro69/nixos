@@ -1,7 +1,4 @@
-{
-  pkgs,
-  ...
-}: {
+{pkgs, ...}: {
   home.packages = with pkgs; [
     yazi
     eza
@@ -9,7 +6,6 @@
     pywal
     fastfetch
     figlet
-    cmatrix
     upower
     brightnessctl
   ];
