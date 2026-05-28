@@ -10,13 +10,13 @@ channels = mono
 
 [color]
 background = '#1e1e2e'
-foreground = '#89b4fa'
+foreground = '#f5c2e7'
 
 gradient = 1
 gradient_color_1 = '#f38ba8'
-gradient_color_2 = '#cba6f7'
-gradient_color_3 = '#89b4fa'
-gradient_color_4 = '#a6e3a1'
+gradient_color_2 = '#f5c2e7'
+gradient_color_3 = '#b4befe'
+gradient_color_4 = '#89b4fa'
 
 [smoothing]
 noise_reduction = 60

@@ -3,7 +3,7 @@ hl.on("hyprland.start", function()
 	local startup = {
 		"ssh-add /home/alpha/.ssh/id_ed25519",
 		"swww-daemon",
-		"wal -R -n",
+		"wal --theme catppuccin-mocha-pink -n -q",
 		"gammastep -O 3000 -m wayland",
 		"systemctl --user start hypridle",
 		"[workspace 1 silent] zen-beta",

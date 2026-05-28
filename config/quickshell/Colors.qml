@@ -7,7 +7,7 @@ Singleton {
 	id: colors
 	property color bg:      "#1e1e2e"
     property color fg:      "#cdd6f4"
-    property color accent:  "#89b4fa"
+    property color accent:  "#f5c2e7"
     property color green:   "#a6e3a1"
     property color red:     "#f38ba8"
     property color yellow:  "#f9e2af"

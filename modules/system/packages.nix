@@ -45,7 +45,7 @@
     qt6.qtimageformats
     (pkgs.catppuccin-sddm.override {
       flavor = "mocha";
-      accent = "mauve";
+      accent = "pink";
       font = "JetBrainsMono Nerd Font";
       fontSize = "10";
     })

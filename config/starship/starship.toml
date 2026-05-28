@@ -2,8 +2,8 @@
 palette = "catppuccin_mocha"
 
 [character]
-success_symbol = "[[󰄛](green) ❯](peach)"
-error_symbol = "[[󰄛](red) ❯](peach)"
+success_symbol = "[[󰄛](pink) ❯](pink)"
+error_symbol = "[[󰄛](red) ❯](pink)"
 vimcmd_symbol = "[󰄛 ❮](subtext1)"
 
 [git_branch]
@@ -20,7 +20,6 @@ style = "bold pink"
 rosewater = "#f5e0dc"
 flamingo = "#f2cdcd"
 pink = "#f5c2e7"
-mauve = "#cba6f7"
 red = "#f38ba8"
 maroon = "#eba0ac"
 peach = "#fab387"

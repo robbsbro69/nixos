@@ -4,6 +4,7 @@
 **/.env.*
 /result
 commit.txt
+modules/system/networking/base.nix
 config/vesktop/*
 !config/vesktop/themes/
 !config/vesktop/themes/**

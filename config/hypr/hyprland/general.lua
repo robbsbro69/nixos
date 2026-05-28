@@ -22,7 +22,7 @@ hl.config({
 		gaps_in = 4,
 		gaps_out = 6,
 		border_size = 1,
-		["col.active_border"] = "rgba(7fc8ffff)",
+		["col.active_border"] = "rgba(f5c2e7ff)",
 		["col.inactive_border"] = "rgba(505050ff)",
 		resize_on_border = false,
 		no_focus_fallback = true,
