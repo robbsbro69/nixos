@@ -1,46 +1,48 @@
 #!/usr/bin/env bash
 WALL_DIR="$HOME/wallpapers"
-CACHE_FILE="/tmp/wallpaper-shuffle-list"
-# get current wallpapers on disk
-DISK_LIST=$(find "$WALL_DIR" -maxdepth 1 -type f \
-	\( -iname '*.jpg' -o -iname '*.jpeg' -o -iname '*.gif' -o -iname '*.png' -o -iname '*.webp' \) \
-	! -name ".*" \
-	! -name "current" \
-	! -name "current.*" \
-	! -name "README*")
-# if cache missing or empty, build fresh
+CACHE_DIR="${XDG_STATE_HOME:-$HOME/.local/state}/wallpaper-shuffle"
+CACHE_FILE="$CACHE_DIR/queue"
+LAST_FILE="$CACHE_DIR/last"
+mkdir -p "$CACHE_DIR"
+
+build_fresh_queue() {
+    local last=""
+    [ -f "$LAST_FILE" ] && last=$(cat "$LAST_FILE")
+    if [ -n "$last" ] && [ -f "$last" ]; then
+        { find "$WALL_DIR" -maxdepth 1 -type f -not -name ".*" \
+              \( -iname '*.jpg' -o -iname '*.jpeg' -o -iname '*.gif' \
+                 -o -iname '*.png' -o -iname '*.webp' \) \
+            | grep -vxF "$last" | shuf --random-source=/dev/urandom
+          echo "$last"
+        }
+    else
+        find "$WALL_DIR" -maxdepth 1 -type f -not -name ".*" \
+            \( -iname '*.jpg' -o -iname '*.jpeg' -o -iname '*.gif' \
+               -o -iname '*.png' -o -iname '*.webp' \) \
+            | shuf --random-source=/dev/urandom
+    fi > "$CACHE_FILE"
+}
+
 if [ ! -s "$CACHE_FILE" ]; then
-	echo "$DISK_LIST" | shuf > "$CACHE_FILE"
+    build_fresh_queue
 else
-	# find new images not yet in cache
-	NEW_IMAGES=$(echo "$DISK_LIST" | grep -vxFf "$CACHE_FILE")
-	# insert new images at random positions — fixed: no subshell loop
-	if [ -n "$NEW_IMAGES" ]; then
-		TMP=$(mktemp)
-		cp "$CACHE_FILE" "$TMP"
-		while IFS= read -r img; do
-			LINES=$(wc -l < "$TMP")
-			INSERT_AT=$(( (RANDOM % (LINES + 1)) + 1 ))
-			TMP2=$(mktemp)
-			awk -v line="$INSERT_AT" -v val="$img" \
-				'NR==line{print val} {print}' "$TMP" > "$TMP2"
-			mv "$TMP2" "$TMP"
-		done <<< "$NEW_IMAGES"
-		mv "$TMP" "$CACHE_FILE"
-	fi
+    TMP=$(mktemp)
+    while IFS= read -r line; do
+        [ -f "$line" ] && echo "$line"
+    done < "$CACHE_FILE" > "$TMP"
+    if [ ! -s "$TMP" ]; then
+        rm -f "$TMP"
+        build_fresh_queue
+    else
+        mv "$TMP" "$CACHE_FILE"
+    fi
 fi
-# pick next wallpaper
-selected_path=""
-while IFS= read -r line; do
-	if [ -f "$line" ]; then
-		selected_path="$line"
-		TMP=$(mktemp)
-		grep -vxF "$line" "$CACHE_FILE" > "$TMP"
-		mv "$TMP" "$CACHE_FILE"
-		break
-	fi
-done < "$CACHE_FILE"
-# apply wallpaper
-if [ -n "$selected_path" ]; then
-	qs ipc call randomwallpaper apply "$selected_path"
+
+selected_path=$(head -n1 "$CACHE_FILE")
+if [ -n "$selected_path" ] && [ -f "$selected_path" ]; then
+    TMP=$(mktemp)
+    tail -n +2 "$CACHE_FILE" > "$TMP"
+    mv "$TMP" "$CACHE_FILE"
+    echo "$selected_path" > "$LAST_FILE"
+    qs ipc call randomwallpaper apply "$selected_path"
 fi

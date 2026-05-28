@@ -2,6 +2,10 @@
   home.packages = with pkgs; [
     nodejs
     gcc
-    rustup
+    cargo
+    rustc
+    rustfmt
+    clippy
+    rust-analyzer
   ];
 }

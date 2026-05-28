@@ -10,6 +10,7 @@
     grim
     slurp
     xwayland
+    gammastep
     wlr-randr
     wf-recorder
     wl-clipboard
@@ -32,7 +33,6 @@
     jellyfin
     jellyfin-web
     jellyfin-ffmpeg
-    jellyfin-desktop
 
     # terminal
     kitty

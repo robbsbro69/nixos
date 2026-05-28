@@ -9,10 +9,10 @@
     imagemagick
     evince
     vesktop
-    obsidian
+    delfin
+    telegram-desktop
     transmission_4-gtk
     video-downloader
-    telegram-desktop
     quickshell.packages.${pkgs.stdenv.hostPlatform.system}.default
   ];
 }

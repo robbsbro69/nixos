@@ -220,31 +220,31 @@ Singleton {
         })
     }
 
-function _parseList(json) {
-    try {
-        var data = JSON.parse(json)
-        if (data.error) { fetchError = data.error; isFetching = false; return }
-        var incoming = data.results || []
-        var isAppend = itemList.length > 0
-        if (!isAppend) {
-            itemList = incoming
-        } else {
-            var seen = {}
-            for (var k = 0; k < itemList.length; k++)
-                seen[String(itemList[k].id) + ":" + (itemList[k].type||"")] = true
-            var fresh = []
-            for (var j = 0; j < incoming.length; j++) {
-                var key = String(incoming[j].id) + ":" + (incoming[j].type||"")
-                if (!seen[key]) fresh.push(incoming[j])
-            }
-            if (fresh.length > 0)
-                itemList = itemList.concat(fresh)
-        }
-        hasMore    = currentPage < (data.totalPages || 1)
-        fetchError = ""
-    } catch(e) { fetchError = "Parse error: " + e }
-    isFetching = false
-}
+	function _parseList(json) {
+	    try {
+	        var data = JSON.parse(json)
+	        if (data.error) { fetchError = data.error; isFetching = false; return }
+	        var incoming = data.results || []
+	        var isAppend = itemList.length > 0
+	        if (!isAppend) {
+	            itemList = incoming
+	        } else {
+	            var seen = {}
+	            for (var k = 0; k < itemList.length; k++)
+	                seen[String(itemList[k].id) + ":" + (itemList[k].type||"")] = true
+	            var fresh = []
+	            for (var j = 0; j < incoming.length; j++) {
+	                var key = String(incoming[j].id) + ":" + (incoming[j].type||"")
+	                if (!seen[key]) fresh.push(incoming[j])
+	            }
+	            if (fresh.length > 0)
+	                itemList = itemList.concat(fresh)
+	        }
+	        hasMore    = currentPage < (data.totalPages || 1)
+	        fetchError = ""
+	    } catch(e) { fetchError = "Parse error: " + e }
+	    isFetching = false
+	}
 
     function fetchNextPage() {
         if (!hasMore || isFetching) return

@@ -1,0 +1,10 @@
+-- ~/.config/hypr/hyprland.lua
+require("hyprland/monitors")
+require("hyprland/env")
+require("hyprland/execs")
+require("hyprland/general")
+require("hyprland/mocha")
+require("hyprland/animations")
+require("hyprland/gestures")
+require("hyprland/keybinds")
+require("hyprland/rules")

@@ -4,6 +4,9 @@
 **/.env.*
 /result
 commit.txt
+config/vesktop/*
+!config/vesktop/themes/
+!config/vesktop/themes/**
 config/fastfetch/logo/*
 config/quickshell/tmdb_account_id
 config/quickshell/tmdb_token

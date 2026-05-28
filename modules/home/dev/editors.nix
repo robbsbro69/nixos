@@ -1,13 +1,12 @@
 {pkgs, ...}: {
   home.packages = with pkgs; [
-    neovim
-    # LSP / formatters
     nil
     biome
-    alejandra
     stylua
+    neovim
+    alejandra
     prettierd
-    nodePackages.prettier
     lua-language-server
+    nodePackages.prettier
   ];
 }

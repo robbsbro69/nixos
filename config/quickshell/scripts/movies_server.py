@@ -113,19 +113,6 @@ STATUSES = ["watching", "completed", "planning", "on_hold", "dropped"]
 _cache      = {}
 _cache_lock = threading.Lock()
 
-
-# def _cached(key, ttl, fn):
-#     with _cache_lock:
-#         entry = _cache.get(key)
-#     if entry:
-#         val, exp = entry
-#         if time.monotonic() < exp:
-#             return val
-#     val = fn()
-#     with _cache_lock:
-#         _cache[key] = (val, time.monotonic() + ttl)
-#     return val
-
 def _cached(key, ttl, fn):
     with _cache_lock:
         entry = _cache.get(key)
@@ -164,13 +151,6 @@ def _img_get(key):
     with _img_lock:
         return _img_cache.get(key)
 
-
-# def _img_put(key, body, ct):
-#     with _img_lock:
-#         if len(_img_cache) > 400:
-#             _img_cache.pop(next(iter(_img_cache)))
-#         _img_cache[key] = (body, ct)
-#
 def _img_put(key, body, ct):
     with _img_lock:
         total = sum(len(v[0]) for v in _img_cache.values())

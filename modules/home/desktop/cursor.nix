@@ -9,7 +9,10 @@
   };
 
   home.pointerCursor = {
+    enable = true;
     gtk.enable = true;
+    hyprcursor.enable = true;
+    hyprcursor.size = 24;
     name = "Adwaita";
     package = pkgs.adwaita-icon-theme;
     size = 24;

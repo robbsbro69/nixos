@@ -112,18 +112,6 @@ query($mediaId:Int){
 _cache = {}
 _cache_lock = threading.Lock()
 
-# def _cached(key, ttl, fn):
-#     with _cache_lock:
-#         entry = _cache.get(key)
-#     if entry:
-#         val, exp = entry
-#         if time.monotonic() < exp:
-#             return val
-#     val = fn()
-#     with _cache_lock:
-#         _cache[key] = (val, time.monotonic() + ttl)
-#     return val
-
 def _cached(key, ttl, fn):
     with _cache_lock:
         entry = _cache.get(key)
@@ -158,13 +146,6 @@ _img_sem   = threading.Semaphore(10)
 
 def _img_get(url):
     with _img_lock: return _img_cache.get(url)
-
-# def _img_put(url, body, ct):
-#     with _img_lock:
-#         if len(_img_cache) > 600:
-#             _img_cache.pop(next(iter(_img_cache)))
-#         _img_cache[url] = (body, ct)
-#
 
 def _img_put(url, body, ct):
     with _img_lock:

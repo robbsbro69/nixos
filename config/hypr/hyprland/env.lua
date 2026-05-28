@@ -1,0 +1,11 @@
+-- ~/.config/hypr/hyprland/env.lua
+hl.env("NIXOS_OZONE_WL", "1")
+hl.env("XCURSOR_SIZE", "24")
+hl.env("HYPRCURSOR_THEME", "Adwaita")
+hl.env("HYPRCURSOR_SIZE", "24")
+hl.env("XCURSOR_THEME", "Adwaita")
+hl.env("QT_QPA_PLATFORMTHEME", "gtk3")
+hl.env("QT_STYLE_OVERRIDE", "adwaita-dark")
+hl.env("HYPRLAND_NO_SD_NOTIFY", "1")
+hl.env("AQ_DRM_DEVICES", "/dev/dri/card1:/dev/dri/card2")
+--hl.env("AQ_DRM_DEVICES", "/dev/dri/by-path/pci-0000:01:00.0-card:/dev/dri/by-path/pci-0000:06:00.0-card")

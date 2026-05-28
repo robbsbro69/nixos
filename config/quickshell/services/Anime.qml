@@ -216,9 +216,22 @@ Singleton {
                 } catch(e) { linksError = "Parse error: " + e }
             })
     }
-    function selectLink(link) { selectedLink = link }
-    function clearStreamLinks() { streamLinks=[]; selectedLink=null; linksError=""; currentEpisode="" }
-    function clearAnimeList() { animeList=[]; hasMoreAnime=false; popularPage=1; latestPage=1; animeError="" }
+	function selectLink(link) { 
+		selectedLink = link 
+	}
+	function clearStreamLinks() { 
+		streamLinks=[]; 
+		selectedLink=null; 
+		linksError=""; 
+		currentEpisode="" 
+	}
+	function clearAnimeList() { 
+		animeList=[]; 
+		hasMoreAnime=false; 
+		popularPage=1; 
+		latestPage=1; 
+		animeError="" 
+	}
     function setMode(mode) {
         if (mode === currentMode) return
         currentMode = mode

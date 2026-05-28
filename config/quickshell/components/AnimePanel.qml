@@ -440,17 +440,17 @@ PanelWindow {
                                     displayMarginBeginning: 0; displayMarginEnd: 0
                                     ScrollBar.vertical: ScrollBar { policy: ScrollBar.AsNeeded
                                         contentItem: Rectangle { implicitWidth: 3; color: root.walColor5; opacity: 0.4; radius: 2 } }
-property real _savedY: 0
-    onContentYChanged: {
-        if (contentY > _savedY) _savedY = contentY
-        if (!Anime.isFetchingAnime && contentY > 100
-                && contentY + height > contentHeight - cellHeight * 2)
-            Anime.fetchNextPage()
-    }
-    Connections {
-        target: Anime
-        function onItemsAppended() { animeGrid.contentY = animeGrid._savedY }
-    }
+	property real _savedY: 0
+	    onContentYChanged: {
+	        if (contentY > _savedY) _savedY = contentY
+	        if (!Anime.isFetchingAnime && contentY > 100
+	                && contentY + height > contentHeight - cellHeight * 2)
+	            Anime.fetchNextPage()
+	    }
+	    Connections {
+	        target: Anime
+	        function onItemsAppended() { animeGrid.contentY = animeGrid._savedY }
+	    }
                                     delegate: Item { width: animeGrid.cellWidth; height: animeGrid.cellHeight
                                         Rectangle { id: aCard; anchors { fill: parent; margins: 4 }
                                             radius: 10; color: Qt.rgba(0,0,0,0.3); clip: true
@@ -771,18 +771,18 @@ property real _savedY: 0
                                     visible: Manga.mangaList.length > 0
                                     ScrollBar.vertical: ScrollBar { policy: ScrollBar.AsNeeded
                                         contentItem: Rectangle { implicitWidth: 3; color: root.walColor13; opacity: 0.4; radius: 2 } }
-    property real _savedY: 0
-    onContentYChanged: {
-        if (contentY > _savedY) _savedY = contentY
-        if (!Manga.isFetchingManga && contentY > 100
-                && contentY + height > contentHeight - cellHeight * 2)
-            Manga.fetchNextMangaPage()
-    }
-    Connections {
-        target: Manga
-        function onItemsAppended() { mangaGrid.contentY = mangaGrid._savedY }
-    }
-                                    delegate: Item { width: mangaGrid.cellWidth; height: mangaGrid.cellHeight
+										property real _savedY: 0
+										onContentYChanged: {
+											if (contentY > _savedY) _savedY = contentY
+											if (!Manga.isFetchingManga && contentY > 100
+											&& contentY + height > contentHeight - cellHeight * 2)
+											Manga.fetchNextMangaPage()
+										}
+										Connections {
+											target: Manga
+											function onItemsAppended() { mangaGrid.contentY = mangaGrid._savedY }
+										}
+										delegate: Item { width: mangaGrid.cellWidth; height: mangaGrid.cellHeight
                                         Rectangle { id: mgCard; anchors { fill: parent; margins: 4 }
                                             radius: 10; color: Qt.rgba(0,0,0,0.3); clip: true
                                             Image { anchors { top: parent.top; left: parent.left; right: parent.right }

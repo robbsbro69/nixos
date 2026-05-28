@@ -316,7 +316,6 @@ ShellRoot {
 	}
 	function launchApp(app) {
 		var cmd = app.exec
-    		//if (cmd.startsWith("dolphin")) cmd = "dolphin --new-window"    
 		launchProc.command = ["bash", "-c", "nohup " + cmd + " >/dev/null 2>&1 & disown"]
         	launchProc.running = true
         	var usage = appUsage

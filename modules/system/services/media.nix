@@ -1,6 +1,7 @@
 {...}: {
   services.mpd = {
     enable = true;
+    startWhenNeeded = true;
     user = "alpha";
     musicDirectory = "/home/alpha/Music";
     extraConfig = ''

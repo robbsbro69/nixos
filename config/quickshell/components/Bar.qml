@@ -25,7 +25,7 @@ PanelWindow {
     	implicitHeight: 32
     	color: "transparent"
 
-    	property color notchColor: Qt.rgba(0, 0, 0, 0.80)
+    	property color notchColor: Qt.rgba(0, 0, 0, 0.88)
     	property color notchHoverColor: Qt.rgba(0, 0, 0, 0.90)
     	property int notchRadius: 12
 		property int notchHeight: 32
@@ -190,39 +190,39 @@ PanelWindow {
 		}
 	}
 
-Process {
-    id: mediaProc
-    command: [Quickshell.env("HOME") + "/.config/quickshell/assets/get-player.sh", "%any"]
-    stdout: SplitParser {
-        splitMarker: ""
-        onRead: data => {
-            var lines = data.split("\n")
-            for (var i = 0; i < lines.length; i++) {
-                var line = lines[i].trim()
-                var idx = line.indexOf(":")
-                if (idx < 0) continue
-                var key = line.substring(0, idx)
-                var val = line.substring(idx + 1)
-                switch (key) {
-                    case "player": bar.mediaPlayer = val; break
-                    case "status": bar.mediaClass = val.toLowerCase(); break
-                    case "pos":    bar.mediaPosition = parseInt(val) || 0; break
-                    case "len":    bar.mediaLength = parseInt(val) || 0; break
-                    case "title":  bar._pendingTitle = val; break
-                    case "artist":
-                        bar._pendingArtist = val
-                        var text = bar._pendingArtist
-                            ? bar._pendingArtist + " - " + bar._pendingTitle
-                            : bar._pendingTitle
-                        if (text.length > 35) text = text.substring(0, 32) + "..."
-                        bar.mediaText = text
-                        break
-                }
-            }
-        }
-    }
-}
-
+	Process {
+	    id: mediaProc
+	    command: [Quickshell.env("HOME") + "/.config/quickshell/assets/get-player.sh", "%any"]
+	    stdout: SplitParser {
+	        splitMarker: ""
+	        onRead: data => {
+	            var lines = data.split("\n")
+	            for (var i = 0; i < lines.length; i++) {
+	                var line = lines[i].trim()
+	                var idx = line.indexOf(":")
+	                if (idx < 0) continue
+	                var key = line.substring(0, idx)
+	                var val = line.substring(idx + 1)
+	                switch (key) {
+	                    case "player": bar.mediaPlayer = val; break
+	                    case "status": bar.mediaClass = val.toLowerCase(); break
+	                    case "pos":    bar.mediaPosition = parseInt(val) || 0; break
+	                    case "len":    bar.mediaLength = parseInt(val) || 0; break
+	                    case "title":  bar._pendingTitle = val; break
+	                    case "artist":
+	                        bar._pendingArtist = val
+	                        var text = bar._pendingArtist
+	                            ? bar._pendingArtist + " - " + bar._pendingTitle
+	                            : bar._pendingTitle
+	                        if (text.length > 35) text = text.substring(0, 32) + "..."
+	                        bar.mediaText = text
+	                        break
+	                }
+	            }
+	        }
+	    }
+	}
+	
 
 	Timer {
 		interval: 1000
@@ -399,7 +399,7 @@ Process {
 
                 		gradient: Gradient {
 					GradientStop { 
-						position: 0.0; color: notchRoot.hovered ? Qt.rgba(0, 0, 0, 0.45) : Qt.rgba(0, 0, 0, 0.30) 
+						position: 0.0; color: notchRoot.hovered ? Qt.rgba(0, 0, 0, 0.65) : Qt.rgba(0, 0, 0, 0.55) 
 					}
 					GradientStop { 
 						position: 1.0; color: notchRoot.hovered ? bar.notchHoverColor : bar.notchColor 
@@ -694,24 +694,24 @@ Process {
 								}
 							}
 						}
-Text {
-    id: mediaLabel
-    anchors.verticalCenter: parent.verticalCenter
-    text: bar.mediaText
-    color: root.walColor13
-    font.pixelSize: 10
-    font.bold: true
-    font.family: "JetBrainsMono Nerd Font"
-    opacity: 1.0
-    Behavior on opacity {
-        NumberAnimation {
-            duration: 300;
-            easing.type: Easing.OutCubic
-        }
-    }
-}
+					Text {
+					    id: mediaLabel
+					    anchors.verticalCenter: parent.verticalCenter
+					    text: bar.mediaText
+					    color: root.walColor13
+					    font.pixelSize: 10
+					    font.bold: true
+					    font.family: "JetBrainsMono Nerd Font"
+					    opacity: 1.0
+					    Behavior on opacity {
+					        NumberAnimation {
+					            duration: 300;
+					            easing.type: Easing.OutCubic
+					        }
+					    }
 					}
-Rectangle {
+										}
+					Rectangle {
 						width: 200
 						height: 3
 						radius: 1.5
@@ -1011,7 +1011,7 @@ Rectangle {
 					}
 				}
 			}
-Notch {
+			Notch {
 				id: trayNotch
 				visible: trayRow.implicitWidth > 0
 				width: visible ? trayRow.implicitWidth + 20 : 0
@@ -1034,10 +1034,12 @@ Notch {
 				}
 				Timer {
 					id: traySnapshotTimer
-					interval: 300
+					interval: 1500
 					repeat: false
 					onTriggered: {
-						trayNotch.stableTrayItems = SystemTray.items.values.slice()
+						    trayNotch.stableTrayItems = SystemTray.items.values.filter(function(item) {
+        return item && item.id && item.id !== ""
+    })
 					}
 				}
 				Component.onCompleted: {

@@ -331,7 +331,7 @@ PanelWindow {
 						PowerBtn { 
 							icon: "󰍃"; 
 							iconColor: root.walColor1; 
-							cmd: "hyprctl dispatch exit" 
+							cmd: "sleep 0.3 && hyprctl dispatch exit" 
 						}
 					}
 				}
@@ -343,27 +343,25 @@ PanelWindow {
                     			radius: 15
                     			property bool laptopScreenEnabled: true
                     			Component.onCompleted: checkScreenProc.running = true
-					Process {
-						id: checkScreenProc
-    						command: ["bash", "-c", "hyprctl monitors | grep -q '^Monitor eDP-1' && echo on || echo off"]
-    						stdout: SplitParser {
-							onRead: data => {
-								laptopScreenToggle.laptopScreenEnabled = data.trim() === "on"
-							}
-						}
-					}
-					Process {
-						id: toggleScreenProc
-    						command: {
-							if (laptopScreenToggle.laptopScreenEnabled)
-							return ["bash", "-c", "hyprctl keyword monitor eDP-1,disable"]
-							else
-							return ["bash", "-c", "hyprctl keyword monitor eDP-1,1920x1080@60,0x0,1"]
-						}
-						onExited: {
-							checkScreenProc.running = true
-						}
-					}
+Process {
+    id: checkScreenProc
+    command: ["bash", "-c", "hyprctl monitors -j | grep -q '\"name\":\"eDP-1\"' && echo on || echo off"]
+    stdout: SplitParser {
+        onRead: data => {
+            laptopScreenToggle.laptopScreenEnabled = data.trim() === "on"
+        }
+    }
+}
+Process {
+    id: toggleScreenProc
+    command: {
+        if (laptopScreenToggle.laptopScreenEnabled)
+            return ["bash", "-c", "hyprctl dispatch 'hl.dsp.dpms({ action = \"disable\", monitor = \"eDP-1\" })'"]
+        else
+            return ["bash", "-c", "hyprctl dispatch 'hl.dsp.dpms({ action = \"enable\", monitor = \"eDP-1\" })'"]
+    }
+    onExited: checkScreenProc.running = true
+}
 					Timer {
 						interval: 1000
     						running: root.dashboardVisible

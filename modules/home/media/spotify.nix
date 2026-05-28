@@ -19,4 +19,12 @@ in {
     theme = spicePkgs.themes.catppuccin;
     colorScheme = "mocha";
   };
+
+  xdg.desktopEntries.spotify = {
+    name = "Spotify";
+    exec = "spotify --no-zygote %U";
+    icon = "spotify";
+    terminal = false;
+    categories = ["Audio" "Music"];
+  };
 }

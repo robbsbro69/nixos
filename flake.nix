@@ -33,11 +33,15 @@
     ...
   }: let
     system = "x86_64-linux";
+    pkgs-unstable = import nixpkgs-unstable {
+      inherit system;
+      config.allowUnfree = true;
+    };
   in {
     nixosConfigurations.nixos = nixpkgs.lib.nixosSystem {
       inherit system;
       specialArgs = {
-        pkgs-unstable = nixpkgs-unstable.legacyPackages.${system};
+        inherit pkgs-unstable;
       };
       modules = [
         ./configuration.nix
@@ -49,8 +53,7 @@
             useUserPackages = true;
             users.alpha = import ./home.nix;
             extraSpecialArgs = {
-              inherit zen-browser quickshell spicetify-nix;
-              pkgs-unstable = nixpkgs-unstable.legacyPackages.${system};
+              inherit zen-browser quickshell spicetify-nix pkgs-unstable;
             };
             backupFileExtension = "backup";
           };

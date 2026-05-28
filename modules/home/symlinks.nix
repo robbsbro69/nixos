@@ -10,6 +10,7 @@
     yazi = "yazi";
     rmpc = "rmpc";
     kitty = "kitty";
+    vesktop = "vesktop";
     scripts = "scripts";
     starship = "starship";
     fastfetch = "fastfetch";
@@ -27,4 +28,8 @@ in {
       "gtk-3.0/gtk.css".enable = false;
       "gtk-4.0/gtk.css".enable = false;
     };
+  home.file.".config/zen/1lwlu2d4.Default Profile/chrome" = {
+    source = create_symlink "${dotfiles}/zen/chrome";
+    recursive = true;
+  };
 }
