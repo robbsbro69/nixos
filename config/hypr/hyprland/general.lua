@@ -19,11 +19,11 @@ hl.config({
 
 hl.config({
 	general = {
-		gaps_in = 4,
-		gaps_out = 6,
+		gaps_in = 0,
+		gaps_out = 0,
 		border_size = 1,
-		["col.active_border"] = "rgba(f5c2e7ff)",
-		["col.inactive_border"] = "rgba(505050ff)",
+		["col.active_border"] = "rgba(ffffffaa)",
+		["col.inactive_border"] = "rgba(666666aa)",
 		resize_on_border = false,
 		no_focus_fallback = true,
 		allow_tearing = false,
@@ -50,8 +50,8 @@ hl.config({
 
 hl.config({
 	decoration = {
-		rounding = 10,
-		rounding_power = 2,
+		rounding = 0,
+		rounding_power = 0,
 		shadow = {
 			enabled = true,
 			range = 4,

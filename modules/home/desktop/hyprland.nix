@@ -11,7 +11,7 @@
   home.packages = with pkgs; [
     hyprlock
     hypridle
-    swww
+    awww
     cliphist
     polkit_gnome
   ];

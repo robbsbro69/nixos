@@ -1,4 +1,8 @@
-{pkgs, ...}: {
+{
+  pkgs,
+  kopuz,
+  ...
+}: {
   environment.systemPackages = with pkgs; [
     # core utils
     vim
@@ -24,10 +28,11 @@
     jmtpfs
     libmtp
     usbutils
-    xfce.thunar
-    xfce.tumbler
-    xfce.thunar-volman
-    xfce.thunar-archive-plugin
+    thunar
+    tumbler
+    thunar-volman
+    thunar-archive-plugin
+    podman-compose
 
     # jellyfin stack
     jellyfin
@@ -58,5 +63,7 @@
         flask
         requests
       ]))
+
+    kopuz.packages.${pkgs.stdenv.hostPlatform.system}.default
   ];
 }

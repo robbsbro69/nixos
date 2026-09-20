@@ -7,6 +7,7 @@
     alejandra
     prettierd
     lua-language-server
-    nodePackages.prettier
+    prettier
+    arduino-ide
   ];
 }

@@ -1,14 +1,14 @@
 {pkgs, ...}: {
-  services.mpd-mpris.enable = true;
+  #services.mpd-mpris.enable = true;
 
   home.packages = with pkgs; [
+    mpc
     cava
     rmpc
-    mpc
+    ffmpeg
+    yt-dlp
     mpd-mpris
     playerctl
     libnotify
-    ffmpeg
-    yt-dlp
   ];
 }

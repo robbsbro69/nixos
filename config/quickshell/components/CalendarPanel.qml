@@ -94,7 +94,7 @@ PanelWindow {
         	[2041,30,32,31,32,31,30,30,30,29,29,30,31],
         	[2042,31,31,32,31,31,30,30,30,29,30,29,31],
         	[2043,31,31,32,31,31,30,30,30,29,30,29,31],
-       	 	[2044,31,31,32,31,31,30,30,30,29,30,30,30],
+       		[2044,31,31,32,31,31,30,30,30,29,30,30,30],
         	[2045,31,32,31,32,31,30,30,30,29,30,30,30],
         	[2046,31,32,31,32,31,30,30,30,29,30,30,30],
         	[2047,30,32,31,32,31,30,30,30,29,30,30,31],
@@ -368,8 +368,8 @@ PanelWindow {
             		height: contentCol.implicitHeight + 32
             		radius: 16
             		color: Qt.rgba(root.walBackground.r, root.walBackground.g, root.walBackground.b, 0.95)
-            		border.width: 1
-            		border.color: Qt.rgba(root.walForeground.r, root.walForeground.g, root.walForeground.b, 0.08)
+border.width: 1
+    border.color: Qt.rgba(root.walColor5.r, root.walColor5.g, root.walColor5.b, 0.45)
             		MouseArea { 
 				anchors.fill: parent 
 			}
@@ -403,7 +403,7 @@ PanelWindow {
 									bold: calMode === 0; 
 									family: "JetBrainsMono Nerd Font" 
 								}
-                               	 				Behavior on color { 
+                               					Behavior on color { 
 									ColorAnimation { 
 										duration: 150 
 									} 

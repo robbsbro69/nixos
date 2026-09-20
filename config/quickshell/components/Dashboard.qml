@@ -54,7 +54,9 @@ PanelWindow {
 		Rectangle {
 			anchors.fill: parent
             		color: Qt.rgba(root.walBackground.r, root.walBackground.g, root.walBackground.b, 0.95)
-            		radius: 20
+					radius: 20
+					border.width: 1
+    border.color: Qt.rgba(root.walColor5.r, root.walColor5.g, root.walColor5.b, 0.45)
 			MouseArea {
 				anchors.fill: parent
                 		visible: profileSection.pfpPickerOpen
@@ -101,7 +103,7 @@ PanelWindow {
 								}
 								Image {
 									id: pfpImage
-                                   	 				anchors.centerIn: parent
+                                   					anchors.centerIn: parent
                                     					width: 68
                                     					height: 68
                                     					source: "file://" + dashboard.configPath + "/assets/pfps/pfp.jpg"
@@ -175,7 +177,7 @@ PanelWindow {
 								Text {
 									id: uptimeText
                                     					text: "up ..."
-                                   	 				color: root.walForeground
+                                   					color: root.walForeground
                                     					font.pixelSize: 12
                                     					font.family: "JetBrainsMono Nerd Font"
 								}
@@ -189,7 +191,7 @@ PanelWindow {
                             				visible: profileSection.pfpPickerOpen
 							ColumnLayout {
 								anchors.fill: parent
-                               	 				anchors.margins: 10
+                               					anchors.margins: 10
                                 				spacing: 8
 								Text {
 									text: "Choose Avatar"
@@ -211,7 +213,7 @@ PanelWindow {
 									GridLayout {
 										id: pfpGrid
                                         					width: parent.width
-                                       	 					columns: 6
+                                       						columns: 6
                                         					rowSpacing: 8
                                         					columnSpacing: 8
                                         					Repeater {
@@ -221,53 +223,53 @@ PanelWindow {
                                                 						height: 48
                                                 						Layout.alignment: Qt.AlignHCenter
                                                 						Rectangle {
-													anchors.fill: parent
-                                                    							radius: 24
-                                                    							color: "transparent"
-                                                    							border.width: 2
-                                                   			 				border.color: thumbMa.containsMouse ? root.walColor13 : root.walColor5
-                                                    							Behavior on border.color { 
-														ColorAnimation { 
-															duration: 150 
-														} 
-													}
+												anchors.fill: parent
+                                                    						radius: 24
+                                                    						color: "transparent"
+                                                    						border.width: 2
+                                                   						border.color: thumbMa.containsMouse ? root.walColor13 : root.walColor5
+                                                    						Behavior on border.color { 
+												ColorAnimation { 
+												duration: 150 
+												} 
+												}
 												}
 												Image {
-													id: thumbImg
-                                                    							anchors.centerIn: parent
-                                                    							width: 44
-                                                    							height: 44
-                                                  		 		 			source: "file://" + modelData
-                                                    							fillMode: Image.PreserveAspectCrop
-                                                   			 				smooth: true
-                                                    							sourceSize.width: 128
-                                                    							sourceSize.height: 128
-                                                   	 						visible: false
+												id: thumbImg
+                                                    						anchors.centerIn: parent
+                                                    						width: 44
+                                                    						height: 44
+                                                  						source: "file://" + modelData
+                                                    						fillMode: Image.PreserveAspectCrop
+                                                   						smooth: true
+                                                    						sourceSize.width: 128
+                                                    						sourceSize.height: 128
+                                                   						visible: false
 												}
 												Rectangle {
-													id: thumbMask
-                                                    							anchors.centerIn: parent
-                                                    							width: 44
-                                                    							height: 44
-                                                    							radius: 22
-                                                    							visible: false
+												id: thumbMask
+                                                    						anchors.centerIn: parent
+                                                    						width: 44
+                                                    						height: 44
+                                                    						radius: 22
+                                                    						visible: false
 												}
 												OpacityMask {
-													anchors.centerIn: parent
-                                                    							width: 44
-                                                    							height: 44
-                                                    							source: thumbImg
-                                                    							maskSource: thumbMask
+												anchors.centerIn: parent
+                                                    						width: 44
+                                                    						height: 44
+                                                    						source: thumbImg
+                                                    						maskSource: thumbMask
 												}
 												MouseArea {
-													id: thumbMa
-                                                    							anchors.fill: parent
-                                                   				 			hoverEnabled: true
-                                                    							cursorShape: Qt.PointingHandCursor
-                                                    							onClicked: {
-														setPfpProc.selFile = modelData
-                                                        							setPfpProc.running = true
-													}
+												id: thumbMa
+                                                    						anchors.fill: parent
+                                                   						hoverEnabled: true
+                                                    						cursorShape: Qt.PointingHandCursor
+                                                    						onClicked: {
+												setPfpProc.selFile = modelData
+                                                        					setPfpProc.running = true
+												}
 												}
 											}
 										}
@@ -285,7 +287,7 @@ PanelWindow {
                                 				if (file.length > 0) {
 									var current = root.pfpFiles.slice()
                                     					current.push(file)
-                                   	 				root.pfpFiles = current
+                                   					root.pfpFiles = current
 								}
 							}
 						}
@@ -393,7 +395,7 @@ Process {
                             				color: laptopScreenToggle.laptopScreenEnabled ? root.walColor2 : root.walColor8
                             				font.pixelSize: 10
                             				font.bold: true
-                          	 		 	font.family: "JetBrainsMono Nerd Font"
+                          				font.family: "JetBrainsMono Nerd Font"
 						}
 						Rectangle {
 							width: 44
@@ -474,7 +476,7 @@ command: {
 		onTriggered: {
 
 			vpnCheckProc.running = true
-			        vpnResultTimer.start()
+			       vpnResultTimer.start()
 
 		}
 	}
@@ -604,14 +606,14 @@ Process {
 }
 				Rectangle {
 					Layout.fillWidth: true
-                   	 		Layout.preferredHeight: 70
+                   			Layout.preferredHeight: 70
                     			color: Qt.rgba(0, 0, 0, 0.5)
                     			radius: 15
                     			RowLayout {
 						anchors.fill: parent
                         			anchors.margins: 15
                         			spacing: 15
-                       		 		Text {
+                       				Text {
 							id: batIcon
                             				text: "󰁹"
                             				color: root.walColor2
@@ -657,7 +659,7 @@ Process {
 							barColor: root.walColor5; 
 							value: dashboard.ramVal 
 						}
-                      	 		 	CircularStat { 
+                      				CircularStat { 
 							label: "DISK"; 
 							icon: ""; 
 							barColor: root.walColor4; 
@@ -700,7 +702,7 @@ Process {
 								id: volSlider
                                 				width: parent.width - 75
                                 				height: 8
-                               	 				anchors.verticalCenter: parent.verticalCenter
+                               					anchors.verticalCenter: parent.verticalCenter
                                 				radius: 4
                                 				color: Qt.rgba(0,0,0,0.3)
                                 				Rectangle {
@@ -794,7 +796,7 @@ Process {
 											var percent = Math.round((mouse.x / parent.width) * 100)
                                             						percent = Math.max(1, Math.min(100, percent))
                                             						dashboard.brightVal = percent
-                                           			 			brightSetProc.command = ["bash", "-c", "brightnessctl set " + percent + "%"]
+                                           						brightSetProc.command = ["bash", "-c", "brightnessctl set " + percent + "%"]
                                             						brightSetProc.running = true	
 										}
 									}
@@ -919,7 +921,7 @@ Process {
                         			text: value + "%"
                         			color: root.walForeground
                         			font.pixelSize: 14
-                      	 	 		font.family: "JetBrainsMono Nerd Font"
+                      				font.family: "JetBrainsMono Nerd Font"
 					}
 				}
 			}
@@ -956,7 +958,7 @@ Process {
 			id: powerMa
             		anchors.fill: parent
             		hoverEnabled: true
-           	 	cursorShape: Qt.PointingHandCursor
+           		cursorShape: Qt.PointingHandCursor
             		onClicked: cmdProc.running = true
 		}
 		Process {

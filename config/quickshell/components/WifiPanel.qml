@@ -47,6 +47,8 @@ PanelWindow {
 			anchors.fill: parent
 			color: Qt.rgba(root.walBackground.r, root.walBackground.g, root.walBackground.b, 0.95)
 			radius: 20
+border.width: 1
+    border.color: Qt.rgba(root.walColor5.r, root.walColor5.g, root.walColor5.b, 0.45)
 			ColumnLayout {
 				anchors.fill: parent
 				anchors.margins: 18
@@ -100,7 +102,7 @@ PanelWindow {
 						}
 					}
 				}
-				    Rectangle {
+				   Rectangle {
         Layout.fillWidth: true
         Layout.preferredHeight: 50
         radius: 12

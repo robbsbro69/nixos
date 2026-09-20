@@ -25,8 +25,8 @@ Singleton {
 		})
 		if (list.length > 50) list = list.slice(0, 50)
 		notifications = list
-		    notificationAdded(id, app, title, body)
-		    if (!dndEnabled) {
+		   notificationAdded(id, app, title, body)
+		   if (!dndEnabled) {
         notificationReceived(id, app, title, body)
     }
 	}

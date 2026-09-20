@@ -2,7 +2,7 @@
   dconf.settings = {
     "org/gnome/desktop/interface" = {
       color-scheme = "prefer-dark";
-      gtk-theme = "adw-gtk3-dark";
+      gtk-theme = "catppuccin-mocha-pink-standard";
       cursor-theme = "Adwaita";
       cursor-size = 24;
     };

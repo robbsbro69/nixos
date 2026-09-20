@@ -23,8 +23,11 @@ PanelWindow {
 		right: 0 
 	}
     	implicitHeight: 32
-    	color: "#1e1e2e"
-
+    	color: "#1a1a1a"
+Rectangle {
+    anchors.fill: parent
+    color: "transparent"
+}
     	property color notchColor: Qt.rgba(0, 0, 0, 0.88)
     	property color notchHoverColor: Qt.rgba(0, 0, 0, 0.90)
     	property int notchRadius: 12
@@ -90,10 +93,6 @@ PanelWindow {
 		}
 	}
 
-
-
-
-
 	Timer {
 		interval: 1500
 		running: true
@@ -135,36 +134,36 @@ PanelWindow {
 	}
 
 	Process {
-	    id: mediaProc
-	    command: [Quickshell.env("HOME") + "/.config/quickshell/assets/get-player.sh", "%any"]
-	    stdout: SplitParser {
-	        splitMarker: ""
-	        onRead: data => {
-	            var lines = data.split("\n")
-	            for (var i = 0; i < lines.length; i++) {
-	                var line = lines[i].trim()
-	                var idx = line.indexOf(":")
-	                if (idx < 0) continue
-	                var key = line.substring(0, idx)
-	                var val = line.substring(idx + 1)
-	                switch (key) {
-	                    case "player": bar.mediaPlayer = val; break
-	                    case "status": bar.mediaClass = val.toLowerCase(); break
-	                    case "pos":    bar.mediaPosition = parseInt(val) || 0; break
-	                    case "len":    bar.mediaLength = parseInt(val) || 0; break
-	                    case "title":  bar._pendingTitle = val; break
-	                    case "artist":
-	                        bar._pendingArtist = val
-	                        var text = bar._pendingArtist
-	                            ? bar._pendingArtist + " - " + bar._pendingTitle
-	                            : bar._pendingTitle
-	                        if (text.length > 35) text = text.substring(0, 32) + "..."
-	                        bar.mediaText = text
-	                        break
-	                }
-	            }
-	        }
-	    }
+	  id: mediaProc
+	  command: [Quickshell.env("HOME") + "/.config/quickshell/assets/get-player.sh", "%any"]
+	  stdout: SplitParser {
+	      splitMarker: ""
+	      onRead: data => {
+	          var lines = data.split("\n")
+	          for (var i = 0; i < lines.length; i++) {
+	              var line = lines[i].trim()
+	              var idx = line.indexOf(":")
+	              if (idx < 0) continue
+	              var key = line.substring(0, idx)
+	              var val = line.substring(idx + 1)
+	              switch (key) {
+	                  case "player": bar.mediaPlayer = val; break
+	                  case "status": bar.mediaClass = val.toLowerCase(); break
+	                  case "pos":    bar.mediaPosition = parseInt(val) || 0; break
+	                  case "len":    bar.mediaLength = parseInt(val) || 0; break
+	                  case "title":  bar._pendingTitle = val; break
+	                  case "artist":
+	                      bar._pendingArtist = val
+	                      var text = bar._pendingArtist
+	                          ? bar._pendingArtist + " - " + bar._pendingTitle
+	                          : bar._pendingTitle
+	                      if (text.length > 35) text = text.substring(0, 32) + "..."
+	                      bar.mediaText = text
+	                      break
+	              }
+	          }
+	      }
+	  }
 	}
 	
 
@@ -198,7 +197,6 @@ PanelWindow {
 				bar.volumeMuted = parts[1] === "1"
 				if (bar.volumeMuted) {
 					bar.volumeStr = "󰝟 mute"
-
 				} else {
 					var icon = bar.volumePercent > 50 ? "󰕾" : (bar.volumePercent > 0 ? "󰖀" : "󰕿")
 					bar.volumeStr = icon + " " + bar.volumePercent + "%"
@@ -259,7 +257,6 @@ PanelWindow {
 					bar.wifiStrength = parts.length > 2 ? parseInt(parts[2]) : 0
 				}
 			}
-
 		}
 	}
 
@@ -354,7 +351,7 @@ PanelWindow {
             font.pixelSize: 10
             font.family: "JetBrainsMono Nerd Font"
         }
-    }
+	}
 
     Item {
         id: contentItem
@@ -405,46 +402,69 @@ PanelWindow {
 				}
 			}
 			Notch {
-				width: clockLabel.implicitWidth + 24
-				hovered: clockMA.containsMouse
-				tooltip: Qt.formatDateTime(new Date(), "dddd, MMMM d, yyyy")
-				Item {
-					anchors.fill: parent
-					Text {
-						id: clockLabel
-						anchors.centerIn: parent
-						text: Qt.formatDateTime(new Date(), "hh:mm AP")
-						color: root.walColor5
+			  width: clockRow.implicitWidth + 24
+			  hovered: clockMA.containsMouse
+			  tooltip: Qt.formatDateTime(new Date(), "dddd, MMMM d, yyyy")
+			  Item {
+			      anchors.fill: parent
+			      Row {
+			          id: clockRow
+			          anchors.centerIn: parent
+			          spacing: 8
+			          Text {
+			              id: clockLabel
+			              anchors.verticalCenter: parent.verticalCenter
+			              text: Qt.formatDateTime(new Date(), "hh:mm AP")
+			              color: root.walColor5
+			              font.pixelSize: 11
+			              font.bold: true
+			              font.family: "JetBrainsMono Nerd Font"
+			          }
+			          Rectangle {
+			              width: 1
+			              height: 14
+			              anchors.verticalCenter: parent.verticalCenter
+			              color: Qt.rgba(root.walColor5.r, root.walColor5.g, root.walColor5.b, 0.3)
+			          }
+			          Text {
+			              id: dateLabel
+			              anchors.verticalCenter: parent.verticalCenter
+			              text: Qt.formatDateTime(new Date(), "MMM d, ddd")
+			              color: root.walColor5
 						font.pixelSize: 11
 						font.bold: true
 						font.family: "JetBrainsMono Nerd Font"
-					}
-				}
-				MouseArea {
-					id: clockMA
-					anchors.fill: parent
-					hoverEnabled: true
-					cursorShape: Qt.PointingHandCursor
-					acceptedButtons: Qt.LeftButton | Qt.RightButton
-					onClicked: function(mouse) {
-						if (mouse.button === Qt.RightButton) {
-							root.toggleCalendar()
-						} else {
-							root.toggleClockPanel()
-						}
-					}
-				}
-				Timer {
-					interval: 1000
-                    			running: true
-                    			repeat: true
-                    			triggeredOnStart: true
-                    			onTriggered: clockLabel.text = Qt.formatDateTime(new Date(), "hh:mm AP")
-				}
+			          }
+			      }
+			  }
+			  MouseArea {
+			      id: clockMA
+			      anchors.fill: parent
+			      hoverEnabled: true
+			      cursorShape: Qt.PointingHandCursor
+			      acceptedButtons: Qt.LeftButton | Qt.RightButton
+			      onClicked: function(mouse) {
+			          if (mouse.button === Qt.RightButton) {
+			              root.toggleCalendar()
+			          } else {
+			              root.toggleClockPanel()
+			          }
+			      }
+			  }
+			  Timer {
+			      interval: 1000
+			      running: true
+			      repeat: true
+			      triggeredOnStart: true
+			      onTriggered: {
+			          clockLabel.text = Qt.formatDateTime(new Date(), "hh:mm AP")
+			          dateLabel.text  = Qt.formatDateTime(new Date(), "MMM d, ddd")
+			      }
+			  }
 			}
 Notch {
     id: workspacesNotch
-    width: wsContainer.width + 20
+    width: wsContainer.width + 1
     Behavior on width {
         NumberAnimation { duration: 300; easing.type: Easing.OutCubic }
     }
@@ -543,27 +563,29 @@ Notch {
                         }
 
 						MouseArea {
-						    id: wsMa
-						    anchors.fill: parent
-						    hoverEnabled: true
-						    cursorShape: Qt.PointingHandCursor
-						    onClicked: Quickshell.execDetached([
-						        "hyprctl", "dispatch",
-						        "hl.dsp.focus({ workspace = " + wsDelegate.wsId + " })"
-						    ])
-						    onWheel: function(wheel) {
-						        if (wheel.angleDelta.y > 0) {
-						            Quickshell.execDetached([
-						                "hyprctl", "dispatch",
-						                "hl.dsp.focus({ workspace = 'e-1' })"
-						            ])
-						        } else {
-						            Quickshell.execDetached([
-						                "hyprctl", "dispatch",
-						                "hl.dsp.focus({ workspace = 'e+1' })"
-						            ])
-						        }
-						    }
+						  id: wsMa
+						  anchors.fill: parent
+						  hoverEnabled: true
+						  cursorShape: Qt.PointingHandCursor
+						  onClicked: Quickshell.execDetached([
+						      "hyprctl", "dispatch",
+						      "hl.dsp.focus({ workspace = " + wsDelegate.wsId + " })"
+						  ])
+							onWheel: function(wheel) {
+							  var current = Hyprland.focusedWorkspace ? Hyprland.focusedWorkspace.id : 1
+							  var maxWs = 1
+							  var vals = Hyprland.workspaces.values
+							  for (var i = 0; i < vals.length; i++) {
+							      if (vals[i].id > maxWs) maxWs = vals[i].id
+							  }
+							  if (wheel.angleDelta.y > 0) {
+							      if (current > 1)
+							          Quickshell.execDetached(["hyprctl", "dispatch", "hl.dsp.focus({ workspace = 'e-1' })"])
+							  } else {
+							      if (current < maxWs)
+							          Quickshell.execDetached(["hyprctl", "dispatch", "hl.dsp.focus({ workspace = 'e+1' })"])
+							  }
+							}
 						}
                     }
                 }
@@ -622,22 +644,22 @@ Notch {
 							}
 						}
 					Text {
-					    id: mediaLabel
-					    anchors.verticalCenter: parent.verticalCenter
-					    text: bar.mediaText
-					    color: root.walColor13
-					    font.pixelSize: 10
-					    font.bold: true
-					    font.family: "JetBrainsMono Nerd Font"
-					    opacity: 1.0
-					    Behavior on opacity {
-					        NumberAnimation {
-					            duration: 300;
-					            easing.type: Easing.OutCubic
-					        }
-					    }
+					  id: mediaLabel
+					  anchors.verticalCenter: parent.verticalCenter
+					  text: bar.mediaText
+					  color: root.walColor13
+					  font.pixelSize: 10
+					  font.bold: true
+					  font.family: "JetBrainsMono Nerd Font"
+					  opacity: 1.0
+					  Behavior on opacity {
+					      NumberAnimation {
+					          duration: 300;
+					          easing.type: Easing.OutCubic
+					      }
+					  }
 					}
-										}
+									}
 					Rectangle {
 						width: 200
 						height: 3
@@ -717,7 +739,7 @@ Notch {
 								id: batteryBody
                         					anchors.left: parent.left
                         					anchors.verticalCenter: parent.verticalCenter
-                       		 				width: 16
+                       						width: 16
                         					height: 10
                         					radius: 3
     								color: "transparent"
@@ -795,7 +817,7 @@ Notch {
                                 				color: root.walBackground
                                 				font.pixelSize: 7
                                 				font.family: "JetBrainsMono Nerd Font"
-                               	 				visible: bar.batteryCharging && bar.batteryPercent < 100
+                               					visible: bar.batteryCharging && bar.batteryPercent < 100
                                 				opacity: bar.chargingPulse
 							}
 							Text {
@@ -814,7 +836,6 @@ Notch {
                             				font.pixelSize: 11
                             				font.bold: true
                             				font.family: "JetBrainsMono Nerd Font"
-
                             				Behavior on color {
 								ColorAnimation { 
 									duration: 400; 
@@ -882,7 +903,7 @@ Notch {
 						id: networkRow
 						anchors.centerIn: parent
 						spacing: 8
-						    Text {
+						Text {
         anchors.verticalCenter: parent.verticalCenter
         visible: root.ethConnected
         text: "󰈀"
@@ -964,7 +985,7 @@ Notch {
 					interval: 1500
 					repeat: false
 					onTriggered: {
-						    trayNotch.stableTrayItems = SystemTray.items.values.filter(function(item) {
+						  trayNotch.stableTrayItems = SystemTray.items.values.filter(function(item) {
         return item && item.id && item.id !== ""
     })
 					}
@@ -1086,53 +1107,28 @@ Notch {
 					}
 				}
 			}
-					Notch {
-						width: 36
-      					hovered: clipMA.containsMouse
-      					tooltip: "Clipboard"
-						Item {
-							anchors.fill: parent
-							Text {
-								anchors.centerIn: parent
-              					text: "󰅍"
-              					color: root.walColor13
-              					font.pixelSize: 15
-              					font.family: "JetBrainsMono Nerd Font"
-							}
-						}
-						MouseArea {
-							id: clipMA
-          					anchors.fill: parent
-          					hoverEnabled: true
-          					cursorShape: Qt.PointingHandCursor
-          					onClicked: root.toggleClipboard()
-						}
+			Notch {
+				width: 36
+      				hovered: clipMA.containsMouse
+      				tooltip: "Clipboard"
+				Item {
+					anchors.fill: parent
+					Text {
+						anchors.centerIn: parent
+              				text: "󰅍"
+              				color: root.walColor13
+              				font.pixelSize: 15
+              				font.family: "JetBrainsMono Nerd Font"
 					}
-					Notch {
-						width: 36; 
-						hovered: mediaNotchMa.containsMouse; 
-						tooltip: "Anime Movie"
-						Item { 
-							anchors.fill: parent; 
-							Text { 
-								anchors.centerIn: parent; 
-								text: "󰿎"; 
-								color: root.walColor13; 
-								font.pixelSize: 15; 
-								font.family: "JetBrainsMono Nerd Font" 
-							} 
-						}
-						MouseArea {
-							id: mediaNotchMa; 
-							anchors.fill: parent; 
-							hoverEnabled: true; 
-							cursorShape: Qt.PointingHandCursor
-							acceptedButtons: Qt.LeftButton | Qt.RightButton
-							onClicked: function(mouse) { 
-								if (mouse.button === Qt.RightButton) root.toggleAnimePanel(); else root.toggleMoviesPanel() 
-							}
-						}
-					}
+				}
+				MouseArea {
+					id: clipMA
+          				anchors.fill: parent
+          				hoverEnabled: true
+          				cursorShape: Qt.PointingHandCursor
+          				onClicked: root.toggleClipboard()
+				}
+			}
 		Notch {
 			width: 36
 			hovered: dashMA.containsMouse
@@ -1163,4 +1159,4 @@ Notch {
 		}
 	}
 }
-}	
+}

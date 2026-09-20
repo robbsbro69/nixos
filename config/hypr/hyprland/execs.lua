@@ -2,14 +2,13 @@
 hl.on("hyprland.start", function()
 	local startup = {
 		"ssh-add /home/alpha/.ssh/id_ed25519",
-		"swww-daemon",
+		"awww-daemon",
 		"wal --theme catppuccin-mocha-pink -n -q",
 		"gammastep -O 3000 -m wayland",
-		"systemctl --user start hypridle",
 		"[workspace 1 silent] zen-beta",
 		"[workspace 2 silent] obsidian",
 		"[workspace 3 silent] spotify",
-		"sleep 3 && env ELECTRON_OZONE_PLATFORM_HINT=auto appimage-run $(ls /home/alpha/AppImages/ticktick/*.AppImage | tail -1)",
+		"systemctl --user start hypridle",
 		"wl-paste --type text --watch cliphist store",
 		"wl-paste --type image --watch cliphist store",
 		"/run/current-system/sw/libexec/polkit-gnome-authentication-agent-1",

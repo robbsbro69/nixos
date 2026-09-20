@@ -27,6 +27,7 @@ in {
     // {
       "gtk-3.0/gtk.css".enable = false;
       "gtk-4.0/gtk.css".enable = false;
+      "hypr/.luarc.json".enable = false;
     };
   home.file.".config/zen/1lwlu2d4.Default Profile/chrome" = {
     source = create_symlink "${dotfiles}/zen/chrome";

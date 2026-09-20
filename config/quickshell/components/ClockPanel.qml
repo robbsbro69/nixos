@@ -170,16 +170,16 @@ PanelWindow {
 	}
 
 	Process {
-	    id: timerSoundProc
-	    command: ["pw-play", Quickshell.env("HOME") + "/.config/quickshell/assets/timer.wav"]
+	   id: timerSoundProc
+	   command: ["pw-play", Quickshell.env("HOME") + "/.config/quickshell/assets/timer.wav"]
 	}
 	Process {
-	    id: alarmSoundProc
-	    command: ["bash", "-c",
-	        "for i in 1 2 3; do " +
-	        "pw-play " + Quickshell.env("HOME") + "/.config/quickshell/assets/timer.wav; " +
-	        "sleep 0.3; done"
-	    ]
+	   id: alarmSoundProc
+	   command: ["bash", "-c",
+	       "for i in 1 2 3; do " +
+	       "pw-play " + Quickshell.env("HOME") + "/.config/quickshell/assets/timer.wav; " +
+	       "sleep 0.3; done"
+	   ]
 	}
 	Process { id: timerNotifyProc; command: ["bash", "-c", "notify-send -u normal '󱎫 Timer' 'Timer finished!' 2>/dev/null || true"] }
 	Process { id: alarmNotifyProc; command: ["bash", "-c", "notify-send -u critical '󰂟 Alarm' 'Alarm ringing!' 2>/dev/null || true"] }
@@ -208,8 +208,8 @@ PanelWindow {
 			implicitHeight: cardCol.implicitHeight + 32
 			radius: 18
 			color: Qt.rgba(root.walBackground.r, root.walBackground.g, root.walBackground.b, 0.95)
-			border.width: 1
-			border.color: Qt.rgba(root.walForeground.r, root.walForeground.g, root.walForeground.b, 0.08)
+border.width: 1
+    border.color: Qt.rgba(root.walColor5.r, root.walColor5.g, root.walColor5.b, 0.45)
 			MouseArea { anchors.fill: parent }
 
 			ColumnLayout {

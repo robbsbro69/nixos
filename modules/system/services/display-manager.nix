@@ -4,5 +4,6 @@
     wayland.enable = true;
     theme = "catppuccin-mocha-pink";
     package = pkgs.kdePackages.sddm;
+    settings.General.DefaultSession = "hyprland.desktop";
   };
 }

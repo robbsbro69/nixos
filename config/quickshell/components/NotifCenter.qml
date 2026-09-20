@@ -45,7 +45,7 @@ PanelWindow {
 		if (!date) return ""
         	var d = new Date(date)
         	var now = new Date()
-       	 	var isToday = d.toDateString() === now.toDateString()
+       		var isToday = d.toDateString() === now.toDateString()
         	if (isToday) return "Today " + formatTime(date)
         	var yesterday = new Date(now)
         	yesterday.setDate(now.getDate() - 1)
@@ -71,6 +71,8 @@ PanelWindow {
 				0.95
 			)
 			radius: 20
+border.width: 1
+    border.color: Qt.rgba(root.walColor5.r, root.walColor5.g, root.walColor5.b, 0.45)
 			ColumnLayout {
 				anchors.fill: parent
                 		anchors.margins: 16
@@ -302,16 +304,16 @@ PanelWindow {
 											Text {
 												text: (modelData.app || "notification").toUpperCase()
 												color: Qt.rgba(
-													root.walColor5.r,
-                                            								root.walColor5.g,
-                                            								root.walColor5.b,
-                                            								0.7
+												root.walColor5.r,
+                                            							root.walColor5.g,
+                                            							root.walColor5.b,
+                                            							0.7
 												)
 												font {
-													pixelSize: 8
-                                            								bold: true
-                                            								family: "JetBrainsMono Nerd Font"
-                                            								letterSpacing: 1.0
+												pixelSize: 8
+                                            							bold: true
+                                            							family: "JetBrainsMono Nerd Font"
+                                            							letterSpacing: 1.0
 												}
 											}
 											Item { 
@@ -321,8 +323,8 @@ PanelWindow {
 												text: notifCenter.formatDate(modelData.time)
                                         							color: root.walColor8
 												font {
-													pixelSize: 8
-                                            								family: "JetBrainsMono Nerd Font"
+												pixelSize: 8
+                                            							family: "JetBrainsMono Nerd Font"
 												}
 												opacity: 0.6
 											}
@@ -383,12 +385,12 @@ PanelWindow {
 											opacity: itemMa.containsMouse ? 1.0 : 0.0
 											Behavior on opacity { 
 												NumberAnimation { 
-													duration: 120 
+												duration: 120 
 												} 
 											}
 											Behavior on color   { 
 												ColorAnimation  { 
-													duration: 120 
+												duration: 120 
 												} 
 											}
 											MouseArea {
@@ -398,9 +400,9 @@ PanelWindow {
                                     								hoverEnabled: true
                                     								cursorShape: Qt.PointingHandCursor
                                     								onClicked: {
-													var hist = root.notificationHistory.slice()
-                                        								hist.splice(index, 1)
-                                        								root.notificationHistory = hist
+												var hist = root.notificationHistory.slice()
+                                        							hist.splice(index, 1)
+                                        							root.notificationHistory = hist
 												}
 											}
 										}

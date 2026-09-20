@@ -1,7 +1,7 @@
 {pkgs, ...}: {
   users.users.alpha = {
     isNormalUser = true;
-    extraGroups = ["wheel" "vboxusers" "networkmanager"];
+    extraGroups = ["wheel" "vboxusers" "networkmanager" "dialout"];
     packages = with pkgs; [tree];
   };
   security.sudo.extraRules = [

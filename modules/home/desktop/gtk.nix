@@ -2,8 +2,11 @@
   gtk = {
     enable = true;
     theme = {
-      name = "adw-gtk3-dark";
-      package = pkgs.adw-gtk3;
+      name = "catppuccin-mocha-pink-standard";
+      package = pkgs.catppuccin-gtk.override {
+        accents = ["pink"];
+        variant = "mocha";
+      };
     };
     iconTheme = {
       name = "Adwaita";

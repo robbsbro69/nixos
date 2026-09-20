@@ -12,6 +12,11 @@ hl.bind(mod .. " + N", exec("qs ipc call notifcenter toggle"), { description = "
 hl.bind(mod .. " + C", exec("qs ipc call clipboard toggle"), { description = "Toggle clipboard panel" })
 hl.bind(mod .. " + SHIFT + W", exec("~/.config/scripts/random-wallpaper.sh"), { description = "Random wallpaper" })
 hl.bind(mod .. " + X", exec("hyprlock"), { description = "Lock screen" })
+hl.bind(
+	mod .. " + P",
+	exec("~/.config/scripts/toggle-pomodoro-bomb.sh"),
+	{ description = "Toggle pomodoro bomb timer" }
+)
 
 -- ── Window State ──────────────────────────────────────────────
 hl.bind(mod .. " + Q", hl.dsp.window.close(), { description = "Window: Close" })

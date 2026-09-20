@@ -62,7 +62,7 @@ hl.window_rule({ match = { class = "^(obsidian)$" }, suppress_event = "activate"
 hl.window_rule({ match = { title = "^(Spotify( Premium)?)$" }, workspace = "3 silent" })
 
 -- TickTick in workspace 4
-hl.window_rule({ match = { class = "^(ticktick|TickTick)$" }, workspace = "4 silent" })
+hl.window_rule({ match = { class = "^(ticktick|TickTick)$" }, workspace = "10 silent" })
 hl.window_rule({ match = { class = "^(ticktick)$" }, suppress_event = "activate" })
 
 -- Fix XWayland apps
@@ -106,3 +106,11 @@ hl.layer_rule({
 	match = { namespace = "^(quickshell:notifications:overlay|quickshell:sidebar|quickshell:popup)$" },
 	no_anim = true,
 })
+-- Pomodoro bomb — float, pin, top-right corner, no chrome
+hl.window_rule({ match = { class = "^(pomodoro-bomb)$" }, float = true })
+hl.window_rule({ match = { class = "^(pomodoro-bomb)$" }, pin = true })
+hl.window_rule({ match = { class = "^(pomodoro-bomb)$" }, size = "180 100" })
+hl.window_rule({ match = { class = "^(pomodoro-bomb)$" }, move = { "(monitor_w-window_w-40)", "40" } })
+hl.window_rule({ match = { class = "^(pomodoro-bomb)$" }, no_shadow = true })
+hl.window_rule({ match = { class = "^(pomodoro-bomb)$" }, no_blur = true })
+hl.window_rule({ match = { class = "^(pomodoro-bomb)$" }, border_size = 0 })

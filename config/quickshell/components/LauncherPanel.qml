@@ -35,6 +35,9 @@ PanelWindow {
 		anchors.fill: parent
 		color: Qt.rgba(root.walBackground.r, root.walBackground.g, root.walBackground.b, 0.95)
 		radius: 20
+		   border.width: 1
+    border.color: Qt.rgba(root.walColor5.r, root.walColor5.g, root.walColor5.b, 0.45)
+
 		ColumnLayout {
 			anchors.fill: parent
             		anchors.margins: 20
@@ -64,7 +67,7 @@ PanelWindow {
 							Text {
 								text: "󰀻"
                                 				color: root.activeTab === 0 ? root.walColor5 : root.walColor8
-                               	 				font.pixelSize: 14
+                               					font.pixelSize: 14
                                 				font.family: "JetBrainsMono Nerd Font"
 							}
 							Text {
@@ -361,7 +364,7 @@ PanelWindow {
                                             						elide: Text.ElideRight
                                             						Behavior on color { 
 												ColorAnimation { 
-													duration: 120 
+												duration: 120 
 												} 
 											}
 										}
@@ -381,7 +384,7 @@ PanelWindow {
                                         					color: root.walColor5
                                         					font.pixelSize: 14
                                         					font.family: "JetBrainsMono Nerd Font"
-                                       	 					font.bold: true
+                                       						font.bold: true
 									}
 								}
 								MouseArea {
@@ -481,7 +484,7 @@ PanelWindow {
 							anchors.fill: parent
                             				anchors.leftMargin: 14
                             				anchors.rightMargin: 14
-                           	 			spacing: 10
+                           				spacing: 10
 							Text {
 								text: ""
 								color: root.walColor8
@@ -680,17 +683,17 @@ PanelWindow {
                                                 						cache: true
                                                 						sourceSize.width: 180
                                                 						sourceSize.height: 120
-                                               	 						visible: false
+                                               							visible: false
                                                 						onStatusChanged: {
-													if (status === Image.Error && modelData.path)
-                                                        						source = "file://" + modelData.path
+												if (status === Image.Error && modelData.path)
+                                                        					source = "file://" + modelData.path
 												}
 											}
 											Rectangle {
 												id: wallThumbMaskRect
                                                 						anchors.fill: parent
                                                 						radius: 7
-                                               	 						visible: false
+                                               							visible: false
 											}
 											OpacityMask {
 												anchors.fill: parent
@@ -707,11 +710,11 @@ PanelWindow {
                                                 						radius: 8
                                                 						color: root.walColor2
 												Text {
-													anchors.centerIn: parent
-                                                    							text: "󰄬"
-                                                    							color: root.walBackground
-                                                    							font.pixelSize: 10
-                                                    							font.family: "JetBrainsMono Nerd Font"
+												anchors.centerIn: parent
+                                                    						text: "󰄬"
+                                                    						color: root.walBackground
+                                                    						font.pixelSize: 10
+                                                    						font.family: "JetBrainsMono Nerd Font"
 												}
 											}
 										}
@@ -726,13 +729,13 @@ PanelWindow {
 											}
 											font.pixelSize: 8
                                             						font.family: "JetBrainsMono Nerd Font"
-                                           		 				font.bold: index === root.wallSelectedIndex || modelData.path === root.currentWallpaper
+                                           						font.bold: index === root.wallSelectedIndex || modelData.path === root.currentWallpaper
                                             						elide: Text.ElideMiddle
                                             						horizontalAlignment: Text.AlignHCenter
                                             						verticalAlignment: Text.AlignVCenter
                                             						Behavior on color { 
 												ColorAnimation { 
-													duration: 120 
+												duration: 120 
 												} 
 											}
 										}

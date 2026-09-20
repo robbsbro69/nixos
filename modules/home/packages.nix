@@ -1,12 +1,13 @@
 {pkgs, ...}: {
   home.packages = with pkgs; [
-    yazi
     eza
-    zoxide
+    yazi
     pywal
-    fastfetch
+    zoxide
     figlet
     upower
+    nitch
+    fastfetch
     brightnessctl
   ];
 }

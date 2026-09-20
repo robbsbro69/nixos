@@ -2,10 +2,10 @@
   description = "NixOS Flake";
 
   inputs = {
-    nixpkgs.url = "github:NixOS/nixpkgs/nixos-25.11";
+    nixpkgs.url = "github:NixOS/nixpkgs/nixos-26.05";
     nixpkgs-unstable.url = "github:NixOS/nixpkgs/nixos-unstable";
     home-manager = {
-      url = "github:nix-community/home-manager/release-25.11";
+      url = "github:nix-community/home-manager/release-26.05";
       inputs.nixpkgs.follows = "nixpkgs";
     };
     zen-browser = {
@@ -20,6 +20,7 @@
       url = "github:Gerg-L/spicetify-nix";
       inputs.nixpkgs.follows = "nixpkgs";
     };
+    kopuz.url = "github:temidaradev/kopuz";
   };
 
   outputs = {
@@ -30,9 +31,11 @@
     zen-browser,
     quickshell,
     spicetify-nix,
+    kopuz,
     ...
   }: let
     system = "x86_64-linux";
+
     pkgs-unstable = import nixpkgs-unstable {
       inherit system;
       config.allowUnfree = true;
@@ -41,7 +44,7 @@
     nixosConfigurations.nixos = nixpkgs.lib.nixosSystem {
       inherit system;
       specialArgs = {
-        inherit pkgs-unstable;
+        inherit pkgs-unstable kopuz;
       };
       modules = [
         ./configuration.nix
@@ -53,7 +56,12 @@
             useUserPackages = true;
             users.alpha = import ./home.nix;
             extraSpecialArgs = {
-              inherit zen-browser quickshell spicetify-nix pkgs-unstable;
+              inherit
+                zen-browser
+                quickshell
+                spicetify-nix
+                pkgs-unstable
+                ;
             };
             backupFileExtension = "backup";
           };

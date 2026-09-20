@@ -8,5 +8,6 @@
     tmux
     htop
     mold
+    platformio
   ];
 }

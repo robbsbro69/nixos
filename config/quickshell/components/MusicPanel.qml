@@ -289,6 +289,8 @@ PanelWindow {
 				width: 400
 				height: 180
 				color: Qt.rgba(root.walBackground.r, root.walBackground.g, root.walBackground.b, 0.95)
+				border.width: 1
+    border.color: Qt.rgba(root.walColor5.r, root.walColor5.g, root.walColor5.b, 0.45)
 				radius: 15
 				clip: true
 				RowLayout {
@@ -664,7 +666,7 @@ PanelWindow {
 					height: visible ? (28 + 1 + 34 + (musicPanel.availablePlayers.length * 34) + 16) : 0
 					radius: 12
 					color: Qt.rgba(root.walBackground.r, root.walBackground.g, root.walBackground.b, 0.92)
-					border.color: Qt.rgba(root.walColor5.r, root.walColor5.g, root.walColor5.b, 0.25)
+					border.color: Qt.rgba(root.walColor5.r, root.walColor5.g, root.walColor5.b, 0.45)
 					border.width: 1
 					visible: musicPanel.playerDropdownOpen && !musicPanel.gifSelectorOpen
 					clip: true
@@ -841,7 +843,7 @@ PanelWindow {
 				anchors.horizontalCenter: parent.horizontalCenter
 				radius: 14
 				color: Qt.rgba(root.walBackground.r, root.walBackground.g, root.walBackground.b, 0.85)
-				border.color: Qt.rgba(1,1,1,0.1)
+				border.color: Qt.rgba(root.walColor5.r, root.walColor5.g, root.walColor5.b, 0.45)
 				border.width: 1
 				visible: musicPanel.gifSelectorOpen
 				clip: true
@@ -1455,38 +1457,38 @@ PanelWindow {
 			}
 		}
 	Process {
-	    id: musicStatusProc
-	    command: [musicPanel.configPath + "/assets/get-player.sh", musicPanel.activePlayer]
-	    stdout: SplitParser {
-	        splitMarker: ""
-	        onRead: data => {
-	            var lines = data.split("\n")
-	            for (var i = 0; i < lines.length; i++) {
-	                var line = lines[i].trim()
-	                var idx = line.indexOf(":")
-	                if (idx < 0) continue
-	                var key = line.substring(0, idx)
-	                var val = line.substring(idx + 1)
-	                switch (key) {
-	                    case "player": musicPanel.resolvedPlayer = val; break
-	                    case "status": musicPanel.playerStatus = val || "Stopped"; break
-	                    case "title":  musicPanel.trackTitle  = val; break
-	                    case "artist": musicPanel.trackArtist = val; break
-	                    case "arturl": musicPanel.trackArtUrl = val; break
-	                    case "pos":    musicPanel.position    = parseFloat(val) || 0; break
-	                    case "len":    musicPanel.length      = parseFloat(val) || 0; break
-	                }
-	            }
-	        }
-	    }
-	    onExited: code => {
-	        if (code !== 0) {
-	            musicPanel.playerStatus = "Stopped"
-	            musicPanel.trackTitle   = ""
-	            musicPanel.trackArtist  = ""
-	            musicPanel.trackArtUrl  = ""
-	        }
-	    }
+	  id: musicStatusProc
+	  command: [musicPanel.configPath + "/assets/get-player.sh", musicPanel.activePlayer]
+	  stdout: SplitParser {
+	      splitMarker: ""
+	      onRead: data => {
+	          var lines = data.split("\n")
+	          for (var i = 0; i < lines.length; i++) {
+	              var line = lines[i].trim()
+	              var idx = line.indexOf(":")
+	              if (idx < 0) continue
+	              var key = line.substring(0, idx)
+	              var val = line.substring(idx + 1)
+	              switch (key) {
+	                  case "player": musicPanel.resolvedPlayer = val; break
+	                  case "status": musicPanel.playerStatus = val || "Stopped"; break
+	                  case "title":  musicPanel.trackTitle  = val; break
+	                  case "artist": musicPanel.trackArtist = val; break
+	                  case "arturl": musicPanel.trackArtUrl = val; break
+	                  case "pos":    musicPanel.position    = parseFloat(val) || 0; break
+	                  case "len":    musicPanel.length      = parseFloat(val) || 0; break
+	              }
+	          }
+	      }
+	  }
+	  onExited: code => {
+	      if (code !== 0) {
+	          musicPanel.playerStatus = "Stopped"
+	          musicPanel.trackTitle   = ""
+	          musicPanel.trackArtist  = ""
+	          musicPanel.trackArtUrl  = ""
+	      }
+	  }
 	}
 		Process {
 			id: playPauseProc
