@@ -10,6 +10,7 @@ Cached in ~/.cache/quickshell/subs/.
 """
 import urllib.parse
 import difflib, glob, hashlib, json, os, re, shutil, subprocess, sys, time, urllib.request
+import tempfile
 
 key = sys.argv[1] if len(sys.argv) > 1 else ""
 title = sys.argv[2] if len(sys.argv) > 2 else ""
@@ -163,8 +164,16 @@ def run(args, timeout=60):
 
 def save(res):
     res["at"] = time.time()
-    with open(cf, "w", encoding="utf-8") as f:
-        json.dump(res, f, ensure_ascii=False)
+    pending = None
+    try:
+        with tempfile.NamedTemporaryFile(mode="w", encoding="utf-8", dir=CACHE,
+                                         prefix=".caption-", suffix=".tmp", delete=False) as f:
+            pending = f.name
+            json.dump(res, f, ensure_ascii=False)
+        os.replace(pending, cf)
+    finally:
+        if pending and os.path.exists(pending):
+            os.unlink(pending)
     out(res)
 
 
@@ -230,30 +239,28 @@ try:
     if not fmts:
         # -J sometimes comes back without caption tracks even though the video has them;
         # ask yt-dlp to just download the captions directly (the way --list-subs sees them)
-        tmp = os.path.join(CACHE, "dl")
-        shutil.rmtree(tmp, ignore_errors=True)
-        os.makedirs(tmp)
-        langs = ([PREF] if PREF != "orig" else []) + [".*-orig", "en", "hi", "ne"]
-        try:
-            run(BA + js_args() + CL + ["--skip-download", "--write-subs", "--write-auto-subs",
-                      "--sub-langs", ",".join(dict.fromkeys(langs)), "--sub-format", "json3",
-                      "-o", os.path.join(tmp, "s.%(ext)s"), url], timeout=120)
-        except Exception as e:
-            dbg("direct caption download failed:", e)
-        got = sorted(glob.glob(os.path.join(tmp, "*.json3")))
-        dbg("downloaded:", [os.path.basename(g) for g in got])
-        if not got:
-            save({"ok": False, "why": "no captions on this video"})
-        def rank(path):
-            lg = os.path.basename(path)[2:-6]           # s.<lang>.json3
-            for i, w in enumerate(langs):
-                if re.fullmatch(w, lg):
-                    return i
-            return 99
-        got.sort(key=rank)
-        with open(got[0], encoding="utf-8") as f:
-            data0 = json.load(f)
-        lang, kind, fmts = os.path.basename(got[0])[2:-6], "auto", [{"ext": "json3", "_data": data0}]
+        with tempfile.TemporaryDirectory(prefix="caption-", dir=CACHE) as tmp:
+            langs = ([PREF] if PREF != "orig" else []) + [".*-orig", "en", "hi", "ne"]
+            try:
+                run(BA + js_args() + CL + ["--skip-download", "--write-subs", "--write-auto-subs",
+                          "--sub-langs", ",".join(dict.fromkeys(langs)), "--sub-format", "json3",
+                          "-o", os.path.join(tmp, "s.%(ext)s"), url], timeout=120)
+            except Exception as e:
+                dbg("direct caption download failed:", e)
+            got = sorted(glob.glob(os.path.join(tmp, "*.json3")))
+            dbg("downloaded:", [os.path.basename(g) for g in got])
+            if not got:
+                save({"ok": False, "why": "no captions on this video"})
+            def rank(path):
+                lg = os.path.basename(path)[2:-6]           # s.<lang>.json3
+                for i, w in enumerate(langs):
+                    if re.fullmatch(w, lg):
+                        return i
+                return 99
+            got.sort(key=rank)
+            with open(got[0], encoding="utf-8") as f:
+                data0 = json.load(f)
+            lang, kind, fmts = os.path.basename(got[0])[2:-6], "auto", [{"ext": "json3", "_data": data0}]
     j3 = next((f for f in fmts if f.get("ext") == "json3"), None)
 
     # ── 3. download + parse ──
@@ -266,25 +273,23 @@ try:
         orig.remove(vlang + "-orig"); orig.insert(0, vlang + "-orig")
     if kind == "auto" and orig and orig[0] != lang:
         tries.append((orig[0], "auto"))
-    tmp = os.path.join(CACHE, "dl")
     for lg, kd in tries:
         if data is not None:
             break
-        shutil.rmtree(tmp, ignore_errors=True)
-        os.makedirs(tmp)
-        try:
-            run(BA + js_args() + CL + ["--skip-download", "--write-auto-subs" if kd == "auto" else "--write-subs",
-                      "--sub-langs", lg, "--sub-format", "json3", "--retries", "3",
-                      "--retry-sleep", "http:exp=1:8", "--sleep-subtitles", "1",
-                      "-o", os.path.join(tmp, "s.%(ext)s"), url], timeout=120)
-        except Exception as e:
-            dbg("download", lg, "failed:", e)
-        got = glob.glob(os.path.join(tmp, "*.json3"))
-        dbg("download", lg, "→", [os.path.basename(g) for g in got])
-        if got:
-            with open(got[0], encoding="utf-8") as f:
-                data = json.load(f)
-            lang, kind = lg, kd
+        with tempfile.TemporaryDirectory(prefix="caption-", dir=CACHE) as tmp:
+            try:
+                run(BA + js_args() + CL + ["--skip-download", "--write-auto-subs" if kd == "auto" else "--write-subs",
+                          "--sub-langs", lg, "--sub-format", "json3", "--retries", "3",
+                          "--retry-sleep", "http:exp=1:8", "--sleep-subtitles", "1",
+                          "-o", os.path.join(tmp, "s.%(ext)s"), url], timeout=120)
+            except Exception as e:
+                dbg("download", lg, "failed:", e)
+            got = glob.glob(os.path.join(tmp, "*.json3"))
+            dbg("download", lg, "→", [os.path.basename(g) for g in got])
+            if got:
+                with open(got[0], encoding="utf-8") as f:
+                    data = json.load(f)
+                lang, kind = lg, kd
     if data is None:
         msg = "caption download failed"
         out({"ok": False, "why": "network: " + msg})      # not cached → the bar retries later
