@@ -6,6 +6,6 @@
   };
   networking.nameservers = [];
   time.timeZone = "Asia/Kathmandu";
-  networking.firewall.allowedTCPPorts = [7417 51413];
+  networking.firewall.allowedTCPPorts = [51413];
   networking.firewall.allowedUDPPorts = [51413 5353];
 }

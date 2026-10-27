@@ -29,3 +29,7 @@ config/quickshell/assets/gifs/current.gif
 config/quickshell/assets/pfps/pfp.jpg
 __pycache__/
 *.pyc
+# patch backups
+*.bak-*
+config/quickshell/subs-cookie-profile
+config/quickshell/subs-lang

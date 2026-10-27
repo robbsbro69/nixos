@@ -1,4 +1,5 @@
 import Quickshell
+import Quickshell.Io
 import Quickshell.Wayland
 import QtQuick
 import QtQuick.Layouts
@@ -15,10 +16,10 @@ PanelWindow {
     		top: root.barPosition === "top"
     	}
     	margins {
-    		bottom: root.calendarVisible ? root.barGapV : -350
+    		bottom: root.calendarVisible ? root.barGapV : -(implicitHeight + 20)
     		left: (root.calendarVisible ? 6 : -(implicitWidth + 20)) + root.barInsetLeft
     		right: (root.calendarVisible ? 6 : -(implicitWidth + 20)) + root.barInsetRight
-    		top: root.calendarVisible ? root.barGapV : -350
+    		top: root.calendarVisible ? root.barGapV : -(implicitHeight + 20)
     	}
     	implicitWidth: 312
     	implicitHeight: card.height + 16
@@ -54,6 +55,135 @@ PanelWindow {
     	property var bsMonthNames: ["Baisakh","Jestha","Ashadh","Shrawan","Bhadra","Ashwin","Kartik","Mangsir","Poush","Magh","Falgun","Chaitra"]
     	property var bsMonthNamesNep: ["बैशाख","जेठ","असार","श्रावण","भाद्र","आश्विन","कार्तिक","मंसिर","पौष","माघ","फाल्गुन","चैत्र"]
     	property var nepaliNums: ["०","१","२","३","४","५","६","७","८","९"]
+	// ── calendar events (assets/calendar-events.py) ─────────────────────────
+	readonly property string evScript: root.configPath + "/assets/calendar-events.py"
+	property var calEvents: ({})
+	property var evSources: ({})
+	property string selKey: ""
+	property bool addOpen: false
+	property bool addYearly: false
+	function pad2(n) { return n < 10 ? "0" + n : "" + n }
+	function dateKey(y, m0, d) { return y + "-" + pad2(m0 + 1) + "-" + pad2(d) }
+	function todayKey() { var n = new Date(); return dateKey(n.getFullYear(), n.getMonth(), n.getDate()) }
+	function eventsOn(k) { return (k && calEvents[k]) ? calEvents[k] : [] }
+	function isHoliday(k) {
+		var l = eventsOn(k)
+		for (var i = 0; i < l.length; i++) if (l[i].k === "holiday") return true
+		return false
+	}
+	function kindColor(k) {
+		switch (k) {
+		case "holiday":  return root.walColor1
+		case "festival": return root.walPeach
+		case "india":    return root.walPeach
+		case "intl":     return root.walColor4
+		case "mine":     return root.walColor5
+		case "task":     return root.walColor2
+		case "reminder": return root.walColor6
+		case "release":  return root.walColor13
+		default:         return root.walColor12
+		}
+	}
+	function kindLabel(e) {
+		if (e.note) return e.note
+		switch (e.k) {
+		case "holiday":  return "holiday"
+		case "festival": return "festival"
+		case "india":    return "India"
+		case "intl":     return "intl"
+		case "mine":     return e.yearly ? "yearly" : "mine"
+		case "task":     return "task"
+		case "reminder": return "reminder"
+		case "release":  return "release"
+		default:         return "calendar"
+		}
+	}
+	readonly property bool selIsToday: selKey === todayKey()
+	readonly property var selEvents: eventsOn(selKey)
+	readonly property string selTitle: {
+		if (!selKey) return ""
+		var p = selKey.split("-"), d = new Date(+p[0], +p[1] - 1, +p[2])
+		var bs = adToBs(d.getFullYear(), d.getMonth() + 1, d.getDate())
+		var head = selIsToday ? "Today" : longDayNames[d.getDay()].slice(0, 3)
+		return head + ", " + monthNames[d.getMonth()].slice(0, 3) + " " + d.getDate() + "  ·  " + bs.day + " " + bsMonthNames[bs.month - 1]
+	}
+	readonly property var upcoming: {
+		var out = [], tk = todayKey(), limit = new Date(Date.now() + 45 * 86400000)
+		var lk = dateKey(limit.getFullYear(), limit.getMonth(), limit.getDate())
+		var keys = Object.keys(calEvents).filter(function(k) { return k > tk && k <= lk }).sort()
+		var last = {}   // title → row, to merge multi-day holidays (Tihar 3 days → "Nov 3–5")
+		for (var i = 0; i < keys.length; i++) {
+			var l = calEvents[keys[i]]
+			for (var j = 0; j < l.length; j++) {
+				var e = l[j], prev = last[e.t]
+				if (prev && nextKey(prev.end) === keys[i]) { prev.end = keys[i]; continue }
+				if (out.length >= 4 || (e.k === "intl" && out.length >= 2)) continue
+				var row = { key: keys[i], end: keys[i], e: e }
+				last[e.t] = row
+				out.push(row)
+			}
+		}
+		return out
+	}
+	function nextKey(k) {
+		var p = k.split("-"), d = new Date(+p[0], +p[1] - 1, +p[2] + 1)
+		return dateKey(d.getFullYear(), d.getMonth(), d.getDate())
+	}
+	readonly property int agendaMax: 6
+	readonly property string evError: {
+		var bad = []
+		for (var n in evSources) if (!evSources[n].ok && evSources[n].err !== "not configured") bad.push(n)
+		return bad.length ? "couldn't update: " + bad.join(", ") : ""
+	}
+	function shortDate(k, end) {
+		var p = k.split("-"), d = new Date(+p[0], +p[1] - 1, +p[2]), n = new Date()
+		var diff = Math.round((d - new Date(n.getFullYear(), n.getMonth(), n.getDate())) / 86400000)
+		var s = diff === 1 ? "tmrw" : monthNames[d.getMonth()].slice(0, 3) + " " + d.getDate()
+		if (end && end !== k) {
+			var q = end.split("-")
+			s = (diff === 1 ? monthNames[d.getMonth()].slice(0, 3) + " " + d.getDate() : s) + "–" + (+q[2])
+		}
+		return s
+	}
+	function goTo(k) {
+		var p = k.split("-")
+		viewYear = +p[0]; viewMonth = +p[1] - 1
+		var bs = adToBs(+p[0], +p[1], +p[2])
+		bsViewYear = bs.year; bsViewMonth = bs.month
+		selKey = k
+	}
+	function reloadEvents(force) {
+		if (evProc.running) return
+		evProc.command = ["python3", evScript, force ? "refresh" : "list"]
+		evProc.running = true
+	}
+	function submitAdd(txt) {
+		var t = (txt || "").trim(), tm = ""
+		var m = t.match(/^(\d{1,2})[:.](\d{2})\s+(.+)$/)
+		if (m) { tm = pad2(+m[1]) + ":" + m[2]; t = m[3] }
+		if (!t || !selKey) return
+		evActProc.command = ["python3", evScript, "add", selKey, t, addYearly ? "1" : "0", tm]
+		evActProc.running = true
+		addOpen = false; addYearly = false
+	}
+	function delEvent(id) {
+		if (!id) return
+		evActProc.command = ["python3", evScript, "del", id]
+		evActProc.running = true
+	}
+	Process {
+		id: evProc
+		stdout: StdioCollector {
+			onStreamFinished: {
+				try {
+					var o = JSON.parse(text)
+					if (o.ok) { calendarPanel.calEvents = o.events; calendarPanel.evSources = o.sources }
+				} catch (e) { console.warn("calendar-events:", e) }
+			}
+		}
+	}
+	Process { id: evActProc; onExited: calendarPanel.reloadEvents(false) }
+	Timer { interval: 15 * 60000; running: true; repeat: true; onTriggered: calendarPanel.reloadEvents(false) }
     	property var bsYearData: [
         	[2000,30,32,31,32,31,30,30,30,29,30,29,31],
         	[2001,31,31,32,31,31,31,30,29,30,29,30,30],
@@ -258,7 +388,7 @@ PanelWindow {
 			cells.push({ 
 				day: j + 1, 
 				current: true, 
-				adDay: d.getDate() 
+				adDay: d.getDate(), key: dateKey(d.getFullYear(), d.getMonth(), d.getDate()) 
 			})
 		}
 		var rem = 42 - cells.length
@@ -336,6 +466,7 @@ PanelWindow {
         	return cells
 	}
 	Component.onCompleted: {
+		selKey = todayKey(); reloadEvents(false)
 		goToday()
         	bsCells = buildBsCells(bsViewYear, bsViewMonth)
 	}
@@ -665,6 +796,8 @@ border.width: 1
 							property bool isToday: modelData.current && modelData.day === todayDay && isCurrentMonth
                             				property bool isWeekend: (index % 7) >= 5
                             				property bool isCurrentWeek: Math.floor(index / 7) === adGrid.todayWeekRow && isCurrentMonth
+                            				property string dkey: modelData.current ? calendarPanel.dateKey(viewYear, viewMonth, modelData.day) : ""
+                            				property var evs: calendarPanel.eventsOn(dkey)
                             				property bool hov: adDayMa.containsMouse && modelData.current
 							width: adGrid.cellW; 
 							height: 32
@@ -692,15 +825,39 @@ border.width: 1
 							Text {
 								anchors.centerIn: parent; 
 								text: modelData.day
-                                				color: isToday ? root.walColor5 : !modelData.current ? Qt.rgba(root.walForeground.r, root.walForeground.g, root.walForeground.b, 0.12) : isWeekend ? Qt.rgba(root.walColor13.r, root.walColor13.g, root.walColor13.b, 0.7) : Qt.rgba(root.walForeground.r, root.walForeground.g, root.walForeground.b, 0.7)
+                                				color: (modelData.current && !isToday && calendarPanel.isHoliday(dkey)) ? root.walColor1 : isToday ? root.walColor5 : !modelData.current ? Qt.rgba(root.walForeground.r, root.walForeground.g, root.walForeground.b, 0.12) : isWeekend ? Qt.rgba(root.walColor13.r, root.walColor13.g, root.walColor13.b, 0.7) : Qt.rgba(root.walForeground.r, root.walForeground.g, root.walForeground.b, 0.7)
 								font { 
 									pixelSize: 11; 
 									family: "JetBrainsMono Nerd Font"; 
 									bold: isToday 
 								}
 							}
+								// events: selected ring + up to 3 dots
+								Rectangle {
+									anchors.centerIn: parent
+									width: 24; height: 24; radius: 12
+									color: "transparent"
+									visible: dkey !== "" && dkey === calendarPanel.selKey && !isToday
+									border.width: 1
+									border.color: Qt.rgba(root.walColor5.r, root.walColor5.g, root.walColor5.b, 0.55)
+								}
+								Row {
+									anchors.horizontalCenter: parent.horizontalCenter
+									anchors.bottom: parent.bottom
+									anchors.bottomMargin: 1
+									spacing: 2
+									Repeater {
+										model: evs.slice(0, 3)
+										Rectangle {
+											required property var modelData
+											width: 4; height: 4; radius: 2
+											color: calendarPanel.kindColor(modelData.k)
+										}
+									}
+								}
 							MouseArea { 
-								id: adDayMa; 
+								id: adDayMa
+								onClicked: { calendarPanel.selKey = parent.dkey; calendarPanel.addOpen = false } 
 								anchors.fill: parent; 
 								hoverEnabled: true; 
 								enabled: modelData.current; 
@@ -728,6 +885,8 @@ border.width: 1
 							property bool isToday: modelData.current && modelData.day === bsTodayDay && bsIsCurrentMonth
 							property bool isWeekend: (index % 7) >= 5
                             				property bool isCurrentWeek: Math.floor(index / 7) === bsGrid.todayWeekRow && bsIsCurrentMonth
+                            				property string dkey: modelData.current ? (modelData.key || "") : ""
+                            				property var evs: calendarPanel.eventsOn(dkey)
                             				property bool hov: bsDayMa.containsMouse && modelData.current
                             				width: bsGrid.cellW; 
 							height: 36
@@ -756,7 +915,7 @@ border.width: 1
 								anchors.centerIn: parent; 
 								anchors.verticalCenterOffset: -5
                                 				text: toNepaliNum(modelData.day)
-                                				color: isToday ? root.walColor13 : !modelData.current ? Qt.rgba(root.walForeground.r, root.walForeground.g, root.walForeground.b, 0.12) : isWeekend ? Qt.rgba(root.walColor1.r, root.walColor1.g, root.walColor1.b, 0.8) : Qt.rgba(root.walForeground.r, root.walForeground.g, root.walForeground.b, 0.85)
+                                				color: (modelData.current && !isToday && calendarPanel.isHoliday(dkey)) ? root.walColor1 : isToday ? root.walColor13 : !modelData.current ? Qt.rgba(root.walForeground.r, root.walForeground.g, root.walForeground.b, 0.12) : isWeekend ? Qt.rgba(root.walColor1.r, root.walColor1.g, root.walColor1.b, 0.8) : Qt.rgba(root.walForeground.r, root.walForeground.g, root.walForeground.b, 0.85)
                                 				font { 
 									pixelSize: 12; 
 									family: "JetBrainsMono Nerd Font"; 
@@ -774,8 +933,32 @@ border.width: 1
 									family: "JetBrainsMono Nerd Font" 
 								}
 							}
+								// events: selected ring + up to 3 dots
+								Rectangle {
+									anchors.centerIn: parent
+									width: 24; height: 24; radius: 12
+									color: "transparent"
+									visible: dkey !== "" && dkey === calendarPanel.selKey && !isToday
+									border.width: 1
+									border.color: Qt.rgba(root.walColor13.r, root.walColor13.g, root.walColor13.b, 0.55)
+								}
+								Row {
+									anchors.horizontalCenter: parent.horizontalCenter
+									anchors.bottom: parent.bottom
+									anchors.bottomMargin: 1
+									spacing: 2
+									Repeater {
+										model: evs.slice(0, 3)
+										Rectangle {
+											required property var modelData
+											width: 4; height: 4; radius: 2
+											color: calendarPanel.kindColor(modelData.k)
+										}
+									}
+								}
 							MouseArea { 
-								id: bsDayMa; 
+								id: bsDayMa
+								onClicked: { calendarPanel.selKey = parent.dkey; calendarPanel.addOpen = false } 
 								anchors.fill: parent; 
 								hoverEnabled: true; 
 								enabled: modelData.current; 
@@ -783,6 +966,219 @@ border.width: 1
 							}
 						}
 					}
+				}
+				// ── events for the picked day ───────────────────────────
+				Rectangle { Layout.fillWidth: true; Layout.topMargin: 6; Layout.preferredHeight: 1; color: root.card(0.4) }
+				RowLayout {
+					Layout.fillWidth: true
+					Layout.topMargin: 2
+					spacing: 6
+					Text {
+						text: calendarPanel.selTitle
+						color: root.walForeground
+						font { pixelSize: 11; bold: true; family: "JetBrainsMono Nerd Font" }
+						elide: Text.ElideRight
+						Layout.fillWidth: true
+					}
+					Rectangle {
+						width: 22; height: 22; radius: 7
+						color: addBtnMa.containsMouse ? root.hover(0.08) : root.card(0.3)
+						Text {
+							anchors.centerIn: parent
+							text: calendarPanel.addOpen ? "󰅖" : "󰐕"
+							color: calendarPanel.calMode === 0 ? root.walColor5 : root.walColor13
+							font { pixelSize: 12; family: "JetBrainsMono Nerd Font" }
+						}
+						MouseArea {
+							id: addBtnMa
+							anchors.fill: parent
+							hoverEnabled: true
+							cursorShape: Qt.PointingHandCursor
+							onClicked: {
+								calendarPanel.addOpen = !calendarPanel.addOpen
+								if (calendarPanel.addOpen) { addInput.text = ""; addInput.forceActiveFocus() }
+							}
+						}
+					}
+				}
+				// add an event to the picked day
+				RowLayout {
+					visible: calendarPanel.addOpen
+					Layout.fillWidth: true
+					spacing: 4
+					Rectangle {
+						Layout.fillWidth: true
+						Layout.preferredHeight: 26
+						radius: 7
+						color: root.card(0.35)
+						border.width: 1
+						border.color: addInput.activeFocus ? Qt.rgba(root.walColor5.r, root.walColor5.g, root.walColor5.b, 0.5) : "transparent"
+						TextInput {
+							id: addInput
+							anchors.fill: parent
+							anchors.leftMargin: 8
+							anchors.rightMargin: 8
+							verticalAlignment: TextInput.AlignVCenter
+							color: root.walForeground
+							selectionColor: Qt.rgba(root.walColor5.r, root.walColor5.g, root.walColor5.b, 0.4)
+							font { pixelSize: 10; family: "JetBrainsMono Nerd Font" }
+							clip: true
+							selectByMouse: true
+							Keys.onReturnPressed: calendarPanel.submitAdd(text)
+							Keys.onEnterPressed: calendarPanel.submitAdd(text)
+							Keys.onEscapePressed: function(event) { calendarPanel.addOpen = false; event.accepted = true }
+							Text {
+								anchors.fill: parent
+								verticalAlignment: Text.AlignVCenter
+								visible: addInput.text === ""
+								text: "Event name  ·  e.g. 09:30 Exam"
+								color: root.walColor8
+								opacity: 0.6
+								font { pixelSize: 10; family: "JetBrainsMono Nerd Font" }
+							}
+						}
+					}
+					Rectangle {
+						Layout.preferredWidth: yearRow.implicitWidth + 12
+						Layout.preferredHeight: 26
+						radius: 7
+						color: calendarPanel.addYearly ? Qt.rgba(root.walColor5.r, root.walColor5.g, root.walColor5.b, 0.22) : root.card(0.35)
+						Row {
+							id: yearRow
+							anchors.centerIn: parent
+							spacing: 4
+							Text { text: "󰑖"; color: calendarPanel.addYearly ? root.walColor5 : root.walColor8; font { pixelSize: 11; family: "JetBrainsMono Nerd Font" } }
+							Text { text: "yearly"; color: calendarPanel.addYearly ? root.walForeground : root.walColor8; font { pixelSize: 9; family: "JetBrainsMono Nerd Font" } }
+						}
+						MouseArea {
+							anchors.fill: parent
+							cursorShape: Qt.PointingHandCursor
+							onClicked: { calendarPanel.addYearly = !calendarPanel.addYearly; addInput.forceActiveFocus() }
+						}
+					}
+				}
+				Repeater {
+					model: calendarPanel.selEvents.slice(0, calendarPanel.agendaMax)
+					delegate: Rectangle {
+						id: evRow
+						required property var modelData
+						Layout.fillWidth: true
+						Layout.preferredHeight: 24
+						radius: 7
+						color: evRowMa.containsMouse ? root.hover(0.05) : "transparent"
+						RowLayout {
+							anchors.fill: parent
+							anchors.leftMargin: 6
+							anchors.rightMargin: 6
+							spacing: 7
+							Rectangle { Layout.preferredWidth: 3; Layout.preferredHeight: 14; radius: 1.5; color: calendarPanel.kindColor(evRow.modelData.k) }
+							Text {
+								visible: evRow.modelData.time !== ""
+								text: evRow.modelData.time
+								color: root.walColor8
+								font { pixelSize: 9; family: "JetBrainsMono Nerd Font" }
+							}
+							Text {
+								text: evRow.modelData.t
+								color: evRow.modelData.k === "holiday" ? root.walColor1 : root.walForeground
+								font { pixelSize: 10; bold: evRow.modelData.k === "holiday"; family: "JetBrainsMono Nerd Font" }
+								elide: Text.ElideRight
+								Layout.fillWidth: true
+							}
+							Text {
+								visible: !(evRow.modelData.k === "mine" && evRowMa.containsMouse)
+								text: calendarPanel.kindLabel(evRow.modelData)
+								color: root.walColor8
+								opacity: 0.7
+								font { pixelSize: 8; family: "JetBrainsMono Nerd Font" }
+							}
+							Text {
+								visible: evRow.modelData.k === "mine" && evRowMa.containsMouse
+								text: "󰆴"
+								color: root.walColor1
+								font { pixelSize: 11; family: "JetBrainsMono Nerd Font" }
+								MouseArea {
+									anchors.fill: parent
+									anchors.margins: -4
+									cursorShape: Qt.PointingHandCursor
+									onClicked: calendarPanel.delEvent(evRow.modelData.id)
+								}
+							}
+						}
+						MouseArea { id: evRowMa; anchors.fill: parent; hoverEnabled: true; acceptedButtons: Qt.NoButton }
+					}
+				}
+				Text {
+					visible: calendarPanel.selEvents.length > calendarPanel.agendaMax
+					text: "+" + (calendarPanel.selEvents.length - calendarPanel.agendaMax) + " more"
+					color: root.walColor8
+					opacity: 0.7
+					font { pixelSize: 9; family: "JetBrainsMono Nerd Font" }
+					Layout.leftMargin: 16
+				}
+				Text {
+					visible: calendarPanel.selEvents.length === 0 && !calendarPanel.addOpen
+					text: "Nothing on this day"
+					color: root.walColor8
+					opacity: 0.6
+					font { pixelSize: 10; family: "JetBrainsMono Nerd Font" }
+					Layout.leftMargin: 6
+				}
+				// coming up (when today is picked)
+				Text {
+					visible: calendarPanel.selIsToday && calendarPanel.upcoming.length > 0
+					text: "COMING UP"
+					color: root.walColor8
+					font { pixelSize: 8; bold: true; letterSpacing: 1.2; family: "JetBrainsMono Nerd Font" }
+					Layout.topMargin: 4
+					Layout.leftMargin: 6
+				}
+				Repeater {
+					model: calendarPanel.selIsToday ? calendarPanel.upcoming : []
+					delegate: Rectangle {
+						id: upRow
+						required property var modelData
+						Layout.fillWidth: true
+						Layout.preferredHeight: 22
+						radius: 7
+						color: upMa.containsMouse ? root.hover(0.05) : "transparent"
+						RowLayout {
+							anchors.fill: parent
+							anchors.leftMargin: 6
+							anchors.rightMargin: 6
+							spacing: 7
+							Rectangle { Layout.preferredWidth: 3; Layout.preferredHeight: 12; radius: 1.5; color: calendarPanel.kindColor(upRow.modelData.e.k) }
+							Text {
+								text: calendarPanel.shortDate(upRow.modelData.key, upRow.modelData.end)
+								color: root.walColor8
+								font { pixelSize: 9; family: "JetBrainsMono Nerd Font" }
+								Layout.preferredWidth: 52
+							}
+							Text {
+								text: upRow.modelData.e.t
+								color: Qt.rgba(root.walForeground.r, root.walForeground.g, root.walForeground.b, 0.8)
+								font { pixelSize: 10; family: "JetBrainsMono Nerd Font" }
+								elide: Text.ElideRight
+								Layout.fillWidth: true
+							}
+						}
+						MouseArea {
+							id: upMa
+							anchors.fill: parent
+							hoverEnabled: true
+							cursorShape: Qt.PointingHandCursor
+							onClicked: calendarPanel.goTo(upRow.modelData.key)
+						}
+					}
+				}
+				Text {
+					visible: calendarPanel.evError !== ""
+					text: "󰀦 " + calendarPanel.evError + "  ·  retry"
+					color: root.walColor8
+					opacity: 0.7
+					font { pixelSize: 8; family: "JetBrainsMono Nerd Font" }
+					Layout.leftMargin: 6
+					MouseArea { anchors.fill: parent; cursorShape: Qt.PointingHandCursor; onClicked: calendarPanel.reloadEvents(true) }
 				}
 				Rectangle {
 					Layout.fillWidth: true; 
@@ -837,7 +1233,7 @@ border.width: 1
 			target: root
 			function onCalendarVisibleChanged() {
 				if (root.calendarVisible) { 
-					calendarPanel.goToday(); focusTimer.start() 
+					calendarPanel.goToday(); calendarPanel.selKey = calendarPanel.todayKey(); calendarPanel.addOpen = false; calendarPanel.reloadEvents(false); focusTimer.start() 
 				}
 			}
 		}

@@ -9,6 +9,7 @@ hl.on("hyprland.start", function()
 		"wl-paste --type text --watch cliphist store",
 		"wl-paste --type image --watch cliphist store",
 		"/run/current-system/sw/libexec/polkit-gnome-authentication-agent-1",
+		"kdeconnect-indicator",
 		"sleep 1 && QS_DROP_EXPENSIVE_FONTS=1 quickshell -p /home/alpha/.config/quickshell",
 	}
 

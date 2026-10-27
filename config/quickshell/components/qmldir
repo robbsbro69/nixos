@@ -16,8 +16,6 @@ BlastOverlay 1.0 BlastOverlay.qml
 WorkspaceOverview 1.0 WorkspaceOverview.qml
 EqPanel 1.0 EqPanel.qml
 ScreenTimePanel 1.0 ScreenTimePanel.qml
-JarvisPanel 1.0 JarvisPanel.qml
-JarvisTimeline 1.0 JarvisTimeline.qml
 BarMenu 1.0 BarMenu.qml
 BarReveal 1.0 BarReveal.qml
 PomoZen 1.0 PomoZen.qml

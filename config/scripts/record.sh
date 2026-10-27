@@ -35,6 +35,16 @@ rec_kill() { pkill "-$1" -x wf-recorder 2>/dev/null; pkill "-$1" -f "$GSR_RE" 2>
 AUDIO="${RECORD_AUDIO:-$(cat "$HOME/.config/quickshell/state/record-audio" 2>/dev/null || echo desktop)}"
 have_gsr() { command -v gpu-screen-recorder >/dev/null; }
 notify() { notify-send -a Recorder "$@" 2>/dev/null || true; }
+# facecam: phone camera window in the corner while recording (state/record-camera: off|front|back)
+FOCUSCAM="$HOME/nixos-private/scripts/focuscam.sh"
+CAMERA="${RECORD_CAMERA:-$(cat "$HOME/.config/quickshell/state/record-camera" 2>/dev/null || echo off)}"
+cam_on() {
+	case "$CAMERA" in front | back) ;; *) [ -x "$FOCUSCAM" ] && "$FOCUSCAM" overlay off; return 0 ;; esac
+	[ -x "$FOCUSCAM" ] || return 0
+	"$FOCUSCAM" overlay on "$CAMERA"
+	sleep 2.5 # let the window appear before the recording starts
+}
+cam_off() { [ -x "$FOCUSCAM" ] && "$FOCUSCAM" overlay off; true; }
 
 start() {
 	# start -o OUTPUT | start -g "X,Y WxH" | start   (whole screen)
@@ -42,6 +52,7 @@ start() {
 		notify "Already recording" "Stop the current recording first."
 		exit 0
 	fi
+	cam_on
 	local base="$DIR/$(date +%Y-%m-%d_%H-%M-%S)"
 	echo "$base" >"$STATE"
 	if have_gsr; then
@@ -70,6 +81,7 @@ start() {
 	if ! is_recording; then
 		notify -u critical "Recording didn't start" "See ~/.cache/qs-record.log"
 		rm -f "$STATE"
+		cam_off
 		exit 1
 	fi
 	setsid -f "$0" _watchdog "$base.mkv" >/dev/null 2>&1
@@ -92,7 +104,7 @@ finish() {
 }
 
 stop() {
-	is_recording || { [ -f "$STATE" ] && finish; exit 0; }
+	is_recording || { [ -f "$STATE" ] && finish; cam_off; exit 0; }
 	rec_kill INT
 	for _ in $(seq 1 60); do is_recording || break; sleep 0.1; done
 	if is_recording; then
@@ -106,6 +118,7 @@ stop() {
 		sleep 0.3
 	fi
 	finish
+	cam_off
 }
 
 watchdog() {

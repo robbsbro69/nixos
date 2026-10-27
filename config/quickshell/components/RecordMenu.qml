@@ -24,6 +24,37 @@ PanelWindow {
 		top: root.recordMenuVisible ? root.barGapV : -(implicitHeight + 20)
 	}
 	implicitWidth: 300
+	property string recCamera: "off"            // off | front | back  (state/record-camera)
+	FileView {
+		path: root.statePath + "/record-camera"
+		onLoaded: { var t = text().trim(); if (["off", "front", "back"].indexOf(t) >= 0) recMenu.recCamera = t }
+	}
+	// live camera preview (focuscam.sh overlay) — state read back from the script
+	property bool camPreview: false
+	property real camClickAt: 0
+	readonly property string camFacing: recCamera === "back" ? "back" : "front"
+	function setCamPreview(on) {
+		camPreview = on
+		camClickAt = Date.now()
+		Quickshell.execDetached(on ? [root.focusCamScript, "overlay", "on", camFacing] : [root.focusCamScript, "overlay", "off"])
+	}
+	Process {
+		id: camStatProc
+		command: [root.focusCamScript, "status"]
+		stdout: StdioCollector {
+			onStreamFinished: {
+				if (Date.now() - recMenu.camClickAt < 2500) return
+				recMenu.camPreview = text.indexOf("overlay=1") >= 0
+			}
+		}
+	}
+	Timer {
+		interval: 1500
+		repeat: true
+		triggeredOnStart: true
+		running: root.recordMenuVisible && root.focusCamAvailable
+		onTriggered: if (!camStatProc.running) camStatProc.running = true
+	}
 	property string recAudio: "desktop"          // desktop | both | none  (state/record-audio)
 	FileView {
 		path: root.statePath + "/record-audio"
@@ -261,6 +292,100 @@ PanelWindow {
 									}
 								}
 							}
+						}
+					}
+				}
+
+				// ── Camera (phone facecam) ──────────────────────────────
+				ColumnLayout {
+					visible: !root.recording && root.focusCamAvailable
+					Layout.fillWidth: true
+					spacing: 6
+					Text {
+						text: "CAMERA  ·  PHONE"
+						color: root.walColor8
+						font.pixelSize: 9
+						font.bold: true
+						font.letterSpacing: 1.2
+						font.family: "JetBrainsMono Nerd Font"
+					}
+					Rectangle {
+						Layout.fillWidth: true
+						Layout.preferredHeight: 32
+						radius: 9
+						color: root.card(0.35)
+						RowLayout {
+							anchors.fill: parent
+							anchors.margins: 3
+							spacing: 3
+							Repeater {
+								model: [{ k: "off", i: "󰗟", t: "Off" }, { k: "front", i: "󰄀", t: "Front" }, { k: "back", i: "󰄀", t: "Back" }]
+								delegate: Rectangle {
+									id: cOpt
+									required property var modelData
+									readonly property bool sel: recMenu.recCamera === modelData.k
+									Layout.fillWidth: true
+									Layout.fillHeight: true
+									radius: 7
+									color: sel ? Qt.rgba(root.walColor1.r, root.walColor1.g, root.walColor1.b, 0.22)
+										: (cMa.containsMouse ? root.hover(0.06) : "transparent")
+									Row {
+										anchors.centerIn: parent
+										spacing: 6
+										Text { text: cOpt.modelData.i; color: cOpt.sel ? root.walColor1 : root.walColor8; font.pixelSize: 13; font.family: "JetBrainsMono Nerd Font"; anchors.verticalCenter: parent.verticalCenter }
+										Text { text: cOpt.modelData.t; color: cOpt.sel ? root.walForeground : root.walColor8; font.pixelSize: 11; font.bold: cOpt.sel; font.family: "JetBrainsMono Nerd Font"; anchors.verticalCenter: parent.verticalCenter }
+									}
+									MouseArea {
+										id: cMa
+										anchors.fill: parent
+										hoverEnabled: true
+										cursorShape: Qt.PointingHandCursor
+										onClicked: {
+											recMenu.recCamera = cOpt.modelData.k
+											root.saveState("record-camera", cOpt.modelData.k)
+											if (recMenu.camPreview) recMenu.setCamPreview(true)   // switch the live view
+										}
+									}
+								}
+							}
+						}
+					}
+					// live preview toggle
+					Rectangle {
+						Layout.fillWidth: true
+						Layout.preferredHeight: 30
+						radius: 9
+						color: recMenu.camPreview
+							? Qt.rgba(root.walColor1.r, root.walColor1.g, root.walColor1.b, 0.22)
+							: (pvMa.containsMouse ? root.hover(0.06) : root.card(0.35))
+						border.width: recMenu.camPreview ? 1 : 0
+						border.color: Qt.rgba(root.walColor1.r, root.walColor1.g, root.walColor1.b, 0.5)
+						Behavior on color { ColorAnimation { duration: 120 } }
+						Row {
+							anchors.centerIn: parent
+							spacing: 8
+							Text {
+								text: recMenu.camPreview ? "󰈉" : "󰈈"
+								color: recMenu.camPreview ? root.walColor1 : root.walColor8
+								font.pixelSize: 13
+								font.family: "JetBrainsMono Nerd Font"
+								anchors.verticalCenter: parent.verticalCenter
+							}
+							Text {
+								text: recMenu.camPreview ? "Hide camera preview" : "Live preview  ·  " + recMenu.camFacing + " cam"
+								color: recMenu.camPreview ? root.walForeground : root.walColor8
+								font.pixelSize: 11
+								font.bold: recMenu.camPreview
+								font.family: "JetBrainsMono Nerd Font"
+								anchors.verticalCenter: parent.verticalCenter
+							}
+						}
+						MouseArea {
+							id: pvMa
+							anchors.fill: parent
+							hoverEnabled: true
+							cursorShape: Qt.PointingHandCursor
+							onClicked: recMenu.setCamPreview(!recMenu.camPreview)
 						}
 					}
 				}

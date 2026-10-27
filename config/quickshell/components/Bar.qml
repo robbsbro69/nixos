@@ -704,6 +704,7 @@ Item {
 				onScrolled: function(up) { if (!root.pomoRunning) root.pomoAdjust(root.pomoPhase, up ? 1 : -1) }
 			}
 			I3Block {
+				visible: root.jarvisEnabled
 				label: !root.jarvisOnline ? "J: offline" : root.jarvisBadge > 0 ? "J: " + root.jarvisBadge : "J: ok"
 				tint: !root.jarvisOnline ? "#888888" : root.jarvisCritical ? i3Layout.bad : root.jarvisBadge > 0 ? i3Layout.degraded : i3Layout.good
 				onLeftClick: root.toggleJarvis()
@@ -2163,7 +2164,7 @@ Notch {
 					}
 				}
 				hovered: jarvisMA.containsMouse
-				visible: !bar.enjoy
+				visible: root.jarvisEnabled && (!bar.enjoy)
 				tooltip: !root.jarvisOnline ? "Jarvis offline" + (root.jarvisError !== "" ? " · " + root.jarvisError : "")
 					: (root.jarvisBadge > 0 ? root.jarvisBadge + " need" + (root.jarvisBadge === 1 ? "s" : "") + " attention" : "Jarvis · all clear")
 					  + " · right-click timeline · middle-click dashboard"

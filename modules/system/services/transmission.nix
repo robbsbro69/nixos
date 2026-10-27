@@ -4,7 +4,7 @@
     package = pkgs.transmission_4;
     user = "alpha";
     group = "users";
-    openRPCPort = true;
+    openRPCPort = false;
     settings = {
       download-dir = "/mnt/ssd/Downloads/complete";
       incomplete-dir = "/mnt/ssd/Downloads/incomplete";

@@ -114,9 +114,36 @@ ShellRoot {
 	property int _zenPrevWs: 0
 	property bool _zenPrevDnd: false
 	property bool _zenActive: false
+	// focus-cam: phone camera timelapse while a focus session runs (scripts/focuscam.sh)
+	readonly property string focusCamScript: homePath + "/nixos-private/scripts/focuscam.sh"   // private; camera UI hidden when missing
+	property bool focusCamAvailable: false        // true only when the private focuscam.sh exists
+	Process {
+		command: ["test", "-x", root.focusCamScript]
+		running: true
+		onExited: (code, status) => root.focusCamAvailable = code === 0
+	}
+	property string focusCamFacing: "front"      // front | back | off   (state/focuscam-facing)
+	property bool focusCamPreview: false          // small live window in the corner (state/focuscam-preview)
+	readonly property bool focusCamOn: focusCamAvailable && focusCamFacing !== "off"
+	function focusCamStart() {
+		if (focusCamOn) Quickshell.execDetached([focusCamScript, "start", focusCamPreview ? "1" : "0"])
+	}
+	function focusCamTogglePreview() {
+		focusCamPreview = !focusCamPreview
+		saveState("focuscam-preview", focusCamPreview ? "on" : "off")
+		Quickshell.execDetached([focusCamScript, "preview", focusCamPreview ? "on" : "off"])
+	}
+	function focusCamSetFacing(f) {
+		focusCamFacing = f
+		saveState("focuscam-facing", f)
+		if (!pomoZen) return
+		if (f === "off") Quickshell.execDetached([focusCamScript, "finish"])
+		else Quickshell.execDetached(["bash", "-c", "sleep 0.3; \"$1\" start \"$2\"", "_", focusCamScript, focusCamPreview ? "1" : "0"])
+	}
 	function pomoZenEnter() {
 		if (_zenActive) return
 		_zenActive = true
+		focusCamStart()
 		_zenPrevWs = Hyprland.focusedWorkspace ? Hyprland.focusedWorkspace.id : 1
 		_zenPrevDnd = dndEnabled
 		dndEnabled = true
@@ -127,6 +154,7 @@ ShellRoot {
 	function pomoZenExit() {
 		if (!_zenActive) return
 		_zenActive = false
+		focusCamSettleTimer.restart()
 		dndEnabled = _zenPrevDnd
 		if (pomoZenWs > 0 && _zenPrevWs > 0 && _zenPrevWs !== pomoZenWs && Hyprland.focusedWorkspace && Hyprland.focusedWorkspace.id === pomoZenWs)
 			Quickshell.execDetached(["hyprctl", "dispatch", "hl.dsp.focus({ workspace = " + _zenPrevWs + " })"])
@@ -255,6 +283,13 @@ ShellRoot {
 	// ── v7: Jarvis (Pi) ──
 	property bool jarvisVisible: false
 	property bool jarvisTimelineVisible: false
+	// Jarvis is private: everything Jarvis only shows/runs when its login file exists
+	property bool jarvisEnabled: false
+	Process {
+		command: ["test", "-f", root.homePath + "/.config/jarvis/client.env"]
+		running: true
+		onExited: (code, status) => root.jarvisEnabled = code === 0
+	}
 	property var jarvisData: null
 	property bool jarvisOnline: false
 	property string jarvisError: ""
@@ -825,6 +860,7 @@ ShellRoot {
 		Quickshell.execDetached(["hyprctl", "dispatch", "hl.dsp.focus({ workspace = " + n + " })"])
 	}
 	function focusWindow(addr, ws) {
+		if (!/^0x[0-9a-fA-F]+$/.test("" + addr) || !/^[A-Za-z0-9:_-]*$/.test("" + ws)) return   // secfix
 		overviewVisible = false
 		// Lua-config dispatchers; the selector form is tried both ways, plus the legacy dispatcher
 		Quickshell.execDetached(["bash", "-c",
@@ -913,16 +949,19 @@ ShellRoot {
 		if (!btStatusProc.running) btStatusProc.running = true
 	}
 	function connectBt(mac) {
+		if (!/^[0-9A-Fa-f]{2}(:[0-9A-Fa-f]{2}){5}$/.test("" + mac)) return   // secfix
 		root.btConnectingMAC = mac
 		btActionProc.command = ["bash", "-c",
 			"(echo 'trust " + mac + "'; echo 'connect " + mac + "'; sleep 2; echo 'quit') | bluetoothctl 2>/dev/null"]
 		btActionProc.running = true
 	}
 	function disconnectBt(mac) {
+		if (!/^[0-9A-Fa-f]{2}(:[0-9A-Fa-f]{2}){5}$/.test("" + mac)) return   // secfix
 		btActionProc.command = ["bash", "-c", "echo -e 'disconnect " + mac + "\\nquit' | bluetoothctl 2>/dev/null"]
 		btActionProc.running = true
 	}
 	function pairBt(mac) {
+		if (!/^[0-9A-Fa-f]{2}(:[0-9A-Fa-f]{2}){5}$/.test("" + mac)) return   // secfix
 		root.btConnectingMAC = mac
 		btActionProc.command = ["bash", "-c",
 			"echo -e 'pair " + mac + "\\nquit' | bluetoothctl 2>/dev/null; sleep 2; " +
@@ -931,6 +970,7 @@ ShellRoot {
 		btActionProc.running = true
 	}
 	function forgetBt(mac) {
+		if (!/^[0-9A-Fa-f]{2}(:[0-9A-Fa-f]{2}){5}$/.test("" + mac)) return   // secfix
 		btActionProc.command = ["bash", "-c", "echo -e 'remove " + mac + "\\nquit' | bluetoothctl 2>/dev/null"]
 		btActionProc.running = true
 	}
@@ -945,8 +985,9 @@ ShellRoot {
 
 	// ── State persistence ─────────────────────────────────────────────────
 	function saveState(key, value) {
-		saveStateProc.command = ["bash", "-c",
-			"mkdir -p '" + statePath + "' && echo '" + value + "' > '" + statePath + "/" + key + "'"]
+		if (!/^[A-Za-z0-9._-]+$/.test("" + key)) return   // secfix
+		saveStateProc.command = ["bash", "-c", 'mkdir -p "$1" && printf "%s\n" "$3" > "$1/$2"',
+			"_", statePath, key, "" + value]
 		saveStateProc.running = true
 	}
 	function loadState(key, callback) {
@@ -975,9 +1016,9 @@ ShellRoot {
 	function applyWallpaper(wallpaper) {
 		root.currentWallpaper = wallpaper.path
 		root.walApplying = true
-		applyWallProc.command = ["bash", "-c",
-			"ln -sf '" + wallpaper.path + "' '" + root.wallpaperPath + "/current' && " +
-			"awww img '" + wallpaper.path + "' --transition-type any --transition-duration 2"]
+		applyWallProc.command = ["bash", "-c",   // secfix: path passed as $1
+			'ln -sf -- "$1" "$2/current" && awww img "$1" --transition-type any --transition-duration 2',
+			"_", wallpaper.path, root.wallpaperPath]
 		applyWallProc.running = true
 	}
 
@@ -1057,15 +1098,9 @@ ShellRoot {
 	Process {
 		id: walStepBlur
 		command: {
-			var wp = root.currentWallpaper
-			if (wp.endsWith(".gif"))
-				return ["bash", "-c",
-					"convert '" + wp + "[0]' -resize 1920x -blur 0x8 -quality 85 '" +
-					root.wallpaperPath + "/.current-blurred.jpg' 2>/dev/null"]
-			else
-				return ["bash", "-c",
-					"convert '" + wp + "' -resize 1920x -blur 0x8 -quality 85 '" +
-					root.wallpaperPath + "/.current-blurred.jpg' 2>/dev/null"]
+			var wp = root.currentWallpaper   // secfix: no shell
+			return ["convert", wp + (wp.endsWith(".gif") ? "[0]" : ""), "-resize", "1920x", "-blur", "0x8", "-quality", "85",
+				root.wallpaperPath + "/.current-blurred.jpg"]
 		}
 		onExited: root.walApplying = false
 	}
@@ -1362,7 +1397,7 @@ ShellRoot {
 	Timer { id: jarvisMsgTimer; interval: 5000; onTriggered: root.jarvisMsg = "" }
 	Timer {
 		interval: root.jarvisVisible ? 20000 : 60000
-		running: true; repeat: true; triggeredOnStart: true
+		running: root.jarvisEnabled; repeat: true; triggeredOnStart: true
 		onTriggered: root.jarvisRefresh()
 	}
 	Process {
@@ -1528,9 +1563,9 @@ ShellRoot {
 		property string password: ""
 		command: {
 			if (password !== "")
-				return ["bash", "-c", "nmcli dev wifi connect '" + ssid + "' password '" + password + "' 2>&1"]
+				return ["nmcli", "dev", "wifi", "connect", ssid, "password", password]   // secfix: no shell
 			else
-				return ["bash", "-c", "nmcli dev wifi connect '" + ssid + "' 2>&1"]
+				return ["nmcli", "dev", "wifi", "connect", ssid]
 		}
 		onExited: {
 			root.wifiConnecting = false; root.wifiPasswordSSID = ""
@@ -1652,13 +1687,46 @@ ShellRoot {
 	NotesPanel {}
 	RecordMenu {}
 	PomodoroPanel {}
+	// focus-cam: decide pause vs. finish once the pomodoro state has settled
+	Timer {
+		id: focusCamSettleTimer
+		interval: 400
+		onTriggered: {
+			if (root.pomoZen || !root.focusCamAvailable) return
+			var paused = root.pomoPhase === "focus" && root.pomoActive
+			Quickshell.execDetached([root.focusCamScript, paused ? "pause" : "finish"])
+		}
+	}
+	Connections {
+		target: root
+		function onPomoActiveChanged() {
+			if (root.focusCamAvailable && !root.pomoActive && !root.pomoZen) Quickshell.execDetached([root.focusCamScript, "finish"])
+		}
+	}
+	FileView {
+		path: root.statePath + "/focuscam-facing"
+		onLoaded: { var t = text().trim(); if (["front", "back", "off"].indexOf(t) >= 0) root.focusCamFacing = t }
+	}
+	FileView {
+		path: root.statePath + "/focuscam-preview"
+		watchChanges: true
+		onFileChanged: reload()
+		onLoaded: root.focusCamPreview = text().trim() === "on"
+	}
+	IpcHandler {
+		target: "focuscam"
+		function preview() { root.focusCamTogglePreview() }
+		function front()   { root.focusCamSetFacing("front") }
+		function back()    { root.focusCamSetFacing("back") }
+		function off()     { root.focusCamSetFacing("off") }
+	}
 	PomoZen {}
 	BlastOverlay {}
 	WorkspaceOverview {}
 	EqPanel {}
 	ScreenTimePanel {}
-	JarvisPanel {}
-	JarvisTimeline {}
+	Loader { active: root.jarvisEnabled; source: Qt.resolvedUrl("components/JarvisPanel.qml") }
+	Loader { active: root.jarvisEnabled; source: Qt.resolvedUrl("components/JarvisTimeline.qml") }
 	BarMenu {}
 	BarReveal {}
 

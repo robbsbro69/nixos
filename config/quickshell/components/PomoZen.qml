@@ -15,7 +15,7 @@ PanelWindow {
 	implicitWidth: pill.width + 4
 	implicitHeight: pill.height + 4
 	color: "transparent"
-	mask: Region {}            // never takes clicks
+	mask: Region { item: camBtn }   // only the camera button takes clicks
 
 	Rectangle {
 		id: pill
@@ -35,6 +35,51 @@ PanelWindow {
 			Text { text: "󰔟"; color: root.pomoColor; font.pixelSize: 13; font.family: "JetBrainsMono Nerd Font"; anchors.verticalCenter: parent.verticalCenter }
 			Text { text: root.pomoText; color: root.walForeground; font.pixelSize: 12; font.bold: true; font.family: "JetBrainsMono Nerd Font"; anchors.verticalCenter: parent.verticalCenter }
 			Text { text: "focus · 󰂛"; color: root.walColor8; font.pixelSize: 10; font.family: "JetBrainsMono Nerd Font"; anchors.verticalCenter: parent.verticalCenter }
+			// focus-cam: click = show / hide the live camera window
+			Rectangle {
+				id: camBtn
+				visible: root.focusCamOn
+				anchors.verticalCenter: parent.verticalCenter
+				width: camRow.implicitWidth + 14
+				height: 18
+				radius: 9
+				color: root.focusCamPreview
+					? Qt.rgba(root.walColor1.r, root.walColor1.g, root.walColor1.b, 0.25)
+					: (camMa.containsMouse ? Qt.rgba(1, 1, 1, 0.08) : "transparent")
+				border.width: 1
+				border.color: Qt.rgba(root.walColor1.r, root.walColor1.g, root.walColor1.b, 0.5)
+				Row {
+					id: camRow
+					anchors.centerIn: parent
+					spacing: 5
+					Rectangle {
+						width: 6; height: 6; radius: 3
+						color: root.walColor1
+						anchors.verticalCenter: parent.verticalCenter
+						SequentialAnimation on opacity {
+							running: zen.visible
+							loops: Animation.Infinite
+							NumberAnimation { to: 0.25; duration: 800; easing.type: Easing.InOutSine }
+							NumberAnimation { to: 1.0; duration: 800; easing.type: Easing.InOutSine }
+						}
+					}
+					Text {
+						text: root.focusCamPreview ? "󰄀 hide" : "󰄀 show"
+						color: root.focusCamPreview ? root.walForeground : root.walColor8
+						font.pixelSize: 10
+						font.bold: root.focusCamPreview
+						font.family: "JetBrainsMono Nerd Font"
+						anchors.verticalCenter: parent.verticalCenter
+					}
+				}
+				MouseArea {
+					id: camMa
+					anchors.fill: parent
+					hoverEnabled: true
+					cursorShape: Qt.PointingHandCursor
+					onClicked: root.focusCamTogglePreview()
+				}
+			}
 		}
 		// thin progress line along the bottom
 		Rectangle {

@@ -432,7 +432,7 @@ PanelWindow {
 					Process {
 						id: setPfpProc
                         			property string selFile: ""
-                        			command: ["bash", "-c", "cp '" + selFile + "' " + dashboard.configPath + "/assets/pfps/pfp.jpg"]
+                        			command: ["cp", "--", selFile, dashboard.configPath + "/assets/pfps/pfp.jpg"]   // secfix
                         			onExited: {
 							pfpImage.reload()
                             				profileSection.pfpPickerOpen = false

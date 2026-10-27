@@ -1,7 +1,7 @@
 {pkgs, ...}: {
   services.jellyfin = {
     enable = true;
-    openFirewall = true;
+    openFirewall = false;
     user = "alpha";
     group = "users";
   };

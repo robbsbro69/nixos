@@ -401,6 +401,58 @@ PanelWindow {
 					}
 				}
 
+				// ── Focus timelapse (phone camera) ──────────────────────
+				RowLayout {
+					visible: root.focusCamAvailable
+					Layout.fillWidth: true
+					spacing: 8
+					Text {
+						text: "󰄀  Timelapse"
+						color: root.walColor8
+						font.pixelSize: 10
+						font.family: "JetBrainsMono Nerd Font"
+					}
+					Rectangle {
+						Layout.fillWidth: true
+						Layout.preferredHeight: 26
+						radius: 8
+						color: root.card(0.35)
+						RowLayout {
+							anchors.fill: parent
+							anchors.margins: 3
+							spacing: 3
+							Repeater {
+								model: [{ k: "front", t: "Front cam" }, { k: "back", t: "Back cam" }, { k: "off", t: "Off" }]
+								delegate: Rectangle {
+									id: fcOpt
+									required property var modelData
+									readonly property bool sel: root.focusCamFacing === modelData.k
+									Layout.fillWidth: true
+									Layout.fillHeight: true
+									radius: 6
+									color: sel ? Qt.rgba(root.walPeach.r, root.walPeach.g, root.walPeach.b, 0.22)
+										: (fcMa.containsMouse ? root.hover(0.06) : "transparent")
+									Text {
+										anchors.centerIn: parent
+										text: fcOpt.modelData.t
+										color: fcOpt.sel ? root.walForeground : root.walColor8
+										font.pixelSize: 10
+										font.bold: fcOpt.sel
+										font.family: "JetBrainsMono Nerd Font"
+									}
+									MouseArea {
+										id: fcMa
+										anchors.fill: parent
+										hoverEnabled: true
+										cursorShape: Qt.PointingHandCursor
+										onClicked: root.focusCamSetFacing(fcOpt.modelData.k)
+									}
+								}
+							}
+						}
+					}
+				}
+
 				Rectangle {
 					Layout.fillWidth: true
 					Layout.preferredHeight: 22
