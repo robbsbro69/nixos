@@ -3,7 +3,8 @@
 YouTube subtitles for whatever the browser is playing, for the bar ticker.
   1. uses the YouTube video ID from the actual MPRIS media URL
   2. reads its caption tracks and downloads one (English → Hindi → Nepali, real before auto)
-Uses your Zen/Firefox YouTube cookies so YouTube doesn't block it (HTTP 429).
+Anonymous by default; opt in with ~/.config/quickshell/subs-cookie-profile.
+The file must contain an explicit Zen/Firefox profile directory.
 Prints one JSON line like lyrics.py: {"key","ok","lines":[[sec,"text"],...],"lang"} or {"key","ok":false,"why"}
 Cached in ~/.cache/quickshell/subs/.
 """
@@ -98,7 +99,18 @@ if not shutil.which("yt-dlp"):
 
 CACHE = os.path.join(CACHE, "by-video", vid)
 os.makedirs(CACHE, exist_ok=True)
+def cookie_setting():
+    try:
+        with open(os.path.expanduser("~/.config/quickshell/subs-cookie-profile"), encoding="utf-8") as f:
+            return f.read().strip()
+    except FileNotFoundError:
+        return ""
+
+
+COOKIE_PROFILE = cookie_setting()
 cf = os.path.join(CACHE, hashlib.sha1(f"v4|{PREF}|{title}|{channel}".encode()).hexdigest() + ".json")
+# Keep authenticated and anonymous results separate, including negative cache entries.
+cf = os.path.join(CACHE, hashlib.sha1((COOKIE_PROFILE + "|" + cf).encode()).hexdigest() + ".json")
 try:
     with open(cf, encoding="utf-8") as f:
         c = json.load(f)
@@ -109,19 +121,17 @@ except Exception:
 
 
 def cookie_args():
-    profs = []
-    for pat in ("~/.config/zen/*/cookies.sqlite", "~/.zen/*/cookies.sqlite"):
-        profs += glob.glob(os.path.expanduser(pat))
-    if not profs:                                   # Zen first, plain Firefox only as a fallback
-        profs = glob.glob(os.path.expanduser("~/.mozilla/firefox/*/cookies.sqlite"))
-    if not profs:
+    profile = COOKIE_PROFILE
+    if not profile:
         return []
-    prof = os.path.dirname(max(profs, key=os.path.getmtime))
-    return ["--cookies-from-browser", "firefox:" + prof]
+    profile = os.path.expanduser(profile)
+    if not os.path.isabs(profile) or not os.path.isfile(os.path.join(profile, "cookies.sqlite")):
+        raise ValueError("subs-cookie-profile must name an existing absolute browser profile directory")
+    return ["--cookies-from-browser", "firefox:" + profile]
 
 
 def base_args():
-    # same as a plain `yt-dlp --cookies-from-browser …` run (that's what lists the captions)
+    # Only the explicitly selected profile is made available to yt-dlp.
     return ["yt-dlp", "--no-warnings"] + cookie_args()
 
 
