@@ -142,23 +142,25 @@ PanelWindow {
             const lines = raw.split("\n").filter(function(l) {
                 return l.trim() !== ""
             })
-            const entries = lines.map(function(line, idx) {
+            const entries = lines.map(function(line) {
                 const tab     = line.indexOf("\t")
+                const id = line.substring(0, tab)
+                if (tab < 1 || !/^\d+$/.test(id)) return null
                 const preview = tab === -1 ? line : line.substring(tab + 1).replace(/\s+/g, " ").trim()
                 const isImg   = preview.startsWith("[[ binary") || preview.startsWith("[[ img")
                 return {
-                    lineIdx:   idx + 1,
+                    id:        id,
                     preview:   isImg ? "Image" : preview,
                     isImage:   isImg,
-                    thumbPath: isImg ? "/tmp/qs_clip_thumb_" + (idx + 1) + ".png" : ""
+                    thumbPath: isImg ? "/tmp/qs_clip_thumb_" + id + ".png" : ""
                 }
-            })
+            }).filter(function(entry) { return entry !== null })
             clipPanel.clipAllEntries = entries
 
             const imgs = entries.filter(function(e) { return e.isImage }).slice(0, 20)
             if (imgs.length > 0) {
                 const cmd = imgs.map(function(e) {
-                    return "cliphist list | sed -n '" + e.lineIdx + "p' | cliphist decode > " + e.thumbPath
+                    return "cliphist decode " + e.id + " > " + e.thumbPath
                 }).join(" & ")
                 thumbDecoder.command = ["bash", "-c", cmd + "; wait"]
                 thumbDecoder.running = true
@@ -202,9 +204,9 @@ PanelWindow {
     }
 
     function pasteClipEntry(entry) {
-        if (!entry) return
-        pasteProcess.command = ["bash", "-c",
-            "cliphist list | sed -n '" + entry.lineIdx + "p' | cliphist decode | wl-copy"]
+        if (!entry || !/^\d+$/.test(entry.id)) return
+        pasteProcess.command = ["bash", "-o", "pipefail", "-c",
+            'cliphist decode "$1" | wl-copy', "_", entry.id]
         pasteProcess.running = true
         root.clipboardVisible = false
     }
