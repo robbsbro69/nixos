@@ -1,7 +1,7 @@
 # Raw cava feed for the Quickshell bar background (mirrored around the centre, bass in the middle).
 [general]
 bars = 48
-framerate = 60
+framerate = 30
 autosens = 1
 
 [output]

@@ -21,7 +21,7 @@ PanelWindow {
 	readonly property real sectionScale: vertical
 		? Math.min(1, (height - 20) / Math.max(1, bar.vertNeed))
 		: Math.min(1, (width - 20) / Math.max(1, leftSection.width + rightSection.width + 12))
-	exclusionMode: root.barMode === "shown" && !root.pomoZen ? ExclusionMode.Auto : ExclusionMode.Ignore
+	exclusionMode: root.barMode === "shown" && !(root.pomoZen && root.pomoZenHideBar) ? ExclusionMode.Auto : ExclusionMode.Ignore
 	anchors {
 		top: bar.barPosition !== "bottom"
 		bottom: bar.barPosition !== "top"
@@ -85,7 +85,7 @@ Item {
 		width: bar.vertical ? parent.height : parent.width
 		height: bar.vertical ? parent.width : parent.height
 		rotation: bar.barPosition === "left" ? 90 : bar.barPosition === "right" ? -90 : bar.barPosition === "top" ? 180 : 0
-		opacity: bar.bgActive && bar.style === "default" && !root.barFloating ? 1 : 0
+		opacity: 0
 		visible: opacity > 0
 		Behavior on opacity { NumberAnimation { duration: 600; easing.type: Easing.OutCubic } }
 		Row {
@@ -125,6 +125,7 @@ Item {
 		Binding {
 			target: root
 			property: "musicAnchorX"
+			when: bar.style !== "i3"   // i3 style sets it from the music block itself (hover / right-click)
 			value: !bar.vertical && bar.style !== "i3" && mediaNotch.visible && mediaNotch.width > 0
 				? bar.floatSide + mediaNotch.x + mediaNotch.width / 2 : -1
 		}
@@ -137,6 +138,7 @@ Item {
 				+ 'case $act in '
 				+ 'next) playerctl -p "$p" next || playerctl -p "$p" position 10+ ;; '
 				+ 'previous) playerctl -p "$p" previous || playerctl -p "$p" position 10- ;; '
+				+ 'play-pause) if [ "$(playerctl -p "$p" status 2>/dev/null)" = Playing ]; then playerctl -p "$p" pause; else playerctl -p "$p" play; fi ;; '
 				+ '*) playerctl -p "$p" "$act" ;; esac; rc=$?; '
 				+ 'mkdir -p ~/.cache/quickshell; echo "$(date +%T) $act -> $p (rc=$rc)" >> ~/.cache/quickshell/media.log; '
 				+ 'tail -n 200 ~/.cache/quickshell/media.log > ~/.cache/quickshell/media.log.tmp && mv ~/.cache/quickshell/media.log.tmp ~/.cache/quickshell/media.log'
@@ -147,6 +149,20 @@ Item {
 		property string _pendingArtist: ""
 
     	property string mediaText: ""
+    	property int cpuPct: 0
+    	property int cpuTemp: 0
+    	property int gpuPct: 0
+    	property int gpuTemp: 0
+    	property int vramUsed: 0
+    	property int vramTotal: 0
+    	property var sysCores: []
+    	property var sysProcs: []
+    	property bool sysMeterOpen: false
+    	property string mediaArt: ""
+    	property real musicAnchorX: 0
+    	property bool mediaNotchHover: false
+    	property bool musicCardHover: false
+    	property bool musicCardOpen: false
     	property string mediaClass: "stopped"
     	property real mediaPosition: 0
     	property real mediaLength: 0
@@ -162,6 +178,49 @@ Item {
     	property string batteryClass: ""
     	property string batteryTime: ""
     	property var cavaValues: [0.1, 0.1, 0.1, 0.1, 0.1, 0.1, 0.1, 0.1, 0.1, 0.1, 0.1, 0.1]
+	// ── workspace app icons: which apps are open on each workspace (most recently used first) ──
+	property var wsApps: ({})
+	function wsList(id, n) { return (bar.wsApps[String(id)] || []).slice(0, n) }
+	function wsHasApps(id) { return (bar.wsApps[String(id)] || []).length > 0 }
+	function wsIconsW(id, n, sz) { var k = Math.min(n, (bar.wsApps[String(id)] || []).length); return k * sz + Math.max(0, k - 1) * 3 }
+	function appIcon(cls) {
+		var n = String(cls).toLowerCase()
+		try { var e = DesktopEntries.heuristicLookup(cls); if (e && e.icon) n = e.icon } catch (err) {}
+		return Quickshell.iconPath(n, "application-x-executable")
+	}
+	Process {
+		id: wsAppsProc
+		command: ["hyprctl", "clients", "-j"]
+		stdout: StdioCollector {
+			onStreamFinished: {
+				try {
+					var c = JSON.parse(this.text), m = {}
+					c.sort(function(a, b) { return a.focusHistoryID - b.focusHistoryID })
+					for (var i = 0; i < c.length; i++) {
+						var w = c[i]
+						if (!w.workspace || w.workspace.id <= 0 || !w["class"]) continue
+						var k = String(w.workspace.id)
+						if (!m[k]) m[k] = []
+						if (m[k].indexOf(w["class"]) < 0) m[k].push(w["class"])
+					}
+					bar.wsApps = m
+				} catch (e) {}
+			}
+		}
+	}
+	Timer { id: wsAppsKick; interval: 150; onTriggered: if (!wsAppsProc.running) wsAppsProc.running = true }
+	Timer { interval: 5000; running: true; repeat: true; triggeredOnStart: true; onTriggered: wsAppsKick.restart() }
+	Connections {
+		target: Hyprland
+		function onRawEvent(ev) { var n = ev.name; if (n.indexOf("window") >= 0 || n.indexOf("workspace") >= 0) wsAppsKick.restart() }
+	}
+
+	// workspace icons: 1 zen, 2 obsidian, 3 spotify, 4 kitty, 5 brave (others stay numbers)
+	readonly property var wsIcons: {"1": "󰈹", "2": "󰇈", "3": "󰓇", "4": "󰄛", "5": "󰒘"}
+	readonly property var wsNames: {"1": "Zen", "2": "Obsidian", "3": "Spotify", "4": "Kitty", "5": "Brave"}
+	function wsIcon(id) { return bar.wsIcons[String(id)] || String(id) }
+	function wsName(id) { return bar.wsNames[String(id)] || ("Workspace " + id) }
+
     	property real chargingPulse: 1.0
     	property real chargingFillAnim: 0.0
     	property bool volumeAdjusting: false
@@ -172,6 +231,20 @@ Item {
 	property var bgVals: []
 	property var bgColors: []
 	readonly property bool bgActive: bar.mediaClass === "playing"
+	// notch-style layouts (not i3/xp) are the only ones that draw cava/lyrics/charging anims
+	readonly property bool notchMode: (bar.style !== "i3" && bar.style !== "xp") || bar.vertical
+
+	// ── day-journal indicator (the `journal` command comes from the private config; hidden without it) ──
+	property string journalState: "000"   // running, paused, phone recording
+	Timer {
+		interval: 3000; running: bar.style === "i3" || bar.extrasOpen || bar.recPopOpen; repeat: true; triggeredOnStart: true
+		onTriggered: if (!journalProc.running) journalProc.running = true
+	}
+	Process {
+		id: journalProc
+		command: ["sh", "-c", "command -v journal >/dev/null && journal bar || echo 000"]
+		stdout: StdioCollector { onStreamFinished: bar.journalState = (this.text.trim() || "000") }
+	}
 	function shuffleBgColors() {
 		var pal = [root.walColor5, root.walColor13, root.walColor2, root.walColor4,
 		           root.walColor6, root.walColor12, root.walPeach, root.walColor1]
@@ -192,7 +265,7 @@ Item {
 	}
 	Process {
 		id: barBgCavaProc
-		running: bar.bgActive
+		running: false
 		command: ["cava", "-p", Quickshell.env("HOME") + "/.config/cava/config_barbg"]
 		stdout: SplitParser {
 			onRead: data => {
@@ -209,7 +282,7 @@ Item {
 
 	SequentialAnimation {
 		id: chargingPulseAnim
-		running: bar.batteryCharging
+		running: bar.batteryCharging && bar.notchMode
         	loops: Animation.Infinite
 		NumberAnimation { 
 			target: bar; property: "chargingPulse"; 
@@ -226,7 +299,7 @@ Item {
 	}
 	SequentialAnimation {
 		id: chargingFillAnimSeq
-		running: bar.batteryCharging
+		running: bar.batteryCharging && bar.notchMode
         	loops: Animation.Infinite
 		NumberAnimation { 
 			target: bar; property: "chargingFillAnim"; 
@@ -254,7 +327,7 @@ Item {
 
 	Process {
 		id: cavaProc
-		running: bar.mediaClass === "playing"
+		running: false
 		command: ["cava", "-p", Quickshell.env("HOME") + "/.config/cava/config_raw"]
 		stdout: SplitParser {
 			onRead: data => {
@@ -271,7 +344,7 @@ Item {
 
 	Timer {
 		interval: 80
-		running: bar.mediaClass !== "playing"
+		running: bar.mediaClass !== "playing" && bar.notchMode && ((bar.cavaValues[0] || 0) + (bar.cavaValues[4] || 0) + (bar.cavaValues[8] || 0)) > 0.03
 		repeat: true
 		onTriggered: {
 			var newVals = []
@@ -302,6 +375,7 @@ Item {
 	                  case "len":    bar.mediaLength = parseInt(val) || 0; break
 	                  case "url":    bar.mediaUrl = val; break
 	                  case "title":  bar._pendingTitle = val; break
+	                  case "arturl": bar.mediaArt = val; break
 	                  case "artist":
 	                      bar._pendingArtist = val
 	                      var text = bar._pendingArtist
@@ -394,7 +468,7 @@ Item {
 
 	Process {
 		id: networkProc
-        	command: ["bash", "-c", "wifi=$(nmcli -t -f active,ssid,signal dev wifi 2>/dev/null | grep '^yes' | head -1); if [ -n \"$wifi\" ]; then ssid=$(echo \"$wifi\" | cut -d: -f2); sig=$(echo \"$wifi\" | cut -d: -f3); echo \"1|$ssid|$sig\"; else echo '0||0'; fi; bt='0'; devices=$(echo -e 'devices\\nquit' | bluetoothctl 2>/dev/null | grep '^Device' | awk '{print $2}'); for mac in $devices; do if echo -e \"info $mac\\nquit\" | bluetoothctl 2>/dev/null | grep -q 'Connected: yes'; then bt='1'; break; fi; done; echo \"bt:$bt\""]
+        	command: ["bash", "-c", "wifi=$(nmcli -t -f active,ssid,signal dev wifi 2>/dev/null | grep '^yes' | head -1); if [ -n \"$wifi\" ]; then ssid=$(echo \"$wifi\" | cut -d: -f2); sig=$(echo \"$wifi\" | cut -d: -f3); echo \"1|$ssid|$sig\"; else echo '0||0'; fi; bt='0'; bluetoothctl devices Connected 2>/dev/null | grep -q '^Device' && bt='1'; echo \"bt:$bt\""]
         	stdout: SplitParser {
 			onRead: data => {
 				var line = data.trim()
@@ -561,6 +635,8 @@ Item {
         sourceComponent: notchRoot.vert
     }
 }
+	// ════════ end XP taskbar ════════════════════════════════════════════════
+
 	// ── i3status look (style "i3"): workspace buttons left, i3status text line right ──
 	Item {
 		id: i3Layout
@@ -578,6 +654,7 @@ Item {
 		readonly property color txt: "#ffffff"
 		property string load: "0.00"
 		property string disk: "?"
+		property string disks: ""
 		property string mem: "?"
 		property string clock: ""
 
@@ -600,12 +677,12 @@ Item {
 		Process {
 			id: i3SysProc
 			command: ["sh", "-c", "read a b c r < /proc/loadavg; echo $a; "
-				+ "df -B1 -P / | awk 'NR==2{printf \"%.1f GiB\\n\", $4/1073741824}'; "
-				+ "free -b | awk '/^Mem:/{printf \"%.1f GiB\\n\", $3/1073741824}'"]
+				+ "df -P -x vfat 2>/dev/null | awk 'NR>1 && $1 ~ \"^/dev/\" && !s[$1]++ {u+=$3; f+=$4} END {printf \"%d%%\\n\", u*100/(u+f)}'; "
+				+ "free -b | awk '/^Mem:/{printf \"%d%%\\n\", ($2-$7)*100/$2}'" + "; df -B1 -P -x vfat 2>/dev/null | awk 'NR>1 && $1 ~ /^\\/dev\\// && !seen[$1]++ { n = split($6, a, \"/\"); nm = ($6 == \"/\") ? \"/\" : a[n]; printf \"%s %.0f/%.0fG  \", nm, $3/1073741824, $2/1073741824 } END { print \"\" }'"]
 			stdout: StdioCollector {
 				onStreamFinished: {
 					var l = this.text.trim().split("\n")
-					if (l.length >= 3) { i3Layout.load = l[0]; i3Layout.disk = l[1]; i3Layout.mem = l[2] }
+					if (l.length >= 3) { i3Layout.load = l[0]; i3Layout.disk = l[1]; i3Layout.mem = l[2]; i3Layout.disks = l.length > 3 ? l[3].trim() : '' }
 				}
 			}
 		}
@@ -618,6 +695,7 @@ Item {
 			spacing: 0
 			I3Block {
 				sep: false
+				visible: false   // launcher icon hidden — use the keybind
 				label: "󱄅"
 				fontFamily: "JetBrainsMono Nerd Font"
 				onLeftClick: { root.activeTab = 0; root.toggleLauncher() }
@@ -646,25 +724,44 @@ Item {
 					readonly property bool urgentWs: modelData.urgent === true
 					readonly property bool activeWs: modelData.active === true
 					height: i3Layout.height - 2
-					width: Math.max(height, i3wsLabel.implicitWidth + 10)
+					width: Math.max(height, (bar.wsHasApps(i3wsBtn.modelData.id) ? bar.wsIconsW(i3wsBtn.modelData.id, 3, 14) : i3wsLabel.implicitWidth) + 10)
 					color: urgentWs ? "#900000" : focusedWs ? "#285577" : activeWs ? "#5f676a" : "#222222"
 					border.width: 1
 					border.color: urgentWs ? "#2f343a" : focusedWs ? "#4c7899" : "#333333"
 					Text {
+						visible: !bar.wsHasApps(i3wsBtn.modelData.id)
 						id: i3wsLabel
 						anchors.centerIn: parent
-						text: i3wsBtn.modelData.id
+						text: bar.wsIcon(i3wsBtn.modelData.id)
 						color: i3wsBtn.focusedWs || i3wsBtn.urgentWs || i3wsBtn.activeWs ? "#ffffff" : "#888888"
-						font.family: i3Layout.mono
+						font.family: "JetBrainsMono Nerd Font"
 						font.pixelSize: i3Layout.fs
+					}
+					Row { // app icons
+						anchors.centerIn: parent
+						spacing: 3
+						visible: bar.wsHasApps(i3wsBtn.modelData.id)
+						Repeater {
+							model: bar.wsList(i3wsBtn.modelData.id, 3)
+							Image {
+								required property var modelData
+								source: bar.appIcon(modelData)
+								width: 14; height: 14; sourceSize.width: 28; sourceSize.height: 28
+								smooth: true; opacity: i3wsBtn.focusedWs || i3wsBtn.activeWs ? 1 : 0.6
+								anchors.verticalCenter: parent.verticalCenter
+							}
+						}
 					}
 					MouseArea {
 						anchors.fill: parent
 						cursorShape: Qt.PointingHandCursor
-						onClicked: Quickshell.execDetached(["hyprctl", "dispatch", "hl.dsp.focus({ workspace = " + i3wsBtn.modelData.id + " })"])
+						acceptedButtons: Qt.LeftButton | Qt.RightButton
+						onClicked: function(mouse) {
+							if (mouse.button === Qt.RightButton) root.toggleWorkspaceOverview()
+							else Quickshell.execDetached(["hyprctl", "dispatch", "hl.dsp.focus({ workspace = " + i3wsBtn.modelData.id + " })"])
+						}
 						onWheel: function(wheel) {
-							Quickshell.execDetached(["hyprctl", "dispatch",
-								wheel.angleDelta.y > 0 ? "hl.dsp.focus({ workspace = 'e-1' })" : "hl.dsp.focus({ workspace = 'e+1' })"])
+							root.wsScroll(wheel.angleDelta.y > 0 ? -1 : 1)
 						}
 					}
 				}
@@ -686,8 +783,14 @@ Item {
 				visible: bar.mediaText !== ""
 				sep: false
 				label: (bar.mediaClass === "playing" ? "♪ " : "❚❚ ") + (bar.mediaText.length > 40 ? bar.mediaText.substring(0, 39) + "…" : bar.mediaText)
+				onHoveredChanged: {   // i3MediaHook
+					bar.mediaNotchHover = hovered
+					if (hovered) { bar.musicAnchorX = mapToItem(null, width / 2, 0).x; root.musicAnchorX = bar.musicAnchorX }
+					if ((bar.mediaNotchHover || bar.musicCardHover) && bar.mediaText !== "") { musicCardCloseTimer.stop(); bar.musicCardOpen = true }
+					else musicCardCloseTimer.restart()
+				}
 				onLeftClick: if (!mediaPlayPauseProc.running) mediaPlayPauseProc.running = true
-				onRightClick: root.toggleMusic()
+				onRightClick: { root.musicAnchorX = root.i3PopCenter; root.toggleMusic() }   // open right under this block
 				onMiddleClick: if (!mediaNextProc.running) mediaNextProc.running = true
 				onScrolled: function(up) {
 					if (up) { if (!mediaNextProc.running) mediaNextProc.running = true }
@@ -705,50 +808,57 @@ Item {
 			}
 			I3Block {
 				visible: root.jarvisEnabled
-				label: !root.jarvisOnline ? "J: offline" : root.jarvisBadge > 0 ? "J: " + root.jarvisBadge : "J: ok"
-				tint: !root.jarvisOnline ? "#888888" : root.jarvisCritical ? i3Layout.bad : root.jarvisBadge > 0 ? i3Layout.degraded : i3Layout.good
+				label: "JARVIS"
+				tint: !root.jarvisOnline ? "#888888" : root.jarvisCritical ? i3Layout.bad : i3Layout.good
 				onLeftClick: root.toggleJarvis()
 				onRightClick: root.toggleJarvisTimeline()
 				onMiddleClick: root.jarvisOpenDashboard()
 			}
-			I3Block {
+			I3Block {   // REC: red + time = screen recording · green = day journal on · yellow = journal paused · grey = idle
+				readonly property bool jRun: bar.journalState.charAt(0) === "1"
+				readonly property bool jPaused: bar.journalState.charAt(1) === "1"
 				label: root.recording ? "REC " + root.recElapsedText : "REC"
-				tint: root.recording ? i3Layout.bad : "#888888"
+				tint: root.recording ? i3Layout.bad : !jRun ? "#888888" : jPaused ? i3Layout.degraded : i3Layout.good
 				onLeftClick: root.recording ? root.stopRecording() : root.toggleRecordMenu()
-				onRightClick: root.toggleRecordMenu()
+				onRightClick: { bar.sysMeterOpen = false; bar.extrasOpen = false; bar.recPopX = root.i3PopCenter; bar.recPopOpen = !bar.recPopOpen }
+				onMiddleClick: Quickshell.execDetached(["journal", "toggle"])      // pause / resume the journal
+				onScrolled: function(up) { Quickshell.execDetached(["journal", "preview"]) }   // journal camera preview
 			}
 			I3Block {
-				label: bar.wifiConnected ? "W: (" + bar.wifiStrength + "% at " + bar.wifiSSID + ")" : "W: down"
+				visible: !root.ethConnected
+				label: bar.wifiConnected ? "W: on" : "W: off"
 				tint: bar.wifiConnected ? i3Layout.good : i3Layout.bad
 				onLeftClick: root.toggleWifi()
 				onRightClick: root.toggleBluetooth()
 			}
 			I3Block {
+				visible: bar.btConnected
 				label: bar.btConnected ? "BT: on" : "BT: off"
 				tint: bar.btConnected ? i3Layout.good : "#888888"
 				onLeftClick: root.toggleBluetooth()
 			}
 			I3Block {
-				label: root.ethConnected ? "E: up" : "E: down"
+				visible: root.ethConnected
+				label: root.ethConnected ? "E: on" : "E: off"
 				tint: root.ethConnected ? i3Layout.good : i3Layout.bad
 				onLeftClick: root.toggleWifi()
 			}
-			I3Block { label: "/: " + i3Layout.disk }
+			I3Block { onLeftClick: root.toggleDiskPanel(); label: "DISK " + i3Layout.disk }   // all drives together
 			I3Block {
-				label: "load: " + i3Layout.load
-				tint: parseFloat(i3Layout.load) > 5 ? i3Layout.bad : i3Layout.txt
+				onLeftClick: bar.sysMeterOpen = !bar.sysMeterOpen
+				label: "CPU " + bar.cpuPct + "%"   // colour = temperature (white / yellow ≥72° / red ≥85°)
+				tint: bar.cpuTemp >= 85 ? i3Layout.bad : bar.cpuTemp >= 72 ? i3Layout.degraded : i3Layout.txt
 			}
-			I3Block { label: "MEM: " + i3Layout.mem }
+			I3Block { onLeftClick: root.toggleMemPanel(); label: "MEM " + i3Layout.mem }
 			I3Block {
-				label: bar.volumeMuted ? "VOL: muted (" + bar.volumePercent + "%)" : "VOL: " + bar.volumePercent + "%"
+				label: bar.volumeMuted ? "VOL mute" : "VOL " + bar.volumePercent + "%"
 				tint: bar.volumeMuted ? i3Layout.degraded : i3Layout.txt
-				onLeftClick: if (!volumeToggleProc.running) volumeToggleProc.running = true
-				onRightClick: root.toggleEq()
+				onLeftClick: root.toggleEq()
+				onRightClick: if (!volumeToggleProc.running) volumeToggleProc.running = true
 				onScrolled: function(up) { bar.adjustVolume(up ? 5 : -5) }
 			}
 			I3Block {
-				label: (bar.batteryCharging ? "CHR " : bar.batteryPercent >= 99 ? "FULL " : "BAT ")
-					+ bar.batteryPercent + "%" + (bar.batteryTime !== "" ? " " + bar.batteryTime : "")
+				label: bar.batteryPercent >= 99 ? "FULL" : (bar.batteryCharging ? "CHR " : "BAT ") + bar.batteryPercent + "%"
 				tint: bar.batteryCharging ? i3Layout.good
 					: bar.batteryClass === "critical" || bar.batteryPercent <= 10 ? i3Layout.bad
 					: bar.batteryClass === "warning" || bar.batteryPercent <= 25 ? i3Layout.degraded : i3Layout.txt
@@ -820,6 +930,7 @@ Item {
 
 	component I3Block: Item {
 		id: blk
+		HoverHandler { id: blkHH }
 		property string label: ""
 		property color tint: "#ffffff"
 		signal leftClick()
@@ -827,8 +938,9 @@ Item {
 		signal middleClick()
 		signal scrolled(bool up)
 		property bool sep: true
+		property alias hovered: blkHH.hovered
 		property string fontFamily: "DejaVu Sans Mono"
-		width: visible ? blkText.implicitWidth + 18 : 0
+		width: visible ? blkText.implicitWidth + 10 : 0
 		height: parent ? parent.height : 20
 		Rectangle {
 			// i3bar separator
@@ -852,6 +964,7 @@ Item {
 			cursorShape: Qt.PointingHandCursor
 			acceptedButtons: Qt.LeftButton | Qt.RightButton | Qt.MiddleButton
 			onClicked: function(mouse) {
+				root.i3PopCenter = blk.mapToItem(null, blk.width / 2, 0).x   // i3align
 				if (mouse.button === Qt.RightButton) blk.rightClick()
 				else if (mouse.button === Qt.MiddleButton) blk.middleClick()
 				else blk.leftClick()
@@ -860,13 +973,379 @@ Item {
 		}
 	}
 	// ── end i3status look ──
+
+		// system meter (qs-update: sys-meter) ───────────────
+		Timer { interval: 2500; running: true; repeat: true; triggeredOnStart: true
+			onTriggered: if (!metricsProc.running) metricsProc.running = true }
+		Process {
+			id: metricsProc
+			command: ["bash", "-c", "python3 " + Quickshell.env("HOME") + "/.config/quickshell/assets/metrics.py detail"]
+			stdout: StdioCollector {
+				onStreamFinished: {
+					try {
+						var o = JSON.parse(this.text)
+						bar.cpuPct = o.cpu_pct; bar.cpuTemp = o.cpu_temp
+						bar.gpuPct = o.gpu_pct; bar.gpuTemp = o.gpu_temp
+						bar.vramUsed = o.vram_used || 0; bar.vramTotal = o.vram_total || 0
+						bar.sysCores = o.cores || []; bar.sysProcs = o.procs || []
+					} catch (e) {}
+				}
+			}
+		}
+		PopupWindow {
+			id: sysMeter
+			anchor.window: bar
+			anchor.rect: Qt.rect(Math.round(root.i3PopCenter - 150), bar.barPosition === "top" ? bar.height + 8 : -(implicitHeight + 8), 1, 1)
+			implicitWidth: 300
+			implicitHeight: 290
+			visible: bar.sysMeterOpen && !bar.vertical
+			color: "transparent"
+			HoverHandler { id: smHH }
+			Connections { target: smHH; function onHoveredChanged() { if (!smHH.hovered && bar.sysMeterOpen) smClose.restart() } }
+			Timer { id: smClose; interval: 400; onTriggered: if (!smHH.hovered) bar.sysMeterOpen = false }
+			function col(t) { return t >= 85 ? "#f38ba8" : t >= 72 ? "#f9e2af" : "#a6e3a1" }
+
+			Rectangle {
+				anchors.fill: parent
+				radius: 18
+				color: Qt.rgba(root.walBackground.r, root.walBackground.g, root.walBackground.b, 0.98)
+				border.width: 1
+				border.color: Qt.rgba(root.walColor13.r, root.walColor13.g, root.walColor13.b, 0.40)
+				Column {
+					anchors.fill: parent
+					anchors.margins: 16
+					spacing: 12
+					Text { text: "System"; color: root.walColor5; font.pixelSize: 14; font.bold: true; font.family: "JetBrainsMono Nerd Font" }
+
+					// CPU + GPU stat rows
+					Repeater {
+						model: [{ ic: "", nm: "CPU", t: bar.cpuTemp, p: bar.cpuPct },
+								{ ic: "󰒢", nm: "GPU", t: bar.gpuTemp, p: bar.gpuPct }]
+						delegate: Item {
+							required property var modelData
+							width: parent.width; height: 34
+							Text { id: ic; anchors.verticalCenter: parent.verticalCenter; text: modelData.ic + "  " + modelData.nm
+								color: root.walForeground; font.pixelSize: 12; font.family: "JetBrainsMono Nerd Font"; width: 60 }
+							Text { anchors.verticalCenter: parent.verticalCenter; anchors.right: parent.right
+								text: modelData.t + "°C  ·  " + modelData.p + "%"
+								color: sysMeter.col(modelData.t); font.pixelSize: 12; font.bold: true; font.family: "JetBrainsMono Nerd Font" }
+							Rectangle { anchors.left: ic.right; anchors.leftMargin: 8; anchors.right: parent.right; anchors.rightMargin: 96
+								anchors.verticalCenter: parent.verticalCenter; height: 6; radius: 3; color: root.card(0.5)
+								Rectangle { width: parent.width * Math.min(1, modelData.p / 100); height: parent.height; radius: 3; color: root.walColor2 } }
+						}
+					}
+					Text { text: "VRAM  " + bar.vramUsed + " / " + bar.vramTotal + " MiB"
+						color: root.walColor8; font.pixelSize: 10; font.family: "JetBrainsMono Nerd Font" }
+
+					// per-core bars
+					Row {
+						spacing: 3
+						Repeater { model: bar.sysCores
+							delegate: Rectangle { required property var modelData; width: 14; height: 34; radius: 3
+								color: root.card(0.4); anchors.bottom: parent ? parent.bottom : undefined
+								Rectangle { anchors.bottom: parent.bottom; width: parent.width; radius: 3
+									height: Math.max(2, parent.height * Math.min(1, modelData / 100))
+									color: modelData >= 80 ? "#f38ba8" : modelData >= 50 ? "#f9e2af" : root.walColor13 } } }
+					}
+
+					// top processes
+					Column {
+						width: parent.width; spacing: 3
+						Repeater { model: bar.sysProcs.slice(0, 5)
+							delegate: Item { required property var modelData; width: parent.width; height: 15
+								Text { anchors.left: parent.left; text: modelData.name; color: root.walForeground
+									font.pixelSize: 10; font.family: "JetBrainsMono Nerd Font"; elide: Text.ElideRight; width: parent.width - 48 }
+								Text { anchors.right: parent.right; text: Math.round(modelData.cpu) + "%"; color: root.walColor8
+									font.pixelSize: 10; font.family: "JetBrainsMono Nerd Font" } } }
+					}
+				}
+			}
+		}
+		// end system meter ───────────────
+
+		// any shell panel opening closes the bar's own little popups (cpu meter, extras, REC menu)
+		// (and the other way round: opening one of those closes the shell panels) — only one thing open at a time
+		readonly property string openPanels: root.popupFlags.filter(function(f) { return !!root[f] }).join(",")
+		onOpenPanelsChanged: if (openPanels !== "") { bar.sysMeterOpen = false; bar.extrasOpen = false; bar.recPopOpen = false }
+		function closeShellPanels() { root.popupFlags.forEach(function(f) { if (root[f]) root[f] = false }) }
+		onSysMeterOpenChanged: if (sysMeterOpen) { bar.extrasOpen = false; bar.recPopOpen = false; bar.closeShellPanels() }
+		onExtrasOpenChanged: if (extrasOpen) { bar.sysMeterOpen = false; bar.recPopOpen = false; bar.closeShellPanels() }
+		onRecPopOpenChanged: if (recPopOpen) { bar.sysMeterOpen = false; bar.extrasOpen = false; bar.closeShellPanels() }
+
+		// ── REC menu: right-click REC (i3) — day journal + screen recorder ──
+		property bool recPopOpen: false
+		property real recPopX: 0
+		function recAction(k) {
+			if (k === "journal") Quickshell.execDetached(["sh", "-c", "systemctl --user is-active -q journal && journal toggle || systemctl --user start journal"])
+			else if (k === "preview") Quickshell.execDetached(["journal", "preview"])
+			else if (k === "peek") { bar.recPopOpen = false; Quickshell.execDetached(["kitty", "--class", "scratch-term", "-e", "journal", "peek"]) }
+			else if (k === "screen") { bar.recPopOpen = false; root.recording ? root.stopRecording() : root.toggleRecordMenu() }
+		}
+		PopupWindow {
+			id: recPop
+			anchor.window: bar
+			anchor.rect: Qt.rect(Math.round(bar.recPopX - 130), bar.barPosition === "top" ? bar.height + 8 : -(implicitHeight + 8), 1, 1)
+			implicitWidth: 260
+			implicitHeight: recCol.implicitHeight + 24
+			visible: bar.recPopOpen && !bar.vertical
+			color: "transparent"
+			HoverHandler { id: recHH }
+			Connections { target: recHH; function onHoveredChanged() { if (!recHH.hovered && bar.recPopOpen) recClose.restart(); else recClose.stop() } }
+			Timer { id: recClose; interval: 500; onTriggered: if (!recHH.hovered) bar.recPopOpen = false }
+			Rectangle {
+				anchors.fill: parent
+				radius: 16
+				color: Qt.rgba(root.walBackground.r, root.walBackground.g, root.walBackground.b, 0.98)
+				border.width: 1
+				border.color: Qt.rgba(root.walColor13.r, root.walColor13.g, root.walColor13.b, 0.40)
+				Column {
+					id: recCol
+					anchors { left: parent.left; right: parent.right; top: parent.top; margins: 12 }
+					spacing: 2
+					Repeater {
+						model: {
+							var js = bar.journalState
+							var jr = js.charAt(0) === "1", jp = js.charAt(1) === "1", jc = js.charAt(2) === "1"
+							var rows = [
+								{ k: "journal", ic: jr && !jp ? "󰑊" : "󰏤", nm: "Day journal",
+								  v: !jr ? "off · start" : jp ? "paused · resume" : (jc ? "recording · pause" : "no cam · pause"),
+								  c: !jr ? "#888888" : jp ? "#f9e2af" : "#a6e3a1" }
+							]
+							if (jr && !jp) rows.push({ k: "preview", ic: "󰄀", nm: "Journal camera", v: "show / hide", c: root.walColor8 })
+							if (jr) rows.push({ k: "peek", ic: "󰕧", nm: "Today so far", v: "build & play", c: root.walColor8 })
+							rows.push({ k: "screen", ic: "󰻃", nm: "Screen recorder", v: root.recording ? "stop " + root.recElapsedText : "open", c: root.recording ? "#f38ba8" : root.walColor8 })
+							return rows
+						}
+						delegate: Rectangle {
+							required property var modelData
+							width: recCol.width
+							height: 30
+							radius: 8
+							color: recRowMA.containsMouse ? root.hover(0.08) : "transparent"
+							Text { anchors.left: parent.left; anchors.leftMargin: 8; anchors.verticalCenter: parent.verticalCenter
+								text: modelData.ic + "  " + modelData.nm; color: root.walForeground
+								font.pixelSize: 12; font.family: "JetBrainsMono Nerd Font" }
+							Text { anchors.right: parent.right; anchors.rightMargin: 8; anchors.verticalCenter: parent.verticalCenter
+								text: modelData.v; color: modelData.c
+								font.pixelSize: 12; font.bold: true; font.family: "JetBrainsMono Nerd Font" }
+							MouseArea { id: recRowMA; anchors.fill: parent; hoverEnabled: true; cursorShape: Qt.PointingHandCursor
+								onClicked: bar.recAction(modelData.k) }
+						}
+					}
+				}
+			}
+		}
+		// end REC menu ───────────────
+
+		// ── extras popup: right-click the clipboard icon (non-i3 styles get what the i3 blocks show) ──
+		property bool extrasOpen: false
+		property real extrasX: 0
+		function extrasAction(k) {
+			if (k === "cpu") { root.i3PopCenter = bar.extrasX; bar.extrasOpen = false; bar.sysMeterOpen = true }
+			else if (k === "mem") { bar.extrasOpen = false; root.toggleMemPanel() }
+			else if (k === "disk") { bar.extrasOpen = false; root.toggleDiskPanel() }
+			else if (k === "journal") Quickshell.execDetached(["journal", "toggle"])
+			else if (k === "preview") Quickshell.execDetached(["journal", "preview"])
+		}
+		Timer {   // memory / disk numbers come from the i3 status helper — refresh them while the popup is open
+			interval: 5000; running: bar.extrasOpen; repeat: true; triggeredOnStart: true
+			onTriggered: if (!i3SysProc.running) i3SysProc.running = true
+		}
+		PopupWindow {
+			id: extrasPop
+			anchor.window: bar
+			anchor.rect: Qt.rect(Math.round(bar.extrasX - 130), bar.barPosition === "top" ? bar.height + 8 : -(implicitHeight + 8), 1, 1)
+			implicitWidth: 260
+			implicitHeight: exCol.implicitHeight + 24
+			visible: bar.extrasOpen && !bar.vertical
+			color: "transparent"
+			HoverHandler { id: exHH }
+			Connections { target: exHH; function onHoveredChanged() { if (!exHH.hovered && bar.extrasOpen) exClose.restart(); else exClose.stop() } }
+			Timer { id: exClose; interval: 500; onTriggered: if (!exHH.hovered) bar.extrasOpen = false }
+			Rectangle {
+				anchors.fill: parent
+				radius: 16
+				color: Qt.rgba(root.walBackground.r, root.walBackground.g, root.walBackground.b, 0.98)
+				border.width: 1
+				border.color: Qt.rgba(root.walColor13.r, root.walColor13.g, root.walColor13.b, 0.40)
+				Column {
+					id: exCol
+					anchors { left: parent.left; right: parent.right; top: parent.top; margins: 12 }
+					spacing: 2
+					Repeater {
+						model: {
+							var js = bar.journalState
+							var jr = js.charAt(0) === "1", jp = js.charAt(1) === "1", jc = js.charAt(2) === "1"
+							var t = bar.cpuTemp
+							var rows = [
+								{ k: "cpu", ic: "󰻠", nm: "CPU", v: bar.cpuPct + "%  ·  " + t + "°C", c: t >= 85 ? "#f38ba8" : t >= 72 ? "#f9e2af" : "#a6e3a1" },
+								{ k: "mem", ic: "󰍛", nm: "Memory", v: i3Layout.mem + " used", c: root.walForeground },
+								{ k: "disk", ic: "󰋊", nm: "Disk", v: i3Layout.disk + " used", c: root.walForeground }
+							]
+							if (jr) rows.push({ k: "journal", ic: jp ? "󰏤" : "󰑊", nm: "Journal", v: jp ? "paused" : (jc ? "recording" : "no cam"), c: (jp || !jc) ? "#f9e2af" : "#a6e3a1" })
+							if (jr && !jp) rows.push({ k: "preview", ic: "󰄀", nm: "Journal preview", v: "show / hide", c: root.walColor8 })
+							return rows
+						}
+						delegate: Rectangle {
+							required property var modelData
+							width: exCol.width
+							height: 30
+							radius: 8
+							color: rowMA.containsMouse ? root.hover(0.08) : "transparent"
+							Text { anchors.left: parent.left; anchors.leftMargin: 8; anchors.verticalCenter: parent.verticalCenter
+								text: modelData.ic + "  " + modelData.nm; color: root.walForeground
+								font.pixelSize: 12; font.family: "JetBrainsMono Nerd Font" }
+							Text { anchors.right: parent.right; anchors.rightMargin: 8; anchors.verticalCenter: parent.verticalCenter
+								text: modelData.v; color: modelData.c
+								font.pixelSize: 12; font.bold: true; font.family: "JetBrainsMono Nerd Font" }
+							MouseArea { id: rowMA; anchors.fill: parent; hoverEnabled: true; cursorShape: Qt.PointingHandCursor
+								onClicked: bar.extrasAction(modelData.k) }
+						}
+					}
+				}
+			}
+		}
+		// end extras popup ───────────────
+
+		Connections {
+			target: mediaMA
+			function onContainsMouseChanged() {
+				bar.mediaNotchHover = mediaMA.containsMouse
+				if (mediaMA.containsMouse) bar.musicAnchorX = mediaNotch.mapToItem(null, mediaNotch.width / 2, 0).x
+				if ((bar.mediaNotchHover || bar.musicCardHover) && bar.mediaText !== "") { musicCardCloseTimer.stop(); bar.musicCardOpen = true }
+				else musicCardCloseTimer.restart()
+			}
+		}
+		Timer { id: musicCardCloseTimer; interval: 220; onTriggered: if (!bar.mediaNotchHover && !bar.musicCardHover) bar.musicCardOpen = false }
+		PopupWindow {
+			id: musicCard
+			anchor.window: bar
+			anchor.rect: Qt.rect(Math.round(bar.musicAnchorX - 180), bar.barPosition === "top" ? bar.height + 8 : -136, 1, 1)
+			implicitWidth: 360
+			implicitHeight: 128
+			visible: bar.musicCardOpen && bar.mediaText !== "" && !bar.vertical && !root.musicVisible
+			color: "transparent"
+			function fmt(s) { s = Math.max(0, Math.floor(s)); return Math.floor(s / 60) + ":" + ("0" + (s % 60)).slice(-2) }
+			HoverHandler {
+				onHoveredChanged: {
+					bar.musicCardHover = hovered
+					if ((bar.mediaNotchHover || bar.musicCardHover) && bar.mediaText !== "") { musicCardCloseTimer.stop(); bar.musicCardOpen = true }
+					else musicCardCloseTimer.restart()
+				}
+			}
+			Rectangle {
+				anchors.fill: parent
+				radius: 20
+				color: Qt.rgba(root.walBackground.r, root.walBackground.g, root.walBackground.b, 0.98)
+				border.width: 1
+				border.color: Qt.rgba(root.walColor13.r, root.walColor13.g, root.walColor13.b, 0.40)
+				Row {
+					anchors.fill: parent
+					anchors.margins: 16
+					spacing: 14
+					Rectangle {
+						width: 96; height: 96; radius: 14; clip: true
+						anchors.verticalCenter: parent.verticalCenter
+						color: Qt.rgba(root.walColor5.r, root.walColor5.g, root.walColor5.b, 0.18)
+						Image {
+							id: artImg
+							anchors.fill: parent
+							source: bar.mediaArt
+							fillMode: Image.PreserveAspectCrop
+							asynchronous: true; cache: true
+							visible: bar.mediaArt !== "" && status === Image.Ready
+						}
+						Text {
+							anchors.centerIn: parent
+							visible: !artImg.visible
+							text: "󰎈"
+							color: root.walColor5
+							font.pixelSize: 34
+							font.family: "JetBrainsMono Nerd Font"
+						}
+					}
+					Column {
+						anchors.verticalCenter: parent.verticalCenter
+						width: parent.width - 96 - 14
+						spacing: 7
+						Text {
+							width: parent.width
+							text: bar._pendingTitle !== "" ? bar._pendingTitle : "Nothing playing"
+							elide: Text.ElideRight
+							color: root.walForeground; font.pixelSize: 14; font.bold: true
+							font.family: "JetBrainsMono Nerd Font"
+						}
+						Text {
+							width: parent.width
+							text: bar._pendingArtist
+							elide: Text.ElideRight
+							color: root.walColor8; font.pixelSize: 11
+							font.family: "JetBrainsMono Nerd Font"
+							visible: bar._pendingArtist !== ""
+						}
+						Item {
+							width: parent.width; height: 20
+							Rectangle {
+								id: pTrack
+								width: parent.width; height: 4; radius: 2
+								anchors.top: parent.top
+								color: root.card(0.5)
+								Rectangle {
+									width: bar.mediaLength > 0 ? parent.width * (bar.mediaPosition / bar.mediaLength) : 0
+									height: parent.height; radius: 2
+									color: root.walColor2
+									Behavior on width { NumberAnimation { duration: 200; easing.type: Easing.Linear } }
+								}
+							}
+							Text {
+								anchors.left: parent.left; anchors.top: pTrack.bottom; anchors.topMargin: 4
+								text: musicCard.fmt(bar.mediaPosition); color: root.walColor8; font.pixelSize: 9
+								font.family: "JetBrainsMono Nerd Font"
+							}
+							Text {
+								anchors.right: parent.right; anchors.top: pTrack.bottom; anchors.topMargin: 4
+								text: musicCard.fmt(bar.mediaLength); color: root.walColor8; font.pixelSize: 9
+								font.family: "JetBrainsMono Nerd Font"
+							}
+						}
+						Row {
+							anchors.horizontalCenter: parent.horizontalCenter
+							spacing: 18
+							Item {
+								width: 22; height: 22; anchors.verticalCenter: parent.verticalCenter
+								Text { anchors.centerIn: parent; text: "󰒮"; color: prevMa.containsMouse ? root.walColor5 : root.walForeground
+									font.pixelSize: 18; font.family: "JetBrainsMono Nerd Font" }
+								MouseArea { id: prevMa; anchors.fill: parent; hoverEnabled: true; cursorShape: Qt.PointingHandCursor
+									onClicked: if (!mediaPrevProc.running) mediaPrevProc.running = true }
+							}
+							Rectangle {
+								width: 32; height: 32; radius: 16
+								anchors.verticalCenter: parent.verticalCenter
+								color: playMa.containsMouse ? root.hover(0.30) : root.hover(0.20)
+								Text { anchors.centerIn: parent; text: bar.mediaClass === "playing" ? "󰏤" : "󰐊"
+									color: root.walColor5; font.pixelSize: 16; font.family: "JetBrainsMono Nerd Font" }
+								MouseArea { id: playMa; anchors.fill: parent; hoverEnabled: true; cursorShape: Qt.PointingHandCursor
+									onClicked: if (!mediaPlayPauseProc.running) mediaPlayPauseProc.running = true }
+							}
+							Item {
+								width: 22; height: 22; anchors.verticalCenter: parent.verticalCenter
+								Text { anchors.centerIn: parent; text: "󰒭"; color: nextMa.containsMouse ? root.walColor5 : root.walForeground
+									font.pixelSize: 18; font.family: "JetBrainsMono Nerd Font" }
+								MouseArea { id: nextMa; anchors.fill: parent; hoverEnabled: true; cursorShape: Qt.PointingHandCursor
+									onClicked: if (!mediaNextProc.running) mediaNextProc.running = true }
+							}
+						}
+					}
+				}
+			}
+		}
 	Item {
 		anchors.fill: parent
 		anchors.topMargin: bar.floatGap
 		anchors.bottomMargin: bar.floatGap
 		anchors.leftMargin: bar.floatSide
 		anchors.rightMargin: bar.floatSide
-		visible: bar.style !== "i3" || bar.vertical
+		visible: (bar.style !== "i3" && bar.style !== "xp") || bar.vertical
 		HoverHandler {
 			// auto-hide: keep the bar out while the pointer is on it
 			onHoveredChanged: hovered ? root.barPeekNow() : root.barLeave()
@@ -1040,13 +1519,29 @@ Notch {
                     Behavior on height { NumberAnimation { duration: 250; easing.type: Easing.OutCubic } }
                     Behavior on color { ColorAnimation { duration: 200 } }
                     Text {
+                    	visible: !bar.wsHasApps(vws.wsId)
                         anchors.centerIn: parent
-                        text: vws.wsId
+                        text: bar.wsIcon(vws.wsId)
                         color: vws.isActive ? root.walBackground : vws.hasWindows ? root.walForeground
                             : Qt.rgba(root.walForeground.r, root.walForeground.g, root.walForeground.b, 0.35)
-                        font.pixelSize: 10
+                        font.pixelSize: vws.wsId <= 5 ? 13 : 10
                         font.bold: true
                         font.family: "JetBrainsMono Nerd Font"
+                    }
+                    Row { // app icons
+                    	anchors.centerIn: parent
+                    	spacing: 3
+                    	visible: bar.wsHasApps(vws.wsId)
+                    	Repeater {
+                    		model: bar.wsList(vws.wsId, 1)
+                    		Image {
+                    			required property var modelData
+                    			source: bar.appIcon(modelData)
+                    			width: 14; height: 14; sourceSize.width: 28; sourceSize.height: 28
+                    			smooth: true; opacity: vws.isActive ? 1 : 0.6
+                    			anchors.verticalCenter: parent.verticalCenter
+                    		}
+                    	}
                     }
                     MouseArea {
                         id: vwsMa
@@ -1059,8 +1554,7 @@ Notch {
                             else Quickshell.execDetached(["hyprctl", "dispatch", "hl.dsp.focus({ workspace = " + vws.wsId + " })"])
                         }
                         onWheel: function(wheel) {
-                            Quickshell.execDetached(["hyprctl", "dispatch",
-                                wheel.angleDelta.y > 0 ? "hl.dsp.focus({ workspace = 'e-1' })" : "hl.dsp.focus({ workspace = 'e+1' })"])
+                            root.wsScroll(wheel.angleDelta.y > 0 ? -1 : 1)
                         }
                     }
                 }
@@ -1121,7 +1615,7 @@ Notch {
                             return found
                         }
 
-                        width: Math.max(wsText.implicitWidth + 14, 26)
+                        width: Math.max((bar.wsHasApps(wsDelegate.wsId) ? bar.wsIconsW(wsDelegate.wsId, 3, 13) : wsText.implicitWidth) + 14, 26)
                         height: 18
                         z: 1
 
@@ -1148,20 +1642,36 @@ Notch {
                         }
 
                         Text {
+                        	visible: !bar.wsHasApps(wsDelegate.wsId)
                             id: wsText
                             anchors.centerIn: parent
-                            text: wsDelegate.wsId.toString()
+                            text: bar.wsIcon(wsDelegate.wsId)
                             color: wsDelegate.isActive
                                 ? root.walBackground
                                 : wsDelegate.hasWindows
                                     ? root.walForeground
                                     : Qt.rgba(root.walForeground.r, root.walForeground.g, root.walForeground.b, 0.35)
-                            font.pixelSize: 10
+                            font.pixelSize: wsDelegate.wsId <= 5 ? 13 : 10
                             font.bold: true
                             font.family: "JetBrainsMono Nerd Font"
                             Behavior on color {
                                 ColorAnimation { duration: 200; easing.type: Easing.OutCubic }
                             }
+                        }
+                        Row { // app icons
+                        	anchors.centerIn: parent
+                        	spacing: 3
+                        	visible: bar.wsHasApps(wsDelegate.wsId)
+                        	Repeater {
+                        		model: bar.wsList(wsDelegate.wsId, 3)
+                        		Image {
+                        			required property var modelData
+                        			source: bar.appIcon(modelData)
+                        			width: 13; height: 13; sourceSize.width: 26; sourceSize.height: 26
+                        			smooth: true; opacity: wsDelegate.isActive ? 1 : 0.6
+                        			anchors.verticalCenter: parent.verticalCenter
+                        		}
+                        	}
                         }
 
 						MouseArea {
@@ -1248,7 +1758,8 @@ Notch {
 						anchors.horizontalCenter: parent.horizontalCenter
 						spacing: 10
 						Item {
-							width: cavaRow.width
+							visible: false
+							width: 0
 							height: 14
 							anchors.verticalCenter: parent.verticalCenter
 							Row {
@@ -1467,14 +1978,14 @@ Notch {
 			}
 			Timer {
 				interval: 1000
-				running: lyricStrip.lines.length > 0 && bar.mediaText !== ""
+				running: lyricStrip.visible && lyricStrip.lines.length > 0 && bar.mediaText !== ""
 				repeat: true
 				triggeredOnStart: true
 				onTriggered: if (!lyrPosProc.running) lyrPosProc.running = true
 			}
 			Timer {
-				interval: 16
-				running: lyricStrip.lines.length > 0 && lyricStrip.playing && lyricStrip.baseAt > 0
+				interval: 33
+				running: lyricStrip.visible && lyricStrip.lines.length > 0 && lyricStrip.playing && lyricStrip.baseAt > 0
 				repeat: true
 				onTriggered: {
 					lyricStrip.pos = lyricStrip.basePos + (Date.now() - lyricStrip.baseAt) / 1000
@@ -2308,7 +2819,7 @@ Notch {
 			Notch {
 				natWidth: bar.iconW
       				hovered: clipMA.containsMouse
-      				tooltip: "Clipboard · right-click for notes"
+      				tooltip: "Clipboard · right-click: system & journal"
 				Item {
 					anchors.fill: parent
 					Text {
@@ -2326,8 +2837,11 @@ Notch {
           				cursorShape: Qt.PointingHandCursor
           				acceptedButtons: Qt.LeftButton | Qt.RightButton
 					onClicked: function(mouse) {
-						if (mouse.button === Qt.RightButton) root.toggleNotes()
-						else root.toggleClipboard()
+						if (mouse.button === Qt.RightButton) {   // right-click: system + journal extras (same things the i3 style shows)
+							bar.sysMeterOpen = false
+							bar.extrasX = clipMA.mapToItem(null, clipMA.width / 2, 0).x
+							bar.extrasOpen = !bar.extrasOpen
+						} else root.toggleClipboard()
 					}
 				}
 			}

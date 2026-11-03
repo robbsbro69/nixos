@@ -1,5 +1,9 @@
 {pkgs, ...}: {
   home.packages = with pkgs; [
+    clang-tools # clangd for C/C++
+    pyright     # Python
+    go          # Go toolchain
+    gopls       # Go language server
     nil
     biome
     stylua

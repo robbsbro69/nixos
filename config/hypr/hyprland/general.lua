@@ -20,10 +20,10 @@ hl.config({
 hl.config({
 	general = {
 		gaps_in = 4,
-		gaps_out = 4,
+		gaps_out = 8,
 		border_size = 1,
 		["col.active_border"] = "rgba(ffffffaa)",
-		["col.inactive_border"] = "rgba(666666aa)",
+		["col.inactive_border"] = "rgba(ffffffaa)", -- was rgba(666666aa)
 		resize_on_border = false,
 		no_focus_fallback = true,
 		allow_tearing = false,
@@ -50,19 +50,34 @@ hl.config({
 
 hl.config({
 	decoration = {
-		rounding = 6,
-		rounding_power = 6,
+		rounding = 10,
+		rounding_power = 2,
+		active_opacity = 1.0,
+		inactive_opacity = 1.0, -- was 0.93
+		fullscreen_opacity = 1.0,
+		dim_inactive = false, -- was true
+		dim_strength = 0.1,
 		shadow = {
-			enabled = true,
-			range = 4,
+			enabled = false, -- was true
+			range = 20,
 			render_power = 3,
-			color = "rgba(00000027)",
+			color = "rgba(00000066)",
 		},
 		blur = {
 			enabled = true,
-			size = 1,
+			size = 5,
 			passes = 3,
-			vibrancy = 0.5,
+			new_optimizations = true,
+			xray = true,
+			popups = true,
+			vibrancy = 0.17,
+			vibrancy_darkness = 0.2,
+			contrast = 1.1,
+			brightness = 0.9,
+			variant = "drops",
+			drops = {
+				speed = 6,
+			},
 		},
 	},
 })
@@ -105,5 +120,15 @@ hl.config({
 		zoom_rigid = false,
 		zoom_disable_aa = true,
 		hotspot_padding = 1,
+	},
+})
+
+hl.config({
+	decoration = {
+		wobble = {
+			enabled = true,
+			-- tunables if you want to tweak the jelly:
+			-- intensity, stiffness, damping, mass, mesh
+		},
 	},
 })

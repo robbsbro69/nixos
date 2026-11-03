@@ -21,6 +21,19 @@
       inputs.nixpkgs.follows = "nixpkgs";
     };
     kopuz.url = "github:temidaradev/kopuz";
+    reel = {
+      url = "git+file:///home/alpha/projects/reel";
+      inputs.nixpkgs.follows = "nixpkgs";
+    };
+    hyprland.url = "github:hyprwm/Hyprland";
+    hyprland-plugins = {
+      url = "github:hyprwm/hyprland-plugins";
+      inputs.hyprland.follows = "hyprland";
+    };
+    nix-index-database = {
+      url = "github:nix-community/nix-index-database";
+      inputs.nixpkgs.follows = "nixpkgs";
+    };
   };
 
   outputs = {
@@ -32,6 +45,10 @@
     quickshell,
     spicetify-nix,
     kopuz,
+    reel,
+    hyprland,
+    nix-index-database,
+    hyprland-plugins,
     ...
   }: let
     system = "x86_64-linux";
@@ -44,7 +61,7 @@
     nixosConfigurations.nixos = nixpkgs.lib.nixosSystem {
       inherit system;
       specialArgs = {
-        inherit pkgs-unstable kopuz;
+        inherit pkgs-unstable kopuz hyprland reel;
       };
       modules = [
         ./configuration.nix
@@ -61,9 +78,25 @@
                 quickshell
                 spicetify-nix
                 pkgs-unstable
+                hyprland
+                hyprland-plugins
                 ;
             };
             backupFileExtension = "backup";
+            sharedModules = [
+              nix-index-database.homeModules.nix-index
+              {
+                # `, cowsay` runs anything without installing it; unknown commands suggest the package
+                programs.nix-index.enable = true;
+                programs.nix-index.enableFishIntegration = true;
+                programs.nix-index-database.comma.enable = true;
+                # nh: nicer rebuilds (live build tree via nix-output-monitor + diff of what changed)
+                programs.nh = {
+                  enable = true;
+                  flake = "/home/alpha/nixos-dotfiles";
+                };
+              }
+            ];
           };
         }
       ];

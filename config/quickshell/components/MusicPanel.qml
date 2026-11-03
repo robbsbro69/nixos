@@ -180,7 +180,7 @@ PanelWindow {
 		dragStartPos = position
 		dragStartAngle = vinylRotation
 		if (vinylWasPlaying) {
-			playPauseProc.command = ["playerctl", "--player=" + activePlayer, "play-pause"]
+			playPauseProc.command = ["bash", "-c", 'if [ "$(playerctl --player="$1" status 2>/dev/null)" = Playing ]; then playerctl --player="$1" pause; else playerctl --player="$1" play; fi', "_", activePlayer]
 			playPauseProc.running = true
 		}
 	}
@@ -208,7 +208,7 @@ PanelWindow {
 		id: vinylResumeTimer
 		interval: 200
 		onTriggered: {
-			playPauseProc.command = ["playerctl", "--player=" + musicPanel.resolvedPlayer, "play-pause"]
+			playPauseProc.command = ["bash", "-c", 'if [ "$(playerctl --player="$1" status 2>/dev/null)" = Playing ]; then playerctl --player="$1" pause; else playerctl --player="$1" play; fi', "_", musicPanel.resolvedPlayer]
 			playPauseProc.running = true
 		}
 	}
@@ -1604,7 +1604,7 @@ PanelWindow {
 	}
 		Process {
 			id: playPauseProc
-			command: ["playerctl", "--player=" + musicPanel.resolvedPlayer, "play-pause"]
+			command: ["bash", "-c", 'if [ "$(playerctl --player="$1" status 2>/dev/null)" = Playing ]; then playerctl --player="$1" pause; else playerctl --player="$1" play; fi', "_", musicPanel.resolvedPlayer]
 			onExited: { if (!musicStatusProc.running) musicStatusProc.running = true }
 		}
 		Process {

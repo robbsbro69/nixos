@@ -2,7 +2,7 @@
 # Mono so bars run bass (left) -> treble (right); the first 4 bars drive the bass glow.
 [general]
 bars = 28
-framerate = 60
+framerate = 30
 autosens = 1
 
 [output]

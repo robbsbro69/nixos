@@ -19,3 +19,5 @@ ScreenTimePanel 1.0 ScreenTimePanel.qml
 BarMenu 1.0 BarMenu.qml
 BarReveal 1.0 BarReveal.qml
 PomoZen 1.0 PomoZen.qml
+DiskPanel 1.0 DiskPanel.qml
+MemPanel 1.0 MemPanel.qml

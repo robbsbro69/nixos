@@ -1,10 +1,13 @@
 {pkgs, ...}: {
   users.users.alpha = {
     isNormalUser = true;
+    shell = pkgs.fish;
     extraGroups = ["wheel" "vboxusers" "networkmanager" "dialout" "i2c"];
     packages = with pkgs; [tree];
   };
 
+
+ programs.fish.enable = true;
   environment.sessionVariables = {
     XCURSOR_SIZE = "24";
     NIXOS_OZONE_WL = "1";

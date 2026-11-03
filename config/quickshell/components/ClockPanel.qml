@@ -20,9 +20,12 @@ PanelWindow {
 	margins {
 		bottom: root.clockPanelVisible ? root.barGapV : -350
 		left: (root.clockPanelVisible ? 6 : -(implicitWidth + 20)) + root.barInsetLeft
-		right: (root.clockPanelVisible ? 6 : -(implicitWidth + 20)) + root.barInsetRight
+		right: (root.clockPanelVisible ? root.popRightAt(popC, implicitWidth, screen) : -(implicitWidth + 20)) + root.barInsetRight
 		top: root.clockPanelVisible ? root.barGapV : -350
 	}
+	// remember where it was opened from (i3 style), so it doesn't follow later clicks
+	property real popC: -1
+	Connections { target: root; function onClockPanelVisibleChanged() { if (root.clockPanelVisible) popC = root.i3PopCenter } }
 	implicitWidth: 300
 	implicitHeight: card.implicitHeight + 16
 	color: "transparent"

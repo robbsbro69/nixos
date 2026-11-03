@@ -8,5 +8,6 @@
     ./udev.nix
     ./transmission.nix
     ./tailscale.nix
+    ./vnstat.nix
   ];
 }

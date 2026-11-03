@@ -18,9 +18,12 @@ PanelWindow {
     	margins {
     		bottom: root.calendarVisible ? root.barGapV : -(implicitHeight + 20)
     		left: (root.calendarVisible ? 6 : -(implicitWidth + 20)) + root.barInsetLeft
-    		right: (root.calendarVisible ? 6 : -(implicitWidth + 20)) + root.barInsetRight
+    		right: (root.calendarVisible ? root.popRightAt(popC, implicitWidth, screen) : -(implicitWidth + 20)) + root.barInsetRight
     		top: root.calendarVisible ? root.barGapV : -(implicitHeight + 20)
     	}
+    	// remember where it was opened from (i3 style), so it doesn't follow later clicks
+    	property real popC: -1
+    	Connections { target: root; function onCalendarVisibleChanged() { if (root.calendarVisible) popC = root.i3PopCenter } }
     	implicitWidth: 312
     	implicitHeight: card.height + 16
     	color: "transparent"

@@ -33,3 +33,6 @@ __pycache__/
 *.bak-*
 config/quickshell/subs-cookie-profile
 config/quickshell/subs-lang
+flake.lock.bak-*
+config/**/*.bak-*
+*.bak-*

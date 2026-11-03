@@ -32,4 +32,5 @@
   # don't start before the SSD is mounted
   systemd.services.transmission.unitConfig.RequiresMountsFor = ["/mnt/ssd"];
   systemd.services.transmission.serviceConfig.Restart = "on-failure";
+  systemd.services.transmission.serviceConfig.ReadWritePaths = ["/home/alpha/Videos/Downloads"];
 }

@@ -1,6 +1,7 @@
 {
   pkgs,
   kopuz,
+  reel,
   ...
 }: {
   environment.systemPackages = with pkgs; [
@@ -68,6 +69,7 @@
       ]))
 
     kopuz.packages.${pkgs.stdenv.hostPlatform.system}.default
+    reel.packages.${pkgs.stdenv.hostPlatform.system}.default
   ];
 
   programs.kdeconnect.enable = true;

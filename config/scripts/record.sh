@@ -28,8 +28,8 @@ mkdir -p "$DIR" "$(dirname "$LOG")"
 
 # NixOS runs gsr as ".gpu-screen-recorder-wrapped", so match both names
 GSR_RE='gpu-screen-recorder(-wrapped)? -w'
-is_recording() { pgrep -x wf-recorder >/dev/null || pgrep -f "$GSR_RE" >/dev/null; }
-rec_kill() { pkill "-$1" -x wf-recorder 2>/dev/null; pkill "-$1" -f "$GSR_RE" 2>/dev/null; true; }
+is_recording() { pgrep -x wf-recorder >/dev/null || pgrep -af "$GSR_RE" | grep -v '/Videos/focus/' | grep -q .; }
+rec_kill() { pkill "-$1" -x wf-recorder 2>/dev/null; for p in $(pgrep -af "$GSR_RE" | grep -v '/Videos/focus/' | cut -d' ' -f1); do kill "-$1" "$p" 2>/dev/null; done; true; }
 # sound: what's playing on the laptop is recorded by default.
 #   RECORD_AUDIO=none   no sound      RECORD_AUDIO=both   laptop sound + microphone
 AUDIO="${RECORD_AUDIO:-$(cat "$HOME/.config/quickshell/state/record-audio" 2>/dev/null || echo desktop)}"

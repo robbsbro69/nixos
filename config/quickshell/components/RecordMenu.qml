@@ -20,9 +20,12 @@ PanelWindow {
 	}
 	margins {
 		bottom: root.recordMenuVisible ? root.barGapV : -(implicitHeight + 20)
-		right: (6) + root.barInsetRight
+		right: (root.popRightAt(popC, implicitWidth, screen)) + root.barInsetRight
 		top: root.recordMenuVisible ? root.barGapV : -(implicitHeight + 20)
 	}
+	// remember where it was opened from (i3 style), so it doesn't follow later clicks
+	property real popC: -1
+	Connections { target: root; function onRecordMenuVisibleChanged() { if (root.recordMenuVisible) popC = root.i3PopCenter } }
 	implicitWidth: 300
 	property string recCamera: "off"            // off | front | back  (state/record-camera)
 	FileView {

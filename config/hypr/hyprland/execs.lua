@@ -6,9 +6,9 @@ hl.on("hyprland.start", function()
 		"wal --theme catppuccin-mocha-pink -n -q",
 		"/home/alpha/.config/scripts/nightlight.sh restore",
 		"systemctl --user start hypridle",
-		"wl-paste --type text --watch cliphist store",
-		"wl-paste --type image --watch cliphist store",
-		"/run/current-system/sw/libexec/polkit-gnome-authentication-agent-1",
+		"wl-paste --type text --watch cliphist -max-items 1000000 store",
+		"wl-paste --type image --watch cliphist -max-items 1000000 store",
+		"polkit-agent",  -- hyprpolkitagent (falls back to polkit-gnome)
 		"kdeconnect-indicator",
 		"sleep 1 && QS_DROP_EXPENSIVE_FONTS=1 quickshell -p /home/alpha/.config/quickshell",
 	}

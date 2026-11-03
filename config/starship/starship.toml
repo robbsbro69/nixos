@@ -1,25 +1,109 @@
 "$schema" = 'https://starship.rs/config-schema.json'
 palette = "catppuccin_mocha"
+add_newline = true
 
-[character]
-success_symbol = "[[󰄛](pink) ❯](pink)"
-error_symbol = "[[󰄛](red) ❯](pink)"
-vimcmd_symbol = "[󰄛 ❮](subtext1)"
+# ╭─  ~/nixos-dotfiles   main !2 ?1   ❄ nix   ……   took 4s   14:32
+# ╰─󰄛 ❯
+format = """
+[╭─](surface2)\
+[](pink)$os[](bg:mauve fg:pink)\
+$directory[](fg:mauve bg:lavender)\
+$git_branch$git_status[](fg:lavender bg:surface0)\
+$nix_shell$python$rust$nodejs$c$golang$lua\
+[](fg:surface0)\
+$fill\
+$cmd_duration$time
+[╰─](surface2)$character"""
 
-[git_branch]
-style = "bold pink"
+[fill]
+symbol = " "
 
-[git_status]
-style = "bold pink"
+[os]
+disabled = false
+style = "bg:pink fg:crust"
+format = "[$symbol ]($style)"
+[os.symbols]
+NixOS = "󱄅"
 
 [directory]
-truncation_length = 4
-style = "bold pink"
+style = "bg:mauve fg:crust bold"
+format = "[ $path ]($style)"
+truncation_length = 3
+truncation_symbol = "…/"
+home_symbol = "~"
+[directory.substitutions]
+"nixos-dotfiles" = "󱄅 dotfiles"
+"Downloads" = "󰉍 "
+"Pictures" = "󰉏 "
+"Videos" = "󰕧 "
+"wallpapers" = "󰸉 walls"
+
+[git_branch]
+symbol = ""
+style = "bg:lavender fg:crust"
+format = "[ $symbol $branch ]($style)"
+
+[git_status]
+style = "bg:lavender fg:crust bold"
+format = "[($all_status$ahead_behind )]($style)"
+
+[nix_shell]
+symbol = "❄"
+style = "bg:surface0 fg:sky"
+format = "[ $symbol $name ]($style)"
+heuristic = false   # only inside nix-shell / nix develop
+
+[python]
+symbol = ""
+style = "bg:surface0 fg:yellow"
+format = "[ $symbol ($version) ]($style)"
+
+[rust]
+symbol = ""
+style = "bg:surface0 fg:peach"
+format = "[ $symbol ($version) ]($style)"
+
+[nodejs]
+symbol = ""
+style = "bg:surface0 fg:green"
+format = "[ $symbol ($version) ]($style)"
+
+[c]
+symbol = ""
+style = "bg:surface0 fg:blue"
+format = "[ $symbol ($version) ]($style)"
+
+[golang]
+symbol = ""
+style = "bg:surface0 fg:sapphire"
+format = "[ $symbol ($version) ]($style)"
+
+[lua]
+symbol = ""
+style = "bg:surface0 fg:blue"
+format = "[ $symbol ($version) ]($style)"
+
+[cmd_duration]
+min_time = 2000
+style = "fg:yellow"
+format = "[ took $duration ]($style)"
+
+[time]
+disabled = false
+time_format = "%H:%M"
+style = "fg:overlay1"
+format = "[ $time]($style)"
+
+[character]
+success_symbol = "[󰄛 ❯](bold pink)"
+error_symbol = "[󰄛 ❯](bold red)"
+vimcmd_symbol = "[󰄛 ❮](subtext1)"
 
 [palettes.catppuccin_mocha]
 rosewater = "#f5e0dc"
 flamingo = "#f2cdcd"
 pink = "#f5c2e7"
+mauve = "#cba6f7"
 red = "#f38ba8"
 maroon = "#eba0ac"
 peach = "#fab387"

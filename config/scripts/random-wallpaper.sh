@@ -1,4 +1,5 @@
 #!/usr/bin/env bash
+pkill "^.?mpvpaper" 2>/dev/null  # a video wallpaper would cover the new one
 WALL_DIR="$HOME/wallpapers"
 CACHE_DIR="${XDG_STATE_HOME:-$HOME/.local/state}/wallpaper-shuffle"
 CACHE_FILE="$CACHE_DIR/queue"

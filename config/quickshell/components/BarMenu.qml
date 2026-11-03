@@ -78,8 +78,7 @@ PanelWindow {
 					Repeater {
 						model: [
 							{ k: "default", t: "Default" },
-							{ k: "i3", t: "i3bar" },
-							{ k: "enjoy", t: "Enjoy" }
+							{ k: "i3", t: "i3bar" }
 						]
 						delegate: Rectangle {
 							id: sCard
@@ -100,7 +99,7 @@ PanelWindow {
 								height: sCard.k === "i3" ? 12 : sCard.k === "minimal" ? 13 : 15
 								radius: sCard.k === "i3" ? 0 : sCard.k === "floating" ? 7 : 3
 								color: sCard.k === "i3" ? (root.lightMode ? "#dce0e8" : "#11111b")
-									: sCard.k === "minimal" ? (root.lightMode ? "#eff1f5" : "#1e1e2e") : sCard.k === "islands" ? "transparent" : root.barColor
+									: sCard.k === "minimal" ? (root.lightMode ? "#eff1f5" : "#1e1e2e") : sCard.k === "xp" ? "#245edb" : sCard.k === "islands" ? "transparent" : root.barColor
 								border.width: sCard.k === "minimal" ? 1 : 0
 								border.color: root.card(0.6)
 								Rectangle {   // accent line (default only)

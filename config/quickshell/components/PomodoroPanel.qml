@@ -20,9 +20,12 @@ PanelWindow {
 	}
 	margins {
 		bottom: root.pomoVisible ? root.barGapV : -(implicitHeight + 20)
-		right: (6) + root.barInsetRight
+		right: (root.popRightAt(popC, implicitWidth, screen)) + root.barInsetRight
 		top: root.pomoVisible ? root.barGapV : -(implicitHeight + 20)
 	}
+	// remember where it was opened from (i3 style), so it doesn't follow later clicks
+	property real popC: -1
+	Connections { target: root; function onPomoVisibleChanged() { if (root.pomoVisible) popC = root.i3PopCenter } }
 	implicitWidth: 340
 	implicitHeight: card.implicitHeight
 	color: "transparent"
@@ -378,6 +381,42 @@ PanelWindow {
 					Stepper { label: "Long every"; unit: "×"; value: root.pomoLongEvery; accent: root.walColor13; onStep: function(d) { root.pomoAdjust("every", d) } }
 				}
 
+				// ── focus mode options ──────────────────────────────────
+				RowLayout {
+					Layout.fillWidth: true
+					spacing: 6
+					Repeater {
+						model: [{ k: "dnd", on: "󰂛  Mute notifications", off: "󰂚  Notifications on" },
+						        { k: "bar", on: "󰘖  Hide bar", off: "󰘕  Keep bar" }]
+						delegate: Rectangle {
+							id: zo
+							required property var modelData
+							readonly property bool sel: modelData.k === "dnd" ? root.pomoZenDnd : root.pomoZenHideBar
+							Layout.fillWidth: true
+							Layout.preferredHeight: 26
+							radius: 8
+							color: sel ? Qt.rgba(root.walPeach.r, root.walPeach.g, root.walPeach.b, 0.22)
+								: (zoMa.containsMouse ? root.hover(0.06) : root.card(0.35))
+							Text {
+								textFormat: Text.PlainText
+								anchors.centerIn: parent
+								text: zo.sel ? zo.modelData.on : zo.modelData.off
+								color: zo.sel ? root.walForeground : root.walColor8
+								font.pixelSize: 10
+								font.bold: zo.sel
+								font.family: "JetBrainsMono Nerd Font"
+							}
+							MouseArea {
+								id: zoMa
+								anchors.fill: parent
+								hoverEnabled: true
+								cursorShape: Qt.PointingHandCursor
+								onClicked: root.pomoZenSet(zo.modelData.k, !zo.sel)
+							}
+						}
+					}
+				}
+
 				// ── Sessions ────────────────────────────────────────────
 				RowLayout {
 					Layout.fillWidth: true
@@ -450,6 +489,125 @@ PanelWindow {
 								}
 							}
 						}
+					}
+				}
+				// ── focus audio: Mic / Sound → the session is recorded live with sound ──
+				RowLayout {
+					visible: root.focusCamAvailable
+					Layout.fillWidth: true
+					spacing: 8
+					Text {
+						text: (root.focusCamMic || root.focusCamSound) ? "󰍬  Live" : "󰍬  Audio"
+						color: (root.focusCamMic || root.focusCamSound) ? root.walPeach : root.walColor8
+						font.pixelSize: 10
+						font.family: "JetBrainsMono Nerd Font"
+					}
+					Rectangle {
+						Layout.fillWidth: true
+						Layout.preferredHeight: 26
+						radius: 8
+						color: root.card(0.35)
+						RowLayout {
+							anchors.fill: parent
+							anchors.margins: 3
+							spacing: 3
+							Repeater {
+								model: [{ k: "mic", t: "󰍬 Mic" }, { k: "sound", t: "󰕾 Sound" }]
+								delegate: Rectangle {
+									id: auOpt
+									required property var modelData
+									readonly property bool sel: modelData.k === "mic" ? root.focusCamMic : root.focusCamSound
+									Layout.fillWidth: true
+									Layout.fillHeight: true
+									radius: 6
+									color: sel ? Qt.rgba(root.walPeach.r, root.walPeach.g, root.walPeach.b, 0.22)
+										: (auMa.containsMouse ? root.hover(0.06) : "transparent")
+									Text {
+										anchors.centerIn: parent
+										text: auOpt.modelData.t
+										color: auOpt.sel ? root.walForeground : root.walColor8
+										font.pixelSize: 10
+										font.bold: auOpt.sel
+										font.family: "JetBrainsMono Nerd Font"
+									}
+									MouseArea {
+										id: auMa
+										anchors.fill: parent
+										hoverEnabled: true
+										cursorShape: Qt.PointingHandCursor
+										onClicked: root.focusCamSetAudio(auOpt.modelData.k, !auOpt.sel)
+									}
+								}
+							}
+						}
+					}
+				}
+				// which mic / output: click to cycle through devices (shown while Mic / Sound is on)
+				Repeater {
+					model: [{ k: "mic", ic: "󰍬", on: root.focusCamMic }, { k: "sound", ic: "󰕾", on: root.focusCamSound }]
+					delegate: Rectangle {
+						id: devRow
+						required property var modelData
+						visible: root.focusCamAvailable && modelData.on
+						Layout.fillWidth: true
+						Layout.preferredHeight: 22
+						radius: 6
+						color: devMa.containsMouse ? root.hover(0.06) : root.card(0.2)
+						Text {
+							anchors.left: parent.left; anchors.right: parent.right; anchors.margins: 8
+							anchors.verticalCenter: parent.verticalCenter
+							text: devRow.modelData.ic + "  " + root.focusCamDevLabel(devRow.modelData.k) + "   ›"
+							color: root.walColor8
+							font.pixelSize: 10
+							font.family: "JetBrainsMono Nerd Font"
+							elide: Text.ElideMiddle
+						}
+						MouseArea {
+							id: devMa
+							anchors.fill: parent
+							hoverEnabled: true
+							cursorShape: Qt.PointingHandCursor
+							onClicked: { root.focusCamListDevices(); root.focusCamCycleDev(devRow.modelData.k) }
+						}
+						onVisibleChanged: if (visible) root.focusCamListDevices()
+					}
+				}
+				// screen + camera timelapse
+				Rectangle {
+					visible: root.focusCamAvailable
+					Layout.fillWidth: true
+					Layout.preferredHeight: 26
+					radius: 8
+					color: root.focusCamScreen ? Qt.rgba(root.walPeach.r, root.walPeach.g, root.walPeach.b, 0.22)
+						: (scrMa.containsMouse ? root.hover(0.06) : root.card(0.35))
+					border.width: root.focusCamScreen ? 1 : 0
+					border.color: Qt.rgba(root.walPeach.r, root.walPeach.g, root.walPeach.b, 0.45)
+					Row {
+						anchors.centerIn: parent
+						spacing: 6
+						Text {
+							text: "󰍹"
+							color: root.focusCamScreen ? root.walPeach : root.walColor8
+							font.pixelSize: 12
+							font.family: "JetBrainsMono Nerd Font"
+							anchors.verticalCenter: parent.verticalCenter
+						}
+						Text {
+							text: !root.focusCamScreen ? "Also record the screen"
+								: (root.focusCamFacing === "off" ? "Screen timelapse  ·  camera off" : "Screen + camera timelapse")
+							color: root.focusCamScreen ? root.walForeground : root.walColor8
+							font.pixelSize: 10
+							font.bold: root.focusCamScreen
+							font.family: "JetBrainsMono Nerd Font"
+							anchors.verticalCenter: parent.verticalCenter
+						}
+					}
+					MouseArea {
+						id: scrMa
+						anchors.fill: parent
+						hoverEnabled: true
+						cursorShape: Qt.PointingHandCursor
+						onClicked: root.focusCamSetScreen(!root.focusCamScreen)
 					}
 				}
 

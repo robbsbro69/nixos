@@ -11,7 +11,7 @@ PanelWindow {
 	WlrLayershell.layer: WlrLayer.Overlay
 	WlrLayershell.namespace: "quickshell-pomozen"
 	anchors { top: true }
-	margins { top: 8 }
+	margins { top: 8 + (root.barShown ? root.barInsetTop : 0) }
 	implicitWidth: pill.width + 4
 	implicitHeight: pill.height + 4
 	color: "transparent"
@@ -26,7 +26,7 @@ PanelWindow {
 		color: Qt.rgba(root.walBackground.r, root.walBackground.g, root.walBackground.b, 0.82)
 		border.width: 1
 		border.color: Qt.rgba(root.pomoColor.r, root.pomoColor.g, root.pomoColor.b, 0.45)
-		opacity: root.pomoZen && !root.barShown ? 0.9 : 0
+		opacity: root.pomoZen ? 0.9 : 0
 		Behavior on opacity { NumberAnimation { duration: 300 } }
 		Row {
 			id: row
@@ -34,7 +34,7 @@ PanelWindow {
 			spacing: 8
 			Text { text: "󰔟"; color: root.pomoColor; font.pixelSize: 13; font.family: "JetBrainsMono Nerd Font"; anchors.verticalCenter: parent.verticalCenter }
 			Text { text: root.pomoText; color: root.walForeground; font.pixelSize: 12; font.bold: true; font.family: "JetBrainsMono Nerd Font"; anchors.verticalCenter: parent.verticalCenter }
-			Text { text: "focus · 󰂛"; color: root.walColor8; font.pixelSize: 10; font.family: "JetBrainsMono Nerd Font"; anchors.verticalCenter: parent.verticalCenter }
+			Text { text: root.pomoZenDnd ? "focus · 󰂛" : "focus"; color: root.walColor8; font.pixelSize: 10; font.family: "JetBrainsMono Nerd Font"; anchors.verticalCenter: parent.verticalCenter }
 			// focus-cam: click = show / hide the live camera window
 			Rectangle {
 				id: camBtn

@@ -78,6 +78,18 @@ ShellRoot {
 	readonly property color walPeach:   pal.peach
 	readonly property color barColor:   pal.bar
 	// Inset cards / hover tints that read correctly on both dark and light panels
+	// i3 style: popups open under the block that was clicked (Bar.qml sets i3PopCenter)
+	property real i3PopCenter: -1
+	function popRightAt(c, w, scr) {
+		if (barStyle !== "i3" || c < 0) return 6
+		var sw = scr ? scr.width : 1920
+		return Math.max(6, Math.min(sw - w - 6, sw - c - w / 2))
+	}
+	function popRight(w, scr) {
+		if (barStyle !== "i3" || i3PopCenter < 0) return 6
+		var sw = scr ? scr.width : 1920
+		return Math.max(6, Math.min(sw - w - 6, sw - i3PopCenter - w / 2))
+	}
 	function card(a)  { return lightMode ? Qt.rgba(walForeground.r, walForeground.g, walForeground.b, a * 0.13) : Qt.rgba(0, 0, 0, a) }
 	function hover(a) { return lightMode ? Qt.rgba(walForeground.r, walForeground.g, walForeground.b, Math.min(0.16, a * 0.3)) : Qt.rgba(1, 1, 1, a) }
 	function setTheme(k) {
@@ -98,18 +110,35 @@ ShellRoot {
 	property bool barPeek: false
 	property bool barMenuVisible: false
 	readonly property bool barVertical: barPosition === "left" || barPosition === "right"
-	readonly property int barThicknessBase: barStyle === "i3" ? 22 : barStyle === "minimal" ? 24 : 28
+	readonly property int barThicknessBase: barStyle === "xp" ? 31 : barStyle === "i3" ? 22 : barStyle === "minimal" ? 24 : 28
 	property bool barFloating: false          // floating: rounded bar with space around it
 	readonly property int barThickness: barThicknessBase + (barFloating ? 8 : 0)
 	// background per style (default keeps barColor)
-	readonly property color barBgBase: barStyle === "islands" || barStyle === "floating" ? "transparent" : barStyle === "i3" ? "#000000" : barStyle === "minimal" ? pal.bg : barColor
+	readonly property color barBgBase: barStyle === "islands" || barStyle === "floating" ? "transparent" : barStyle === "i3" ? "#000000" : barStyle === "xp" ? "transparent" : barStyle === "minimal" ? pal.bg : barColor
 	readonly property bool anyPanelOpen: dashboardVisible || musicVisible || launcherVisible || wifiVisible || btVisible
 		|| calendarVisible || notifCenterVisible || clipboardVisible || clockPanelVisible
 		|| recordMenuVisible || pomoVisible || eqVisible || screenTimeVisible
-		|| jarvisVisible || jarvisTimelineVisible || barMenuVisible
+		|| jarvisVisible || jarvisTimelineVisible || barMenuVisible || diskPanelVisible || memPanelVisible
 	// pomo-zen: a running focus session hides the bar (edge-peek still works)
 	property bool pomoZenEnabled: true
 	readonly property bool pomoZen: pomoZenEnabled && pomoRunning && pomoPhase === "focus"
+	// focus-mode options (Pomodoro panel toggles, state/pomozen-opts: "<dnd> <hidebar>")
+	property bool pomoZenDnd: true
+	property bool pomoZenHideBar: true
+	function pomoZenSet(which, on) {
+		if (which === "dnd") {
+			pomoZenDnd = on
+			if (_zenActive) dndEnabled = on ? true : _zenPrevDnd
+		} else pomoZenHideBar = on
+		saveState("pomozen-opts", (pomoZenDnd ? "1" : "0") + " " + (pomoZenHideBar ? "1" : "0"))
+	}
+	FileView {
+		path: root.statePath + "/pomozen-opts"
+		onLoaded: {
+			var p = text().trim().split(" ")
+			if (p.length >= 2) { root.pomoZenDnd = p[0] === "1"; root.pomoZenHideBar = p[1] === "1" }
+		}
+	}
 	property int pomoZenWs: 0                    // the focus workspace
 	property int _zenPrevWs: 0
 	property bool _zenPrevDnd: false
@@ -124,9 +153,69 @@ ShellRoot {
 	}
 	property string focusCamFacing: "front"      // front | back | off   (state/focuscam-facing)
 	property bool focusCamPreview: false          // small live window in the corner (state/focuscam-preview)
+	property bool focusCamScreen: false           // timelapse of the screen + camera window (state/focuscam-screen)
 	readonly property bool focusCamOn: focusCamAvailable && focusCamFacing !== "off"
+	// focus audio (state/focuscam-mic, focuscam-sound): either on → next session is recorded live with sound
+	property bool focusCamMic: false
+	property bool focusCamSound: false
+	// which mic / which output (state/focuscam-mic-dev, focuscam-sound-dev; "" = system default)
+	property string focusCamMicDev: ""
+	property string focusCamSoundDev: ""
+	property var focusCamMics: []          // [{ n: pulse name, d: description }]
+	property var focusCamOuts: []
+	property string focusCamDefMic: ""
+	property string focusCamDefOut: ""
+	function focusCamListDevices() { if (!fcDevProc.running) fcDevProc.running = true }
+	function focusCamCycleDev(which) {
+		var list = which === "mic" ? focusCamMics : focusCamOuts
+		var cur = which === "mic" ? focusCamMicDev : focusCamSoundDev
+		var names = [""].concat(list.map(function(x) { return x.n }))
+		var nxt = names[(names.indexOf(cur) + 1) % names.length]
+		if (which === "mic") focusCamMicDev = nxt; else focusCamSoundDev = nxt
+		saveState("focuscam-" + which + "-dev", nxt === "" ? "default" : nxt)
+	}
+	function focusCamDevLabel(which) {
+		var list = which === "mic" ? focusCamMics : focusCamOuts
+		var cur = which === "mic" ? focusCamMicDev : focusCamSoundDev
+		var find = function(n) { for (var i = 0; i < list.length; i++) if (list[i].n === n) return list[i].d; return n }
+		if (cur === "") {
+			var def = which === "mic" ? focusCamDefMic : focusCamDefOut
+			return "Default" + (def !== "" ? " · " + find(def) : "")
+		}
+		return find(cur)
+	}
+	Process {
+		id: fcDevProc
+		command: ["sh", "-c", "command -v pactl >/dev/null || { echo '{}'; exit; }; printf '{\"src\":'; pactl -f json list sources; printf ',\"snk\":'; pactl -f json list sinks; printf ',\"ds\":\"%s\",\"dk\":\"%s\"}' \"$(pactl get-default-source)\" \"$(pactl get-default-sink)\""]
+		stdout: StdioCollector {
+			onStreamFinished: {
+				var j = {}
+				try { j = JSON.parse(this.text) } catch (e) { return }
+				var nice = function(x) { return { n: x.name, d: (x.description || x.name).replace(/ Analog Stereo| Digital Stereo \(HDMI\)/, "") } }
+				root.focusCamMics = (j.src || []).filter(function(x) { return !/\.monitor$/.test(x.name) }).map(nice)
+				root.focusCamOuts = (j.snk || []).map(nice)
+				root.focusCamDefMic = j.ds || ""
+				root.focusCamDefOut = j.dk || ""
+			}
+		}
+	}
+	Process {
+		running: true
+		command: ["sh", "-c", "for k in mic sound; do v=$(cat \"$1/focuscam-$k-dev\" 2>/dev/null); [ \"$v\" = default ] && v=; printf '%s\\n' \"$v\"; done", "_", root.homePath + "/.config/quickshell/state"]
+		stdout: StdioCollector { onStreamFinished: { var p = this.text.split("\n"); root.focusCamMicDev = p[0] || ""; root.focusCamSoundDev = p[1] || ""; root.focusCamListDevices() } }
+	}
+	function focusCamSetAudio(which, on) {
+		if (which === "mic") focusCamMic = on; else focusCamSound = on
+		saveState("focuscam-" + which, on ? "on" : "off")
+	}
+	Process {
+		running: true
+		command: ["sh", "-c", "for k in mic sound; do printf '%s ' \"$(cat \"$1/focuscam-$k\" 2>/dev/null || echo off)\"; done", "_", root.homePath + "/.config/quickshell/state"]
+		stdout: StdioCollector { onStreamFinished: { var p = this.text.trim().split(/\s+/); root.focusCamMic = p[0] === "on"; root.focusCamSound = p[1] === "on" } }
+	}
 	function focusCamStart() {
-		if (focusCamOn) Quickshell.execDetached([focusCamScript, "start", focusCamPreview ? "1" : "0"])
+		if (focusCamAvailable && (focusCamOn || focusCamScreen))
+			Quickshell.execDetached([focusCamScript, "start", focusCamPreview ? "1" : "0", focusCamScreen ? "1" : "0"])
 	}
 	function focusCamTogglePreview() {
 		focusCamPreview = !focusCamPreview
@@ -137,8 +226,14 @@ ShellRoot {
 		focusCamFacing = f
 		saveState("focuscam-facing", f)
 		if (!pomoZen) return
-		if (f === "off") Quickshell.execDetached([focusCamScript, "finish"])
-		else Quickshell.execDetached(["bash", "-c", "sleep 0.3; \"$1\" start \"$2\"", "_", focusCamScript, focusCamPreview ? "1" : "0"])
+		if (f === "off" && !focusCamScreen) Quickshell.execDetached([focusCamScript, "finish"])
+		else Quickshell.execDetached(["bash", "-c", "sleep 0.3; \"$1\" start \"$2\" \"$3\"", "_", focusCamScript, focusCamPreview ? "1" : "0", focusCamScreen ? "1" : "0"])
+	}
+	function focusCamSetScreen(on) {
+		focusCamScreen = on
+		saveState("focuscam-screen", on ? "on" : "off")
+		if (pomoZen) Quickshell.execDetached(["bash", "-c", "sleep 0.3; \"$1\" start \"$2\" \"$3\"", "_", focusCamScript,
+			focusCamPreview ? "1" : "0", on ? "1" : "0"])
 	}
 	function pomoZenEnter() {
 		if (_zenActive) return
@@ -146,7 +241,7 @@ ShellRoot {
 		focusCamStart()
 		_zenPrevWs = Hyprland.focusedWorkspace ? Hyprland.focusedWorkspace.id : 1
 		_zenPrevDnd = dndEnabled
-		dndEnabled = true
+		if (pomoZenDnd) dndEnabled = true
 		closeSidePanels()
 		if (pomoZenWs > 0 && _zenPrevWs !== pomoZenWs)
 			Quickshell.execDetached(["hyprctl", "dispatch", "hl.dsp.focus({ workspace = " + pomoZenWs + " })"])
@@ -163,7 +258,7 @@ ShellRoot {
 		target: root
 		function onPomoZenChanged() { root.pomoZen ? root.pomoZenEnter() : root.pomoZenExit() }
 	}
-	readonly property bool barShown: pomoZen ? false : (barMode === "shown" || barPeek || (barMode === "auto" && anyPanelOpen))
+	readonly property bool barShown: (pomoZen && pomoZenHideBar) ? false : (barMode === "shown" || barPeek || (barMode === "auto" && anyPanelOpen))
 	// space the bar takes on each edge — panels use these to open beside it
 	readonly property int barInsetTop: barPosition === "top" && barMode !== "hidden" ? barThickness : 0
 	readonly property int barInsetBottom: barPosition === "bottom" && barMode !== "hidden" ? barThickness : 0
@@ -186,8 +281,8 @@ ShellRoot {
 		saveBar()
 	}
 	function toggleBar() { setBarMode(barMode === "hidden" ? "shown" : "hidden") }
-	function barPeekNow() { if (barMode !== "shown" || pomoZen) { barPeek = true; barHideTimer.stop() } }
-	function barLeave() { if (barMode !== "shown" || pomoZen) barHideTimer.restart() }
+	function barPeekNow() { if (barMode !== "shown" || (pomoZen && pomoZenHideBar)) { barPeek = true; barHideTimer.stop() } }
+	function barLeave() { if (barMode !== "shown" || (pomoZen && pomoZenHideBar)) barHideTimer.restart() }
 	property string barOpacity: "opaque"       // opaque | transparent | blur
 	readonly property real barAlpha: barOpacity === "transparent" ? 0.55 : (barOpacity === "blur" ? 0.62 : 1)
 	readonly property color barBg: Qt.rgba(barBgBase.r, barBgBase.g, barBgBase.b, barBgBase.a * barAlpha)
@@ -208,14 +303,14 @@ ShellRoot {
 		barFloating = f
 		saveBar()
 	}
-	onBarStyleChanged: if (["default", "i3", "enjoy"].indexOf(barStyle) < 0) barStyle = "default"
+	onBarStyleChanged: if (["default", "i3"].indexOf(barStyle) < 0) barStyle = "default"
 	function setBarStyle(s) {
-		if (["default", "i3", "enjoy"].indexOf(s) < 0) return
+		if (["default", "i3"].indexOf(s) < 0) return
 		barStyle = s
 		saveBar()
 	}
 	function cycleBarStyle() {
-		var order = ["default", "i3", "enjoy"]
+		var order = ["default", "i3"]
 		setBarStyle(order[(order.indexOf(barStyle) + 1) % order.length])
 	}
 
@@ -256,6 +351,8 @@ ShellRoot {
 	property real pomoEndsAt: 0
 	property bool pomoBlast: false
 	property bool overviewVisible: false
+	property bool diskPanelVisible: false
+	property bool memPanelVisible: false
 	readonly property string themeScript: homePath + "/.config/scripts/theme.sh"
 
 	// ── v4: overview previews, equalizer, screen time ──
@@ -431,7 +528,7 @@ ShellRoot {
 		wifiVisible = false; btVisible = false; calendarVisible = false
 		notifCenterVisible = false; clockPanelVisible = false; clipboardVisible = false
 		recordMenuVisible = false; pomoVisible = false; overviewVisible = false
-		eqVisible = false; screenTimeVisible = false; jarvisVisible = false; jarvisTimelineVisible = false; barMenuVisible = false
+		eqVisible = false; screenTimeVisible = false; jarvisVisible = false; jarvisTimelineVisible = false; barMenuVisible = false; diskPanelVisible = false; memPanelVisible = false
 	}
 	function toggleCalendar() {
 		calendarVisible = !calendarVisible
@@ -441,6 +538,8 @@ ShellRoot {
 		}
 	}
 	function toggleNotifCenter() { notifCenterVisible = !notifCenterVisible }
+	function toggleDiskPanel() { diskPanelVisible = !diskPanelVisible }
+	function toggleMemPanel()  { memPanelVisible = !memPanelVisible }
 	function toggleClockPanel()  { clockPanelVisible  = !clockPanelVisible  }
 	function toggleClipboard()   { clipboardVisible   = !clipboardVisible   }
 
@@ -528,10 +627,39 @@ ShellRoot {
 
 	// ── Equalizer ──
 	function eqArgs() { return eqGains.map(function(g) { return "" + g }) }
+	// only one popup at a time: opening any panel closes the others
+	readonly property var popupFlags: ["dashboardVisible", "musicVisible", "launcherVisible", "wifiVisible", "btVisible", "calendarVisible", "notifCenterVisible", "clipboardVisible", "clockPanelVisible", "recordMenuVisible", "pomoVisible", "eqVisible", "screenTimeVisible", "jarvisVisible", "jarvisTimelineVisible", "barMenuVisible", "notesVisible", "overviewVisible", "diskPanelVisible", "memPanelVisible"]
+	function _onlyOne(flag) {
+		if (!root[flag]) return
+		for (var i = 0; i < popupFlags.length; i++)
+			if (popupFlags[i] !== flag && root[popupFlags[i]]) root[popupFlags[i]] = false
+	}
+	Connections {
+		target: root
+		function onDashboardVisibleChanged() { root._onlyOne("dashboardVisible") }
+		function onMusicVisibleChanged() { root._onlyOne("musicVisible") }
+		function onLauncherVisibleChanged() { root._onlyOne("launcherVisible") }
+		function onWifiVisibleChanged() { root._onlyOne("wifiVisible") }
+		function onBtVisibleChanged() { root._onlyOne("btVisible") }
+		function onCalendarVisibleChanged() { root._onlyOne("calendarVisible") }
+		function onNotifCenterVisibleChanged() { root._onlyOne("notifCenterVisible") }
+		function onClipboardVisibleChanged() { root._onlyOne("clipboardVisible") }
+		function onClockPanelVisibleChanged() { root._onlyOne("clockPanelVisible") }
+		function onRecordMenuVisibleChanged() { root._onlyOne("recordMenuVisible") }
+		function onPomoVisibleChanged() { root._onlyOne("pomoVisible") }
+		function onEqVisibleChanged() { root._onlyOne("eqVisible") }
+		function onScreenTimeVisibleChanged() { root._onlyOne("screenTimeVisible") }
+		function onJarvisVisibleChanged() { root._onlyOne("jarvisVisible") }
+		function onJarvisTimelineVisibleChanged() { root._onlyOne("jarvisTimelineVisible") }
+		function onBarMenuVisibleChanged() { root._onlyOne("barMenuVisible") }
+		function onNotesVisibleChanged() { root._onlyOne("notesVisible") }
+		function onOverviewVisibleChanged() { root._onlyOne("overviewVisible") }
+	}
+
 	function closeSidePanels() {
 		dashboardVisible = false; wifiVisible = false; btVisible = false; recordMenuVisible = false
 		pomoVisible = false; clipboardVisible = false; notifCenterVisible = false
-		eqVisible = false; screenTimeVisible = false; jarvisVisible = false; jarvisTimelineVisible = false; barMenuVisible = false
+		eqVisible = false; screenTimeVisible = false; jarvisVisible = false; jarvisTimelineVisible = false; barMenuVisible = false; diskPanelVisible = false; memPanelVisible = false
 	}
 	function toggleEq() {
 		var open = !eqVisible
@@ -647,7 +775,6 @@ ShellRoot {
 	function stSave() {
 		if (!stLoaded) return
 		var keys = Object.keys(stData).sort()
-		while (keys.length > 35) delete stData[keys.shift()]
 		stFile.setText(JSON.stringify(stData))
 	}
 
@@ -855,6 +982,21 @@ ShellRoot {
 			clipboardVisible = false; notifCenterVisible = false
 		}
 	}
+	// bar scroll: next/previous existing workspace, no wrap-around, one step per gesture
+	property real _wsScrollAt: 0
+	function wsScroll(dir) {
+		if (Date.now() - _wsScrollAt < 200) return
+		_wsScrollAt = Date.now()
+		var cur = Hyprland.focusedWorkspace ? Hyprland.focusedWorkspace.id : 1
+		var ids = Hyprland.workspaces.values.map(function(w) { return w.id })
+			.filter(function(i) { return i > 0 }).sort(function(a, b) { return a - b })
+		var t = -1
+		for (var i = 0; i < ids.length; i++) {
+			if (dir > 0 && ids[i] > cur) { t = ids[i]; break }
+			if (dir < 0 && ids[i] < cur) t = ids[i]
+		}
+		if (t > 0) Quickshell.execDetached(["hyprctl", "dispatch", "hl.dsp.focus({ workspace = " + t + " })"])
+	}
 	function focusWorkspace(n) {
 		overviewVisible = false
 		Quickshell.execDetached(["hyprctl", "dispatch", "hl.dsp.focus({ workspace = " + n + " })"])
@@ -888,6 +1030,23 @@ ShellRoot {
 	function pomoReset() {
 		pomoRunning = false
 		pomoRemaining = pomoTotal
+		root.pomoPush("/api/pomodoro", { active: false, phase: pomoPhase, remaining: pomoRemaining, session: 0, sessions: pomoLongEvery })
+	}
+	function pomoPush(path, obj) {
+		if (!root.jarvisEnabled) return
+		Quickshell.execDetached(["bash", "-c",
+			"set -a; . ~/.config/jarvis/client.env 2>/dev/null; set +a; curl -s -m 3 -X POST \"$JARVIS_URL" + path + "\" -H \"Authorization: Bearer $JARVIS_TOKEN\" -H \"Content-Type: application/json\" -d '" + JSON.stringify(obj) + "' >/dev/null 2>&1 || true"])
+	}
+	Timer {
+		id: pomoPushTimer
+		interval: 5000
+		running: root.jarvisEnabled && root.pomoActive
+		repeat: true
+		triggeredOnStart: true
+		onTriggered: {
+			var rem = root.pomoRunning ? Math.max(0, Math.ceil((root.pomoEndsAt - Date.now()) / 1000)) : root.pomoRemaining
+			root.pomoPush("/api/pomodoro", { active: root.pomoRunning, phase: root.pomoPhase, remaining: rem, session: (root.pomoSessions % root.pomoLongEvery) + 1, sessions: root.pomoLongEvery })
+		}
 	}
 	function pomoSkip() { pomoAdvance(false) }
 	function pomoAdvance(natural) {
@@ -901,6 +1060,8 @@ ShellRoot {
 		pomoRemaining = pomoTotal
 		if (pomoRunning) pomoEndsAt = Date.now() + pomoRemaining * 1000
 		if (!natural) return
+		if (finished === "focus")
+			root.pomoPush("/api/pomodoro/complete", { duration_sec: pomoWorkMin * 60, phase: "focus" })
 		if (finished === "focus")
 			Quickshell.execDetached(["notify-send", "-a", "Pomodoro",
 				pomoPhase === "long" ? "Long break" : "Break time",
@@ -1017,7 +1178,7 @@ ShellRoot {
 		root.currentWallpaper = wallpaper.path
 		root.walApplying = true
 		applyWallProc.command = ["bash", "-c",   // secfix: path passed as $1
-			'ln -sf -- "$1" "$2/current" && awww img "$1" --transition-type any --transition-duration 2',
+			'pkill "^.?mpvpaper" 2>/dev/null; ln -sf -- "$1" "$2/current" && awww img "$1" --transition-type any --transition-duration 2',
 			"_", wallpaper.path, root.wallpaperPath]
 		applyWallProc.running = true
 	}
@@ -1028,7 +1189,8 @@ ShellRoot {
 	}
 
 	// ── Component init ────────────────────────────────────────────────────
-	Component.onCompleted: {
+	Component.onCompleted: { // noxp fallback
+		if (root.barStyle === "xp" || root.barStyle === "enjoy") root.barStyle = "default"
 		initStateDir.running = true
 		if (Hyprland.focusedMonitor) {
 			for (var i = 0; i < Quickshell.screens.length; i++) {
@@ -1419,7 +1581,7 @@ ShellRoot {
 				if (p.indexOf("float") >= 0) root.barFloating = true
 				if (["top", "bottom"].indexOf(p[0]) >= 0) root.barPosition = p[0]
 				else if (p[0] === "left" || p[0] === "right") root.barPosition = "bottom"
-				if (["default", "i3", "enjoy"].indexOf(p[2]) >= 0) root.barStyle = p[2]
+				if (["default", "i3"].indexOf(p[2]) >= 0) root.barStyle = p[2]
 				if (["opaque", "transparent", "blur"].indexOf(p[3]) >= 0) root.barOpacity = p[3]
 				if (["shown", "auto", "hidden"].indexOf(p[1]) >= 0) root.barMode = p[1]
 			}
@@ -1437,6 +1599,47 @@ ShellRoot {
 			else root.pomoRemaining = r
 		}
 	}
+
+	// ── pomodoro survives reloads (state/pomodoro-run) ──────────────────
+	property bool pomoRestored: false
+	function pomoDayKey() { var d = new Date(); return d.getFullYear() + "-" + (d.getMonth() + 1) + "-" + d.getDate() }
+	function pomoPersist() {
+		if (!pomoRestored) return
+		saveState("pomodoro-run", JSON.stringify({ phase: pomoPhase, running: pomoRunning, endsAt: pomoEndsAt,
+			remaining: pomoRemaining, sessions: pomoSessions, day: pomoDayKey() }))
+	}
+	function pomoRestore(text) {
+		try {
+			var o = JSON.parse(("" + text).trim())
+			if (["focus", "break", "long"].indexOf(o.phase) >= 0) pomoPhase = o.phase
+			pomoSessions = o.day === pomoDayKey() ? (o.sessions | 0) : 0
+			pomoRemaining = pomoTotal
+			if (o.running && o.endsAt > Date.now() - 10 * 60000) {   // stale (>10 min past) → start fresh
+				pomoEndsAt = o.endsAt
+				pomoRemaining = Math.max(0, Math.ceil((o.endsAt - Date.now()) / 1000))
+				pomoRunning = true          // the tick timer finishes the phase if it already ran out
+			} else if (o.remaining > 0 && o.remaining <= pomoTotal) {
+				pomoRemaining = o.remaining // paused mid-phase
+			}
+		} catch (e) {}
+		pomoRestored = true
+	}
+	Process {
+		id: pomoRunLoadProc
+		command: ["cat", root.statePath + "/pomodoro-run"]
+		stdout: StdioCollector { onStreamFinished: root.pomoRestore(this.text) }
+		onExited: (code, status) => { if (code !== 0) root.pomoRestored = true }
+	}
+	Timer { id: pomoPersistTimer; interval: 400; onTriggered: root.pomoPersist() }
+	Connections {
+		target: root
+		function onPomoRunningChanged()  { pomoPersistTimer.restart() }
+		function onPomoPhaseChanged()    { pomoPersistTimer.restart() }
+		function onPomoSessionsChanged() { pomoPersistTimer.restart() }
+		function onPomoEndsAtChanged()   { pomoPersistTimer.restart() }
+		function onPomoRemainingChanged() { if (!root.pomoRunning) pomoPersistTimer.restart() }
+	}
+
 	Process {
 		id: loadPomoProc
 		command: ["bash", "-c", "cat '" + root.statePath + "/pomodoro' 2>/dev/null || echo '30 5 15 3'"]
@@ -1450,6 +1653,7 @@ ShellRoot {
 				// untouched old defaults (25/5/15, no 4th field) → the new 30-minute default
 				if (p.length < 4 && p[0] === 25 && p[1] === 5 && p[2] === 15) root.pomoWorkMin = 30
 				if (!root.pomoRunning) root.pomoRemaining = root.pomoTotal
+				if (!root.pomoRestored && !pomoRunLoadProc.running) pomoRunLoadProc.running = true
 			}
 		}
 	}
@@ -1467,7 +1671,7 @@ ShellRoot {
 	}
 	Process {
 		id: recPollProc
-		command: ["bash", "-c", "pgrep -x wf-recorder || pgrep -f 'gpu-screen-recorder(-wrapped)? -w'"]
+		command: ["bash", "-c", "pgrep -x wf-recorder >/dev/null || pgrep -af 'gpu-screen-recorder(-wrapped)? -w' | grep -v /Videos/focus/ | grep -q ."]
 		onExited: (code, status) => {
 			var on = code === 0
 			if (on && !root.recording) root.recStartedAt = Date.now()
@@ -1713,12 +1917,17 @@ ShellRoot {
 		onFileChanged: reload()
 		onLoaded: root.focusCamPreview = text().trim() === "on"
 	}
+	FileView {
+		path: root.statePath + "/focuscam-screen"
+		onLoaded: root.focusCamScreen = text().trim() === "on"
+	}
 	IpcHandler {
 		target: "focuscam"
 		function preview() { root.focusCamTogglePreview() }
 		function front()   { root.focusCamSetFacing("front") }
 		function back()    { root.focusCamSetFacing("back") }
 		function off()     { root.focusCamSetFacing("off") }
+		function screen()  { root.focusCamSetScreen(!root.focusCamScreen) }
 	}
 	PomoZen {}
 	BlastOverlay {}
@@ -1727,6 +1936,16 @@ ShellRoot {
 	ScreenTimePanel {}
 	Loader { active: root.jarvisEnabled; source: Qt.resolvedUrl("components/JarvisPanel.qml") }
 	Loader { active: root.jarvisEnabled; source: Qt.resolvedUrl("components/JarvisTimeline.qml") }
+	// DISK / MEM panels (bar blocks)
+	Connections {
+		target: root
+		function onDiskPanelVisibleChanged() { if (root.diskPanelVisible && typeof root._onlyOne === "function") root._onlyOne("diskPanelVisible") }
+		function onMemPanelVisibleChanged()  { if (root.memPanelVisible && typeof root._onlyOne === "function") root._onlyOne("memPanelVisible") }
+	}
+	IpcHandler { target: "disk"; function toggle() { root.toggleDiskPanel() } }
+	IpcHandler { target: "mem";  function toggle() { root.toggleMemPanel() } }
+	DiskPanel {}
+	MemPanel {}
 	BarMenu {}
 	BarReveal {}
 
@@ -1763,6 +1982,8 @@ ShellRoot {
 	IpcHandler { target: "clipboard"; function toggle() { root.toggleClipboard() } }
 	IpcHandler {
 		target: "pomozen"
+		function dnd()    { root.pomoZenSet("dnd", !root.pomoZenDnd) }
+		function bar()    { root.pomoZenSet("bar", !root.pomoZenHideBar) }
 		function on()     { root.pomoZenEnabled = true }
 		function off()    { root.pomoZenEnabled = false }
 		function toggle() { root.pomoZenEnabled = !root.pomoZenEnabled }

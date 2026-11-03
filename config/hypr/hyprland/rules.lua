@@ -72,7 +72,7 @@ hl.window_rule({ match = { class = "^(.*jetbrains.*)$", title = "^(splash)$" }, 
 -- Dim around dialogs
 hl.window_rule({ match = { class = "^(gcr-prompter)$" }, dim_around = true })
 hl.window_rule({ match = { class = "^(xdg-desktop-portal-gtk)$" }, dim_around = true })
-hl.window_rule({ match = { class = "^(polkit-gnome-authentication-agent-1)$" }, dim_around = true })
+hl.window_rule({ match = { class = "^(.*polkit.*)$" }, dim_around = true })
 hl.window_rule({ match = { class = "^(zen)$", title = "^(File Upload)$" }, dim_around = true })
 
 -- ── Layer Rules ───────────────────────────────────────────────
@@ -102,6 +102,8 @@ hl.layer_rule({
 	match = { namespace = "^(quickshell:notifications:overlay|quickshell:sidebar|quickshell:popup)$" },
 	no_anim = true,
 })
+hl.layer_rule({ match = { namespace = "^(quickshell)$" }, blur = true, ignore_alpha = 0.6 })
+
 -- Pomodoro bomb — float, pin, top-right corner, no chrome
 hl.window_rule({ match = { class = "^(pomodoro-bomb)$" }, float = true })
 hl.window_rule({ match = { class = "^(pomodoro-bomb)$" }, pin = true })
@@ -122,3 +124,9 @@ hl.window_rule({ match = { class = "^(pomodoro-bomb-blast)$" }, move = "0 0" })
 hl.window_rule({ match = { class = "^(pomodoro-bomb-blast)$" }, no_shadow = true })
 hl.window_rule({ match = { class = "^(pomodoro-bomb-blast)$" }, no_blur = true })
 hl.window_rule({ match = { class = "^(pomodoro-bomb-blast)$" }, border_size = 0 })
+
+-- keep pomodoro-bomb overlays crisp (no jelly / halo)
+hl.window_rule({ match = { class = "^(pomodoro-bomb)$" }, no_wobble = true })
+hl.window_rule({ match = { class = "^(pomodoro-bomb)$" }, no_glow = true })
+hl.window_rule({ match = { class = "^(pomodoro-bomb-blast)$" }, no_wobble = true })
+hl.window_rule({ match = { class = "^(pomodoro-bomb-blast)$" }, no_glow = true })

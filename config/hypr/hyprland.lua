@@ -8,3 +8,5 @@ require("hyprland/animations")
 require("hyprland/gestures")
 require("hyprland/keybinds")
 require("hyprland/rules")
+require("hyprland/extras")
+

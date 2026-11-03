@@ -17,9 +17,12 @@ PanelWindow {
 	}
 	margins {
 		bottom: root.btVisible ? root.barGapV : -350
-		right: (root.btVisible ? 6 : -350) + root.barInsetRight
+		right: (root.btVisible ? root.popRightAt(popC, implicitWidth, screen) : -350) + root.barInsetRight
 		top: root.btVisible ? root.barGapV : -350
 	}
+	// remember where it was opened from (i3 style), so it doesn't follow later clicks
+	property real popC: -1
+	Connections { target: root; function onBtVisibleChanged() { if (root.btVisible) popC = root.i3PopCenter } }
 	implicitHeight: 460
     	implicitWidth: 320
     	color: "transparent"
