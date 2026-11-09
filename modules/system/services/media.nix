@@ -24,13 +24,4 @@
   systemd.services.mpd.environment = {
     XDG_RUNTIME_DIR = "/run/user/1000";
   };
-  virtualisation.oci-containers.backend = "podman";
-
-  virtualisation.oci-containers.containers.honne = {
-    image = "ghcr.io/gmkonan/honne:latest"; # ← replace with the exact tag from compose.yaml
-    autoStart = true;
-    ports = ["7417:7417"];
-    volumes = ["honne-data:/data"]; # ← match compose.yaml's mount path
-    environmentFiles = ["/etc/honne.env"];
-  };
 }

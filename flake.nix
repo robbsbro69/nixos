@@ -20,7 +20,6 @@
       url = "github:Gerg-L/spicetify-nix";
       inputs.nixpkgs.follows = "nixpkgs";
     };
-    kopuz.url = "github:temidaradev/kopuz";
     reel = {
       url = "git+file:///home/alpha/projects/reel";
       inputs.nixpkgs.follows = "nixpkgs";
@@ -44,7 +43,6 @@
     zen-browser,
     quickshell,
     spicetify-nix,
-    kopuz,
     reel,
     hyprland,
     nix-index-database,
@@ -61,7 +59,7 @@
     nixosConfigurations.nixos = nixpkgs.lib.nixosSystem {
       inherit system;
       specialArgs = {
-        inherit pkgs-unstable kopuz hyprland reel;
+        inherit pkgs-unstable hyprland reel;
       };
       modules = [
         ./configuration.nix

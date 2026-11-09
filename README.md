@@ -51,8 +51,8 @@ https://github.com/user-attachments/assets/370773de-65d8-40f3-ad4d-80987ba59b45
 | Editors       | Neovim (minimal, built-in `vim.pack`), VS Code, Arduino IDE, PlatformIO |
 | Files         | Thunar + Yazi                                                           |
 | Browsers      | Zen (default, flake) + Brave                                            |
-| Music / video | MPD + rmpc, Spotify (Spicetify), Kopuz, mpv (MPRIS)                     |
-| Media server  | Jellyfin, Transmission, Honne (Podman)                                  |
+| Music / video | MPD + rmpc, Spotify (Spicetify), mpv (MPRIS)                     |
+| Media server  | Jellyfin, Transmission                                  |
 | Notifications | own Python D-Bus daemon → Quickshell                                    |
 | Audio         | PipeWire + WirePlumber                                                  |
 | DNS           | systemd-resolved, DNS-over-TLS, DNSSEC                                  |
@@ -72,7 +72,6 @@ https://github.com/user-attachments/assets/370773de-65d8-40f3-ad4d-80987ba59b45
 | `zen-browser`      | `github:0xc000022070/zen-browser-flake`             |
 | `quickshell`       | `git+https://git.outfoxxed.me/outfoxxed/quickshell` |
 | `spicetify-nix`    | `github:Gerg-L/spicetify-nix`                       |
-| `kopuz`            | `github:temidaradev/kopuz` (+ `kopuz.cachix.org`)   |
 
 ---
 
@@ -91,7 +90,7 @@ nixos-dotfiles/
 │   │   ├── hardware/            nvidia PRIME, bluetooth, /mnt/ssd, i2c
 │   │   ├── display/             hyprland, portals, xserver, appimage, nix-ld, VirtualBox, Podman
 │   │   ├── networking/          NetworkManager, firewall, resolved + DoT
-│   │   ├── services/            pipewire, sddm, jellyfin, mpd, honne, transmission, nfs, tailscale, udev
+│   │   ├── services/            pipewire, sddm, jellyfin, mpd, transmission, nfs, tailscale, udev
 │   │   └── fonts.nix  nix.nix  packages.nix  security.nix  users.nix
 │   └── home/
 │       ├── browsers/            zen, brave, mime defaults
@@ -297,11 +296,10 @@ The older plugin-heavy lazy.nvim setup is still kept in `config/nvim-fancy/`, bu
 | Jellyfin      | `services/jellyfin.nix`   | runs as `alpha`, waits for `/mnt/ssd`, library scan every 15 min (`/etc/jellyfin-api-key`) |
 | Transmission  | `services/transmission.nix` | web UI on `:9091` |
 | MPD           | `services/media.nix`      | PipeWire output + `/tmp/mpd.fifo` for visualizers            |
-| Honne         | `services/media.nix`      | Podman container on `:7417`, env in `/etc/honne.env`         |
 | Tailscale     | `services/tailscale.nix`  | MagicDNS (`100.100.100.100`)                                 |
 | VirtualBox / Podman / nix-ld | `display/hyprland.nix` | extension pack, `dockerCompat`, CUDA libs for foreign binaries |
 | gpu-screen-recorder | `display/hyprland.nix` | `programs.gpu-screen-recorder` (capture permission) for the recorder |
-| Nix           | `nix.nix`                 | weekly GC (> 7 days), auto-optimise, Hyprland / nix-community / kopuz caches |
+| Nix           | `nix.nix`                 | weekly GC (> 7 days), auto-optimise, Hyprland / nix-community caches |
 
 ---
 

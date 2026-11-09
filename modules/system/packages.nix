@@ -1,6 +1,5 @@
 {
   pkgs,
-  kopuz,
   reel,
   ...
 }: {
@@ -68,7 +67,6 @@
         requests
       ]))
 
-    kopuz.packages.${pkgs.stdenv.hostPlatform.system}.default
     reel.packages.${pkgs.stdenv.hostPlatform.system}.default
   ];
 
