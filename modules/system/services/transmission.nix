@@ -1,4 +1,4 @@
-{pkgs, ...}: {
+{pkgs, lib, ...}: {
   services.transmission = {
     enable = true;
     package = pkgs.transmission_4;
@@ -8,7 +8,7 @@
     settings = {
       download-dir = "/mnt/ssd/Downloads/complete";
       incomplete-dir = "/mnt/ssd/Downloads/incomplete";
-      incomplete-dir-enabled = true;
+      incomplete-dir-enabled = false;
       rpc-bind-address = "0.0.0.0";
       rpc-whitelist-enabled = true;
       rpc-whitelist = "127.0.0.1,192.168.*.*";
@@ -32,5 +32,5 @@
   # don't start before the SSD is mounted
   systemd.services.transmission.unitConfig.RequiresMountsFor = ["/mnt/ssd"];
   systemd.services.transmission.serviceConfig.Restart = "on-failure";
-  systemd.services.transmission.serviceConfig.ReadWritePaths = ["/home/alpha/Videos/Downloads"];
+  systemd.services.transmission.serviceConfig.BindPaths = ["/home/alpha/Videos/Downloads"];
 }

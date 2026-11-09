@@ -118,7 +118,7 @@ ShellRoot {
 	readonly property bool anyPanelOpen: dashboardVisible || musicVisible || launcherVisible || wifiVisible || btVisible
 		|| calendarVisible || notifCenterVisible || clipboardVisible || clockPanelVisible
 		|| recordMenuVisible || pomoVisible || eqVisible || screenTimeVisible
-		|| jarvisVisible || jarvisTimelineVisible || barMenuVisible || diskPanelVisible || memPanelVisible
+		|| jarvisVisible || jarvisTimelineVisible || barMenuVisible || diskPanelVisible || memPanelVisible || netPanelVisible
 	// pomo-zen: a running focus session hides the bar (edge-peek still works)
 	property bool pomoZenEnabled: true
 	readonly property bool pomoZen: pomoZenEnabled && pomoRunning && pomoPhase === "focus"
@@ -353,6 +353,8 @@ ShellRoot {
 	property bool overviewVisible: false
 	property bool diskPanelVisible: false
 	property bool memPanelVisible: false
+	property bool netPanelVisible: false
+	property var netLive: ({})          // /run/netmon/live.json (netmon service): live + today per app / site
 	readonly property string themeScript: homePath + "/.config/scripts/theme.sh"
 
 	// ── v4: overview previews, equalizer, screen time ──
@@ -484,6 +486,7 @@ ShellRoot {
 	property int wallSelectedIndex: 0
 	property string currentWallpaper: ""
 	property bool wallsLoaded: false
+	property bool wallCarouselVisible: false
 	property bool thumbsReady: false
 	property bool walApplying: false
 	property var wallpaperHashes: ({})
@@ -528,7 +531,7 @@ ShellRoot {
 		wifiVisible = false; btVisible = false; calendarVisible = false
 		notifCenterVisible = false; clockPanelVisible = false; clipboardVisible = false
 		recordMenuVisible = false; pomoVisible = false; overviewVisible = false
-		eqVisible = false; screenTimeVisible = false; jarvisVisible = false; jarvisTimelineVisible = false; barMenuVisible = false; diskPanelVisible = false; memPanelVisible = false
+		eqVisible = false; screenTimeVisible = false; jarvisVisible = false; jarvisTimelineVisible = false; barMenuVisible = false; diskPanelVisible = false; memPanelVisible = false; netPanelVisible = false
 	}
 	function toggleCalendar() {
 		calendarVisible = !calendarVisible
@@ -540,6 +543,20 @@ ShellRoot {
 	function toggleNotifCenter() { notifCenterVisible = !notifCenterVisible }
 	function toggleDiskPanel() { diskPanelVisible = !diskPanelVisible }
 	function toggleMemPanel()  { memPanelVisible = !memPanelVisible }
+	function toggleNetPanel()  { netPanelVisible = !netPanelVisible }
+	function fmtRate(b) {   // bytes/s → "1.2M" / "340K" / "0"
+		b = b || 0
+		if (b >= 1048576) return (b / 1048576).toFixed(b >= 10485760 ? 0 : 1) + "M"
+		if (b >= 1024) return Math.round(b / 1024) + "K"
+		return b > 0 ? Math.round(b) + "B" : "0"
+	}
+	function fmtBytes(b) {  // bytes → "1.4 GB" / "230 MB"
+		b = b || 0
+		if (b >= 1073741824) return (b / 1073741824).toFixed(2) + " GB"
+		if (b >= 1048576) return (b / 1048576).toFixed(b >= 104857600 ? 0 : 1) + " MB"
+		if (b >= 1024) return Math.round(b / 1024) + " KB"
+		return Math.round(b) + " B"
+	}
 	function toggleClockPanel()  { clockPanelVisible  = !clockPanelVisible  }
 	function toggleClipboard()   { clipboardVisible   = !clipboardVisible   }
 
@@ -628,7 +645,7 @@ ShellRoot {
 	// ── Equalizer ──
 	function eqArgs() { return eqGains.map(function(g) { return "" + g }) }
 	// only one popup at a time: opening any panel closes the others
-	readonly property var popupFlags: ["dashboardVisible", "musicVisible", "launcherVisible", "wifiVisible", "btVisible", "calendarVisible", "notifCenterVisible", "clipboardVisible", "clockPanelVisible", "recordMenuVisible", "pomoVisible", "eqVisible", "screenTimeVisible", "jarvisVisible", "jarvisTimelineVisible", "barMenuVisible", "notesVisible", "overviewVisible", "diskPanelVisible", "memPanelVisible"]
+	readonly property var popupFlags: ["dashboardVisible", "musicVisible", "launcherVisible", "wifiVisible", "btVisible", "calendarVisible", "notifCenterVisible", "clipboardVisible", "clockPanelVisible", "recordMenuVisible", "pomoVisible", "eqVisible", "screenTimeVisible", "jarvisVisible", "jarvisTimelineVisible", "barMenuVisible", "notesVisible", "overviewVisible", "diskPanelVisible", "memPanelVisible", "netPanelVisible"]
 	function _onlyOne(flag) {
 		if (!root[flag]) return
 		for (var i = 0; i < popupFlags.length; i++)
@@ -659,7 +676,7 @@ ShellRoot {
 	function closeSidePanels() {
 		dashboardVisible = false; wifiVisible = false; btVisible = false; recordMenuVisible = false
 		pomoVisible = false; clipboardVisible = false; notifCenterVisible = false
-		eqVisible = false; screenTimeVisible = false; jarvisVisible = false; jarvisTimelineVisible = false; barMenuVisible = false; diskPanelVisible = false; memPanelVisible = false
+		eqVisible = false; screenTimeVisible = false; jarvisVisible = false; jarvisTimelineVisible = false; barMenuVisible = false; diskPanelVisible = false; memPanelVisible = false; netPanelVisible = false
 	}
 	function toggleEq() {
 		var open = !eqVisible
@@ -1184,8 +1201,9 @@ ShellRoot {
 	}
 
 	function loadWallpapers() {
-		root.wallpaperList = []; root.wallsLoaded = false; root.thumbsReady = false
-		if (!wallpaperListProc.running) wallpaperListProc.running = true
+		if (wallpaperListProc.running) return
+		wallpaperListProc.acc = []; root.wallsLoaded = false; root.thumbsReady = false
+		wallpaperListProc.running = true
 	}
 
 	// ── Component init ────────────────────────────────────────────────────
@@ -1290,6 +1308,7 @@ ShellRoot {
 	}
 	Process {
 		id: wallpaperListProc
+		property var acc: []
 		command: ["bash", "-c",
 			"find '" + root.wallpaperPath + "' -maxdepth 1 -type f " +
 			"\\( -iname '*.jpg' -o -iname '*.jpeg' -o -iname '*.gif' -o -iname '*.png' -o -iname '*.webp' \\) " +
@@ -1299,12 +1318,11 @@ ShellRoot {
 				var path = data.trim()
 				if (path.length === 0) return
 				var parts = path.split("/"); var name = parts[parts.length - 1]
-				var current = root.wallpaperList.slice()
-				current.push({ name: name, path: path })
-				root.wallpaperList = current
+				wallpaperListProc.acc.push({ name: name, path: path })
 			}
 		}
 		onExited: {
+			root.wallpaperList = wallpaperListProc.acc
 			root.wallsLoaded = true
 			if (!thumbGenProc.running) thumbGenProc.running = true
 		}
@@ -1883,6 +1901,7 @@ ShellRoot {
 	WifiPanel {}
 	BluetoothPanel {}
 	LauncherPanel {}
+	WallCarousel {}
 	CalendarPanel {}
 	NotificationPopup {}
 	NotifCenter {}
@@ -1941,7 +1960,23 @@ ShellRoot {
 		target: root
 		function onDiskPanelVisibleChanged() { if (root.diskPanelVisible && typeof root._onlyOne === "function") root._onlyOne("diskPanelVisible") }
 		function onMemPanelVisibleChanged()  { if (root.memPanelVisible && typeof root._onlyOne === "function") root._onlyOne("memPanelVisible") }
+		function onNetPanelVisibleChanged()  { if (root.netPanelVisible && typeof root._onlyOne === "function") root._onlyOne("netPanelVisible") }
 	}
+	// NET: live network usage (netmon service) — read every second while the panel is open, every 2 s otherwise
+	Process {
+		id: netProc
+		command: ["cat", "/run/netmon/live.json"]
+		stdout: StdioCollector {
+			onStreamFinished: { try { root.netLive = JSON.parse(this.text) } catch (e) {} }
+		}
+	}
+	Timer {
+		interval: root.netPanelVisible ? 1000 : 2000
+		running: true; repeat: true; triggeredOnStart: true
+		onTriggered: if (!netProc.running) netProc.running = true
+	}
+	IpcHandler { target: "net"; function toggle() { root.toggleNetPanel() } }
+	NetPanel {}
 	IpcHandler { target: "disk"; function toggle() { root.toggleDiskPanel() } }
 	IpcHandler { target: "mem";  function toggle() { root.toggleMemPanel() } }
 	DiskPanel {}
@@ -1960,14 +1995,20 @@ ShellRoot {
 	IpcHandler { target: "music";      function toggle() { root.toggleMusic() } }
 	IpcHandler {
 		target: "wallpaper"
+		// Super+W → skewed carousel (re-reads ~/wallpapers every time it opens)
 		function toggle() {
+			if (!root.wallCarouselVisible) { root.closeAllPanels(); root.loadWallpapers() }
+			root.wallCarouselVisible = !root.wallCarouselVisible
+		}
+		// old grid picker in the launcher:  qs ipc call wallpaper grid
+		function grid() {
+			root.loadWallpapers()
 			if (!root.launcherVisible) {
 				root.activeTab = 1; root.toggleLauncher()
 			} else if (root.activeTab === 1) {
 				root.toggleLauncher()
 			} else {
 				root.activeTab = 1
-				if (!root.wallsLoaded) root.loadWallpapers()
 			}
 		}
 	}

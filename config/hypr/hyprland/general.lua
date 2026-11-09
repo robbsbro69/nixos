@@ -19,8 +19,8 @@ hl.config({
 
 hl.config({
 	general = {
-		gaps_in = 4,
-		gaps_out = 8,
+		gaps_in = 1,
+		gaps_out = 2,
 		border_size = 1,
 		["col.active_border"] = "rgba(ffffffaa)",
 		["col.inactive_border"] = "rgba(ffffffaa)", -- was rgba(666666aa)
@@ -50,7 +50,7 @@ hl.config({
 
 hl.config({
 	decoration = {
-		rounding = 10,
+		rounding = 2,
 		rounding_power = 2,
 		active_opacity = 1.0,
 		inactive_opacity = 1.0, -- was 0.93

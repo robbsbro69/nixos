@@ -6,5 +6,5 @@ else
     	REGION=$(slurp)
     	[ -z "$REGION" ] && exit 0  # cancelled selection
     	notify-send "Recording Started (Region)"
-    	wf-recorder -g "$REGION" -f ~/Videos/screen-recordings/$(date +%Y-%m-%d_%H-%M-%S).mp4
+    	wf-recorder -C aac -g "$REGION" -f ~/Videos/screen-recordings/$(date +%Y-%m-%d_%H-%M-%S).mp4
 fi

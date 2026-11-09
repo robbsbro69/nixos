@@ -36,3 +36,5 @@ config/quickshell/subs-lang
 flake.lock.bak-*
 config/**/*.bak-*
 *.bak-*
+*.bak-*
+*.bak

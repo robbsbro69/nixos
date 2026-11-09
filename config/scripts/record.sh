@@ -69,12 +69,12 @@ start() {
 			desktop) aud=(-a default_output) ;;
 			both) aud=(-a "default_output|default_input") ;;
 		esac
-		setsid -f gpu-screen-recorder -w "$target" "${extra[@]}" -f 60 "${aud[@]}" -c mkv -o "$base.mkv" >>"$LOG" 2>&1
+		setsid -f gpu-screen-recorder -w "$target" "${extra[@]}" -f 60 -k h264 -ac aac "${aud[@]}" -c mkv -o "$base.mkv" >>"$LOG" 2>&1
 	else
 		echo "=== $(date) — wf-recorder $*" >>"$LOG"
 		local aud=()
 		[ "$AUDIO" != none ] && aud=("--audio=$(pactl get-default-sink 2>/dev/null).monitor")
-		setsid -f wf-recorder "$@" "${aud[@]}" -r 30 -c libx264 -p preset=ultrafast -p crf=23 -x yuv420p \
+		setsid -f wf-recorder -C aac "$@" "${aud[@]}" -r 30 -c libx264 -p preset=ultrafast -p crf=23 -x yuv420p \
 			-f "$base.mkv" >>"$LOG" 2>&1
 	fi
 	sleep 1.5

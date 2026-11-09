@@ -157,3 +157,4 @@ hl.bind(mod .. " + mouse:273", hl.dsp.window.resize(), { mouse = true, descripti
 hl.bind(mod .. " + SHIFT + N", exec("qs ipc call notes toggle"), { description = "Toggle sticky notes" })
 hl.bind(mod .. " + SHIFT + R", exec("qs ipc call record menu"), { description = "Screen recorder menu" })
 hl.bind(mod .. " + TAB", exec("qs ipc call overview toggle"), { description = "Workspace overview" })
+hl.bind(mod .. " + I", exec("qs ipc call net toggle"), { description = "Network usage panel" })

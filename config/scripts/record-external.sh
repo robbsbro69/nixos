@@ -4,5 +4,5 @@ if pgrep -x wf-recorder > /dev/null; then
     	notify-send "Recording Stopped"
 else
     	notify-send "Recording Started (External)"
-    	wf-recorder -o HDMI-A-1 -f ~/Videos/screen-recordings/$(date +%Y-%m-%d_%H-%M-%S).mp4
+    	wf-recorder -C aac -o HDMI-A-1 -f ~/Videos/screen-recordings/$(date +%Y-%m-%d_%H-%M-%S).mp4
 fi

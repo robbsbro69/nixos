@@ -10,3 +10,4 @@ require("hyprland/keybinds")
 require("hyprland/rules")
 require("hyprland/extras")
 
+require("hyprland/peak")

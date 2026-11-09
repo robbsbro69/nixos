@@ -687,7 +687,7 @@ Item {
 			}
 		}
 
-		// ── workspaces (only ones that exist, like i3) ──
+		// ── workspaces: always 1-10 (+ any higher ones that exist); empty ones dimmed ──
 		Row {
 			id: i3Left
 			x: 0
@@ -711,18 +711,23 @@ Item {
 			spacing: 1
 			Repeater {
 				model: {
-					var a = []
+					var byId = {}
 					var v = Hyprland.workspaces.values
-					for (var i = 0; i < v.length; i++) if (v[i].id > 0) a.push(v[i])
+					for (var i = 0; i < v.length; i++) if (v[i].id > 0) byId[v[i].id] = v[i]
+					var a = []
+					for (var n = 1; n <= 10; n++) a.push({ id: n, ws: byId[n] || null })
+					for (var k in byId) if (byId[k].id > 10) a.push({ id: byId[k].id, ws: byId[k] })
 					a.sort(function(x, y) { return x.id - y.id })
 					return a
 				}
 				delegate: Rectangle {
 					id: i3wsBtn
 					required property var modelData
+					readonly property var ws: modelData.ws
 					readonly property bool focusedWs: Hyprland.focusedWorkspace ? Hyprland.focusedWorkspace.id === modelData.id : false
-					readonly property bool urgentWs: modelData.urgent === true
-					readonly property bool activeWs: modelData.active === true
+					readonly property bool urgentWs: ws ? ws.urgent === true : false
+					readonly property bool activeWs: ws ? ws.active === true : false
+					readonly property bool emptyWs: !bar.wsHasApps(modelData.id) && !focusedWs
 					height: i3Layout.height - 2
 					width: Math.max(height, (bar.wsHasApps(i3wsBtn.modelData.id) ? bar.wsIconsW(i3wsBtn.modelData.id, 3, 14) : i3wsLabel.implicitWidth) + 10)
 					color: urgentWs ? "#900000" : focusedWs ? "#285577" : activeWs ? "#5f676a" : "#222222"
@@ -733,7 +738,7 @@ Item {
 						id: i3wsLabel
 						anchors.centerIn: parent
 						text: bar.wsIcon(i3wsBtn.modelData.id)
-						color: i3wsBtn.focusedWs || i3wsBtn.urgentWs || i3wsBtn.activeWs ? "#ffffff" : "#888888"
+						color: i3wsBtn.focusedWs || i3wsBtn.urgentWs || i3wsBtn.activeWs ? "#ffffff" : i3wsBtn.emptyWs ? "#555555" : "#888888"
 						font.family: "JetBrainsMono Nerd Font"
 						font.pixelSize: i3Layout.fs
 					}
@@ -842,6 +847,10 @@ Item {
 				label: root.ethConnected ? "E: on" : "E: off"
 				tint: root.ethConnected ? i3Layout.good : i3Layout.bad
 				onLeftClick: root.toggleWifi()
+			}
+			I3Block {   // live internet speed (netmon) — click for per-app / per-site usage
+				onLeftClick: root.toggleNetPanel()
+				label: "NET ↓" + root.fmtRate((root.netLive || {}).down) + " ↑" + root.fmtRate((root.netLive || {}).up)
 			}
 			I3Block { onLeftClick: root.toggleDiskPanel(); label: "DISK " + i3Layout.disk }   // all drives together
 			I3Block {
@@ -2307,8 +2316,8 @@ Notch {
                     			cursorShape: Qt.PointingHandCursor
                     			acceptedButtons: Qt.LeftButton | Qt.RightButton
 					onClicked: function(mouse) {
-						if (mouse.button === Qt.RightButton) root.toggleEq()
-						else if (!volumeToggleProc.running) volumeToggleProc.running = true
+						if (mouse.button === Qt.RightButton) { if (!volumeToggleProc.running) volumeToggleProc.running = true }
+						else root.toggleEq()
 					}
 					onWheel: function(wheel) {
 						var delta = wheel.angleDelta.y > 0 ? 5 : -5
@@ -2378,6 +2387,14 @@ Notch {
 								} 
 							}
 						}
+						Text {   // live download speed (netmon); middle-click the notch for the NET panel
+							anchors.verticalCenter: parent.verticalCenter
+							visible: (root.netLive || {}).ts !== undefined
+							text: "↓" + root.fmtRate((root.netLive || {}).down)
+							color: root.walColor8
+							font.pixelSize: 10
+							font.family: "JetBrainsMono Nerd Font"
+						}
 						Text {
 							anchors.verticalCenter: parent.verticalCenter
 							text: bar.btConnected ? "󰂱" : "󰂲"
@@ -2398,10 +2415,12 @@ Notch {
 					anchors.fill: parent
 					hoverEnabled: true
 					cursorShape: Qt.PointingHandCursor
-					acceptedButtons: Qt.LeftButton | Qt.RightButton
+					acceptedButtons: Qt.LeftButton | Qt.RightButton | Qt.MiddleButton
 					onClicked: function(mouse) {
 						if (mouse.button === Qt.RightButton)
 						root.toggleBluetooth()
+						else if (mouse.button === Qt.MiddleButton)
+						root.toggleNetPanel()
 						else
 						root.toggleWifi()
 					}

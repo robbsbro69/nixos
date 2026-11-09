@@ -40,7 +40,8 @@ in {
   wayland.windowManager.hyprland = {
     enable = true;
     systemd.enable = false;
-    package = hyprland.packages.${pkgs.stdenv.hostPlatform.system}.hyprland;
+    package = null;        # system programs.hyprland provides it
+    portalPackage = null;  # system provides the matching 1.5.0 portal
   };
   home.packages = with pkgs; [
     hyprlock

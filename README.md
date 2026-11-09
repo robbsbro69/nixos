@@ -5,7 +5,7 @@ A NixOS desktop built around **Hyprland** (configured in Lua) and a hand-written
 <div align="center">
 
 ![NixOS](https://img.shields.io/badge/NixOS-26.05-5277C3?style=flat&logo=nixos&logoColor=white)
-![Hyprland](https://img.shields.io/badge/Hyprland-unstable%20·%20Lua-58E1FF?style=flat)
+![Hyprland](https://img.shields.io/badge/Hyprland-v0.57.2%20·%20Lua-58E1FF?style=flat)
 ![Quickshell](https://img.shields.io/badge/Quickshell-git-F5C2E7?style=flat)
 ![Theme](https://img.shields.io/badge/Catppuccin-Mocha%20Pink-F5C2E7?style=flat)
 ![License](https://img.shields.io/badge/License-MIT-A6E3A1?style=flat)
@@ -43,12 +43,12 @@ https://github.com/user-attachments/assets/370773de-65d8-40f3-ad4d-80987ba59b45
 | Area          | Choice                                                                  |
 | ------------- | ----------------------------------------------------------------------- |
 | OS            | NixOS `nixos-26.05`, with `nixos-unstable` available as `pkgs-unstable` |
-| Compositor    | Hyprland (unstable), Lua config                                         |
+| Compositor    | Hyprland `v0.57.2` (pinned flake tag), Lua config                       |
 | Shell / bar   | Quickshell (upstream git flake), custom QML                             |
 | Login / boot  | SDDM + Plymouth (Catppuccin), systemd-boot, latest kernel               |
 | GPU           | AMD iGPU + NVIDIA (open driver, PRIME offload)                          |
 | Terminal      | Kitty + Starship                                                        |
-| Editors       | Neovim (lazy.nvim), VS Code, Arduino IDE, PlatformIO                    |
+| Editors       | Neovim (minimal, built-in `vim.pack`), VS Code, Arduino IDE, PlatformIO |
 | Files         | Thunar + Yazi                                                           |
 | Browsers      | Zen (default, flake) + Brave                                            |
 | Music / video | MPD + rmpc, Spotify (Spicetify), Kopuz, mpv (MPRIS)                     |
@@ -67,6 +67,8 @@ https://github.com/user-attachments/assets/370773de-65d8-40f3-ad4d-80987ba59b45
 | `nixpkgs`          | `github:NixOS/nixpkgs/nixos-26.05`                  |
 | `nixpkgs-unstable` | `github:NixOS/nixpkgs/nixos-unstable`               |
 | `home-manager`     | `github:nix-community/home-manager/release-26.05`   |
+| `hyprland`         | `github:hyprwm/Hyprland/v0.57.2`                    |
+| `hyprland-plugins` | `github:hyprwm/hyprland-plugins` (follows `hyprland`) |
 | `zen-browser`      | `github:0xc000022070/zen-browser-flake`             |
 | `quickshell`       | `git+https://git.outfoxxed.me/outfoxxed/quickshell` |
 | `spicetify-nix`    | `github:Gerg-L/spicetify-nix`                       |
@@ -138,8 +140,8 @@ Top or bottom, picked from the bar menu (`󰏘` button or `Super+Ctrl+B`). Setti
 | Music            | Play / pause               | Music panel         | Middle: next · scroll: next / prev |
 | Lyrics ticker    | —                          | —                   | see [Lyrics & subtitles](#lyrics--subtitles) |
 | Battery          | Screen time                |                     | animated while charging            |
-| Volume           | Mute                       | Equalizer           | Scroll ±5 %                        |
-| Network          | Wi-Fi panel                | Bluetooth panel     |                                    |
+| Volume           | Sound / EQ panel           | Mute                | Scroll ±5 %                        |
+| Network          | Wi-Fi panel                | Bluetooth panel     | Middle: network usage panel · live ↓ next to the icon |
 | Tray             | Activate                   | Menu                |                                    |
 | Pomodoro bomb    | Pomodoro panel             | Start / pause       | Middle: reset · scroll: minutes    |
 | Recorder `󰑋`     | Recorder menu / stop       | Recorder menu       | red timer while recording          |
@@ -152,13 +154,13 @@ While something plays, a mirrored cava visualizer runs behind the whole bar (att
 
 ### i3bar style
 
-A look-alike of i3bar + i3status: black bar, monospace text, i3 workspace buttons (blue focused, grey others, red urgent), and a status line with grey separators and i3status colours (green good, yellow degraded, red bad):
+A look-alike of i3bar + i3status: black bar, monospace text, i3 workspace buttons (blue focused, grey others, red urgent), and a status line with grey separators and i3status colours (green good, yellow degraded, red bad). Workspaces **1–10 are always shown** (plus any higher ones in use); empty ones are dimmed and occupied ones show app icons.
 
 ```
- 1 2 3 | ♪ track | POMO 18:20 | REC | W: (73% at ssid) | BT: on | E: down | /: 120 GiB | load: 0.4 | MEM: 4.1 GiB | VOL: 45% | BAT 85% | 2026-10-26 13:10:06 | tray | CLIP | DASH | ≡
+ 1 2 3 | ♪ track | POMO 18:20 | REC | W: (73% at ssid) | BT: on | E: down | NET ↓1.2M ↑90K | /: 120 GiB | load: 0.4 | MEM: 4.1 GiB | VOL: 45% | BAT 85% | 2026-10-26 13:10:06 | tray | CLIP | DASH | ≡
 ```
 
-Every block keeps its click / scroll actions. `≡` or right-click on empty bar space opens the bar menu. Clock and calendar panels open on the right in this style.
+Every block keeps its click / scroll actions (the `NET` block opens the network usage panel; the volume block left-clicks to the sound / EQ panel, right-clicks to mute and scrolls in 5 % steps). `≡` or right-click on empty bar space opens the bar menu. Clock and calendar panels open on the right in this style.
 
 ---
 
@@ -168,18 +170,28 @@ All panels slide in from their edge, take keyboard focus, and close with `Esc`.
 
 - **Dashboard** — avatar, power row (poweroff / reboot / lock / suspend / logout), night light (scroll for 1500–6500 K) and light/dark toggles, battery, CPU / RAM / disk rings, volume and brightness sliders, clock.
 - **Launcher** — usage-sorted apps, plus a wallpaper tab.
+- **Wallpaper carousel** — `Super+W` opens a skewed, cover-flow strip of `~/wallpapers`. The directory is re-read every time it opens, so new images appear immediately. `←` / `→`, `h` / `l`, scroll or drag to browse, `Enter` or click the centre card to apply, `Esc` (or click outside) to close; clicking a side card jumps to it. The old grid picker is still available via `qs ipc call wallpaper grid`.
 - **Music** — opens right under the music component in the bar. Title, artist, seek bar, controls on a live cava backdrop; dancing GIF or draggable vinyl; player picker (Auto or a pinned MPRIS player).
 - **Sticky notes** — a floating note you **drag anywhere** by its header (position remembered). Tabs, six paper colours, autosave to `~/.local/share/quickshell/notes.json` (outside the repo). Stays open while you use other panels. `Ctrl+N` new · `Ctrl+W` delete · `Ctrl+Tab` switch.
-- **Screen recorder** — full screen, a specific monitor, or a `slurp` region, with a **Sound** switch: laptop audio · laptop + mic · off. Uses [gpu-screen-recorder](https://git.dec05eba.com/gpu-screen-recorder/about/) (hardware encoding, 60 fps), records to `.mkv` so nothing is lost if it crashes, then remuxes to `.mp4` in `~/Videos/screen-recordings/`. A watchdog saves and notifies if the recorder stalls; stop always works. Also `config/scripts/record.sh full|output NAME|region|stop|toggle|status`, log in `~/.cache/qs-record.log`.
+- **Screen recorder** — full screen, a specific monitor, or a `slurp` region, with a **Sound** switch: laptop audio · laptop + mic · off. Uses [gpu-screen-recorder](https://git.dec05eba.com/gpu-screen-recorder/about/) (hardware encoding, 60 fps), records to `.mkv` so nothing is lost if it crashes, then remuxes to `.mp4` in `~/Videos/screen-recordings/`. Audio is encoded as **AAC** (`-C aac` for wf-recorder, `-k h264 -ac aac` for gpu-screen-recorder), so finished clips upload straight to X / Twitter. A watchdog saves and notifies if the recorder stalls; stop always works. Also `config/scripts/record.sh full|output NAME|region|stop|toggle|status`, log in `~/.cache/qs-record.log`. The `record-external.sh` / `record-laptop.sh` / `record-region.sh` shortcuts use `wf-recorder -C aac` too.
 - **Clipboard** — cliphist history with image thumbnails, emoji and kaomoji search.
 - **Notification center** — 50-item history and Do Not Disturb.
 - **Wi-Fi / Bluetooth** — connect with password; pair / connect / forget.
+- **Network usage** — live ↓ / ↑ totals, a 2-minute graph and the top apps / sites for **now** or **today** (`Tab` / `T` switches). The `NET` block in the i3 bar and the live ↓ speed next to the Wi-Fi icon open it (`Super+I`, or `qs ipc call net toggle`). It reads `/run/netmon/live.json` from a separate `netmon` root service (bandwhich + `resolvectl monitor`) that is **not** part of this repo; without that service the panel shows "netmon isn't running".
 - **Calendar** — AD and Bikram Sambat (BS 2000–2090, full BS ↔ AD conversion).
 - **Clock** — analog clock, timer, stopwatch with laps, alarms.
 - **Equalizer** — 10 bands (32 Hz – 16 kHz, ±12 dB), presets, response curve; runs a PipeWire filter-chain (`scripts/eq.sh`).
 - **Workspace overview** — every occupied workspace with a live mini-map of its windows. Click a window to jump to it, **drag it onto another workspace (or `＋ new workspace`) to move it there**, `1`–`9` to switch.
 - **Screen time** — today's total, hourly chart, 7-day view with **previous-week navigation** (arrows, or the `this week` / `today` button to jump back), most-used apps. Counts time at the computer: pauses after 2 min without input or when locked, but **keeps counting while a video plays** (browser, mpv, VLC, Jellyfin…). Music alone doesn't count when you're idle. Days split at midnight. Data in `~/.local/share/quickshell/screentime.json`, 35 days kept.
 - **Bar menu** — every bar setting from the table above, plus theme previews.
+
+### Recording for X / Twitter
+
+Recordings use H.264 + AAC, so the resulting `.mp4` uploads directly. X rejects clips wider than a 3:1 aspect ratio, so pad very wide region captures to 16:9 before uploading:
+
+```sh
+ffmpeg -i in.mp4 -vf "pad=iw:ceil(iw*9/16/2)*2:0:(oh-ih)/2:black" -c:v libx264 -preset veryfast -crf 20 -pix_fmt yuv420p -c:a aac -b:a 160k out.mp4
+```
 
 ---
 
@@ -237,18 +249,22 @@ Colours come from official palettes defined once in `shell.qml` (`palettes`, exp
 
 The rest of the desktop is Catppuccin Mocha Pink: GTK, SDDM, Plymouth, Spicetify, Zen, Starship, Yazi, rmpc, mpv, fzf. Hyprland runs `wal --theme catppuccin-mocha-pink` at startup for the pywal templates. The light/dark toggle also flips the desktop colour-scheme hint and the GTK3 theme via `config/scripts/theme.sh`.
 
-Wallpapers live in `~/wallpapers/`. Picking one runs `awww img` with a transition, links it as `~/wallpapers/current` and writes a blurred copy for hyprlock. `Super+Shift+W` plays a shuffled queue.
+Wallpapers live in `~/wallpapers/`. Picking one runs `awww img` with a transition, links it as `~/wallpapers/current` and writes a blurred copy for hyprlock. `Super+W` opens the carousel; `Super+Shift+W` plays a shuffled queue.
 
 ---
 
 ## Hyprland
 
-`hyprland.lua` requires `monitors`, `env`, `execs`, `general`, `mocha`, `animations`, `gestures`, `keybinds` and `rules` from `config/hypr/hyprland/`.
+Hyprland is pinned to the `v0.57.2` tag in `flake.nix`, and the whole config is Lua. `hyprland.lua` requires `monitors`, `env`, `execs`, `general`, `mocha`, `animations`, `gestures`, `keybinds`, `rules` and `extras` from `config/hypr/hyprland/`, with `peak` loaded last so it can override the base look.
 
+- **Peak look** — `peak.lua` sets gaps 4/8 and 10 px rounding, a **rotating Catppuccin gradient border** on the active window (pink → mauve → blue via a looping `borderangle` animation), a soft pink glow, and a faint shadow plus gentle dim (`inactive_opacity` 0.92) on inactive windows. Window pop-in is a little bouncier and the border / shadow / dim changes fade smoothly. Comment out `require("hyprland/peak")` in `hyprland.lua` to turn it off; the main knobs are `dim_strength`, `inactive_opacity`, the shadow `range` / colours and the `borderangle` speed.
+- **Base look** — the blur is kept (including the `drops` variant), along with wobbly windows (`decoration.wobble`) and the Material-style expressive / emphasized curves in `animations.lua`.
+- **Portals** — `programs.hyprland.portalPackage` comes from the Hyprland flake, so the compositor and its `xdg-desktop-portal-hyprland` always match. `xdg-desktop-portal-gtk` stays in `xdg.portal.extraPortals` for file pickers. Home Manager's Hyprland is disabled (`package = null`, `portalPackage = null`), leaving exactly one compositor and one matching portal.
 - **Monitors** — external only right now: `HDMI-A-1` 1920×1080@60, `eDP-1` disabled. Dual-screen (laptop at 144 Hz + HDMI side by side) and laptop-only layouts are kept commented in `monitors.lua`.
 - **Startup** — ssh-add, `awww-daemon`, pywal, night light restore, hypridle, cliphist watchers, polkit agent, Quickshell.
 - **Idle** — dim at 4 min, lock at 8 min, screen off at 8.5 min.
 - **Gestures** — 3-finger vertical: switch workspace · 3-finger horizontal: scroll-move · 4-finger pinch out / in: fullscreen on / off.
+- **Extras** — `extras.lua` adds a drop-down terminal scratchpad (`Super+backtick`), a general scratchpad (`Super+Z`), tabbed window groups (`Super+G`, `Super+period` / `Super+comma`), terminal swallow, a colour picker (`Super+Shift+C`), a video-wallpaper toggle via `mpvpaper` (`Super+Alt+W`) and the dwindle ↔ scrolling layout switch (`Super+Shift+Space`). Workspace 4 always uses the scrolling layout.
 - **Rules**
   - Zen → workspace 1, Obsidian → 2, Spotify → 3 (silent, no focus steal)
   - Picture-in-Picture: floating, pinned, aspect-locked, bottom-right at ¼ size
@@ -263,23 +279,14 @@ Wallpapers live in `~/wallpapers/`. Picking one runs `awww img` with a transitio
 
 ## Neovim
 
-lazy.nvim, bootstrapped from `init.lua`; one file per plugin in `config/nvim/lua/plugins/`.
+The active config is deliberately minimal: a single `config/nvim/init.lua` using Neovim's built-in `vim.pack` (no plugin-manager framework), aimed at "just code and run".
 
-| Plugin                                      | Purpose                                                    |
-| ------------------------------------------- | ---------------------------------------------------------- |
-| tokyonight                                  | colour scheme                                              |
-| lsp (nvim-lspconfig)                        | language servers (rust_analyzer, lua_ls …)                 |
-| cmp                                         | completion + snippets                                      |
-| autoformat (conform.nvim)                   | format on save: rustfmt, stylua, biome / prettier, alejandra |
-| telescope                                   | files, grep, buffers, LSP pickers                          |
-| treesitter                                  | highlighting / indent                                      |
-| harpoon                                     | quick file slots                                           |
-| gitsigns, git-conflict                      | git in the gutter, conflict helpers                        |
-| oil, neotree, yazi                          | file browsing three ways                                   |
-| dashboard                                   | start screen                                               |
-| lualine, which-key                          | statusline, key hints                                      |
-| mini, autopairs, tabout, comment            | editing comfort                                            |
-| silicon, markdown-preview, colorizer        | code screenshots, live markdown, colour swatches           |
+- **Colours / LSP** — gruber-darker and `nvim-lspconfig`; servers enable themselves only when installed (clangd, pyright, rust-analyzer, lua_ls, nil, nixd, ts_ls, gopls, qmlls).
+- **Compile mode** — `<leader>c` prompts for a command (Makefile / Cargo / `build.sh` / per-language defaults), streams output into the quickfix list; `<leader>r` reruns, `<leader>k` kills, `<leader>q` closes it.
+- **Navigation** — all built-in: `<leader>f` find, `<leader>g` grep, `<leader>b` buffers, `-` netrw, `<leader>t` terminal, `<leader>y` floating Yazi.
+- **Quiet LSP** — completion plus `gd`, `K`, rename, code actions, references and a diagnostics-to-quickfix shortcut; diagnostics are underlines only. Transparent background, wrapped long lines, no icons or popups.
+
+The older plugin-heavy lazy.nvim setup is still kept in `config/nvim-fancy/`, but `~/.config/nvim` points at the minimal one.
 
 ---
 
@@ -303,13 +310,14 @@ lazy.nvim, bootstrapped from `init.lua`; one file per plugin in `config/nvim/lua
 | Keys                                   | Action                              |
 | -------------------------------------- | ----------------------------------- |
 | `Super+Return`                         | Kitty                               |
-| `Super+D` / `Super+W`                  | Launcher / wallpaper picker         |
+| `Super+D` / `Super+W`                  | Launcher / wallpaper carousel       |
 | `Super+Shift+W`                        | Next shuffled wallpaper             |
 | `Super+A`                              | Dashboard                           |
 | `Super+M`                              | Music panel                         |
 | `Super+N`                              | Notification center                 |
 | `Super+C`                              | Clipboard                           |
 | `Super+Shift+N`                        | Sticky notes                        |
+| `Super+I`                              | Network usage panel                 |
 | `Super+P`                              | Pomodoro panel                      |
 | `Super+B` / `Super+Shift+B` / `Super+Ctrl+B` | Bar show-hide / flip top-bottom / bar menu |
 | `Super+Shift+R`                        | Screen recorder menu                |
@@ -324,6 +332,13 @@ lazy.nvim, bootstrapped from `init.lua`; one file per plugin in `config/nvim/lua
 | `Super+1…0` / `Super+Shift+1…0`        | Workspace / move window there       |
 | `Super+Shift/Alt+scroll`               | Move window to next / prev workspace |
 | `Super+LMB` / `Super+RMB`              | Drag / resize                       |
+| `Super+backtick` / `Super+Z`           | Scratchpad terminal / scratchpad    |
+| `Super+Shift+Z`                        | Send window to scratchpad           |
+| `Super+G` / `Super+period` / `Super+comma` | Group make-break / next tab / previous tab |
+| `Super+Shift+G` / `Super+Ctrl+G`       | Pull window out of group / lock group |
+| `Super+Shift+C`                        | Pick a colour from the screen       |
+| `Super+Alt+W`                          | Video wallpaper on / off            |
+| `Super+Shift+Space`                    | Layout dwindle ↔ scrolling          |
 | `Super+Shift+E`                        | Exit Hyprland                       |
 
 ---
@@ -332,8 +347,9 @@ lazy.nvim, bootstrapped from `init.lua`; one file per plugin in `config/nvim/lua
 
 ```bash
 qs ipc call launcher | wallpaper | dashboard | music | notifcenter | clipboard toggle
-qs ipc call calendar | wifi | bluetooth | notes | overview | eq | screentime toggle
-qs ipc call record       menu | full | region | stop | toggle
+qs ipc call calendar | wifi | bluetooth | notes | overview | eq | screentime | net | disk | mem toggle
+qs ipc call wallpaper    grid            # old grid picker (toggle opens the carousel)
+qs ipc call record       menu | full | region | stop
 qs ipc call pomodoro     toggle | startPause | reset | skip
 qs ipc call pomozen      on | off | toggle
 qs ipc call bar          toggle | autohide | cycle | menu | nextstyle | floating
@@ -394,6 +410,7 @@ Other aliases: `ff` / `gf` (fastfetch with a random logo), `ls` / `ll` (eza), `w
 
 - NVIDIA runs in PRIME offload; Hyprland is pinned to DRM cards via `AQ_DRM_DEVICES`.
 - The bar and music panel each run their own cava, only while something plays.
+- The network usage panel is only a front-end. It reads `/run/netmon/live.json`, written by a separate `netmon` root service (bandwhich + `resolvectl monitor`) that is not part of this repo. Provide your own service that writes JSON with live `down` / `up` (bytes/s), `apps` and `hosts` rows, a 120-sample `history` (2 minutes) and `today` totals; until then the panel shows "netmon isn't running".
 - Shell updates are backed up to `~/.cache/qs-update-backups/<time>-<name>/` before files are changed.
 - Sticky notes, screen time and caches live outside the repo on purpose.
 - `nrs` builds with `--impure` so it can pick up an optional private module directory outside the repo.

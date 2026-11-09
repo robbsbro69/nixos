@@ -11,12 +11,10 @@
     xwayland.enable = true;
     withUWSM = false;
     package = hyprland.packages.${pkgs.stdenv.hostPlatform.system}.hyprland;
-    portalPackage = pkgs-unstable.xdg-desktop-portal-hyprland;
+    portalPackage = hyprland.packages.${pkgs.stdenv.hostPlatform.system}.xdg-desktop-portal-hyprland;
   };
 
 
- # flake 0.57 compositor auto-adds its own 1.3.12 portal; pin to one to avoid a dup unit
- xdg.portal.extraPortals = lib.mkForce [ pkgs-unstable.xdg-desktop-portal-hyprland ];
   programs.appimage = {
     enable = true;
     binfmt = true;

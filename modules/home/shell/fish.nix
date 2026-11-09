@@ -13,6 +13,13 @@
      lt = "eza --tree --level=2 --icons --group-directories-first";
    };
 
+
+functions.reel-dev = ''
+  cd ~/projects/reel
+  source ~/.config/reel-test/env.fish
+  opencode $argv
+'';
+
    functions = {
      ff = "fastfetch --logo (find ~/.config/fastfetch/logo -type f | shuf -n 1) --logo-type kitty --logo-height 18";
      gf = "fastfetch --logo (find ~/Pictures/Dump_fastfetch_logo/FastFetch -type f | shuf -n 1) --logo-type kitty --logo-height 18";

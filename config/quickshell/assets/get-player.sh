@@ -1,61 +1,42 @@
 #!/usr/bin/env bash
+# What the bar/music panel shows. Rules:
+#   • something Playing → show it (real players before browser tabs)
+#   • nothing Playing → keep showing the player you paused, but only for 5 minutes
+#   • otherwise → blank (every field printed empty, so no stale title is left behind)
 export PATH="/run/current-system/sw/bin:$HOME/.nix-profile/bin:$PATH"
 ACTIVE_PLAYER="${1:-%any}"
+BROWSERS='firefox\|chromium\|brave\|chrome\|zen\|librewolf\|vivaldi'
+LAST="${XDG_RUNTIME_DIR:-/tmp}/qs-last-player"
+GRACE=300
 
+blank() { printf 'player:\nstatus:Stopped\nurl:\ntitle:\nartist:\narturl:\npos:0\nlen:0\n'; exit 0; }
+st() { playerctl --player="$1" status 2>/dev/null; }
+
+all=$(playerctl --list-all 2>/dev/null)
+best=""
 if [ "$ACTIVE_PLAYER" != "%any" ]; then
     best="$ACTIVE_PLAYER"
 else
-    # 1. Any Playing player (priority order: non-browser first, then browser)
-    best=$(playerctl --list-all 2>/dev/null \
-        | grep -iv 'firefox\|chromium\|brave\|chrome' \
-        | while read -r p; do
-            [ "$(playerctl --player="$p" status 2>/dev/null)" = "Playing" ] && echo "$p" && break
-          done)
-
-    # 2. Browser Playing player
-    [ -z "$best" ] && best=$(playerctl --list-all 2>/dev/null \
-        | grep -i 'firefox\|chromium\|brave\|chrome' \
-        | while read -r p; do
-            [ "$(playerctl --player="$p" status 2>/dev/null)" = "Playing" ] && echo "$p" && break
-          done)
-
-    # 3. Browser Paused player (prefer browser over stopped spotify)
-    [ -z "$best" ] && best=$(playerctl --list-all 2>/dev/null \
-        | grep -i 'firefox\|chromium\|brave\|chrome' \
-        | while read -r p; do
-            [ "$(playerctl --player="$p" status 2>/dev/null)" = "Paused" ] && echo "$p" && break
-          done)
-
-    # 4. Non-browser Paused player
-    [ -z "$best" ] && best=$(playerctl --list-all 2>/dev/null \
-        | grep -iv 'firefox\|chromium\|brave\|chrome' \
-        | while read -r p; do
-            [ "$(playerctl --player="$p" status 2>/dev/null)" = "Paused" ] && echo "$p" && break
-          done)
-
-    # 5. Last resort - anything
-    [ -z "$best" ] && best=$(playerctl --list-all 2>/dev/null | head -1)
+    for p in $(echo "$all" | grep -iv "$BROWSERS") $(echo "$all" | grep -i "$BROWSERS"); do
+        [ "$(st "$p")" = "Playing" ] && { best=$p; break; }
+    done
+    if [ -n "$best" ]; then
+        echo "$best $(date +%s)" > "$LAST"
+    elif [ -f "$LAST" ]; then
+        read -r lp lt < "$LAST"
+        if [ $(( $(date +%s) - ${lt:-0} )) -lt $GRACE ] && echo "$all" | grep -qxF "$lp" && [ "$(st "$lp")" = "Paused" ]; then
+            best=$lp
+        fi
+    fi
 fi
 
-[ -z "$best" ] && { echo "status:Stopped"; echo "url:"; exit 0; }
-
-status=$(playerctl --player="$best" status 2>/dev/null || echo "Stopped")
-
-# Suppress stopped Spotify so bar goes blank
-if [ "$status" = "Stopped" ] && echo "$best" | grep -qi "spotify"; then
-    echo "player:$best"
-    echo "status:Stopped"
-    echo "url:"
-    echo "title:"
-    echo "artist:"
-    echo "arturl:"
-    echo "pos:0"
-    echo "len:0"
-    exit 0
-fi
+[ -z "$best" ] && blank
+status=$(st "$best"); status=${status:-Stopped}
+[ "$status" = "Stopped" ] && blank
+title=$(playerctl --player="$best" metadata title 2>/dev/null)
+[ -z "$title" ] && blank
 
 url=$(playerctl --player="$best" metadata xesam:url 2>/dev/null)
-title=$(playerctl --player="$best" metadata title 2>/dev/null)
 artist=$(playerctl --player="$best" metadata artist 2>/dev/null)
 arturl=$(playerctl --player="$best" metadata mpris:artUrl 2>/dev/null)
 pos=$(playerctl --player="$best" position 2>/dev/null | cut -d. -f1)
